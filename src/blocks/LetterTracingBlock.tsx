@@ -1,0 +1,195 @@
+/**
+ * @license
+ * Sunshine Brigade Worksheet Builder - Starter Block 2: Letter Tracing
+ * Features:
+ * - A chosen letter in uppercase, lowercase, or both (e.g. "Aa")
+ * - Shown solid once as a clear reference model, then dashed outlines to trace
+ * - Complete 3-line preschool handwriting guidelines (top, dashed midline, baseline)
+ */
+
+import React from 'react';
+import { BlockDefinition, BlockRenderProps } from '../types';
+import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
+import { CharacterCorner } from '../components/CharacterCorner';
+
+export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
+  instance,
+  size,
+  width,
+  height,
+}) => {
+  const letter = (instance.settings.letter || 'A').toUpperCase().charAt(0) || 'A';
+  const lowerLetter = letter.toLowerCase();
+  const caseMode: 'both' | 'upper' | 'lower' = instance.settings.caseMode || 'both';
+
+  const paddingX = size === 'quarter' ? 24 : 36;
+  const paddingY = size === 'quarter' ? 28 : 36;
+
+  // Decide row count based on block size
+  const defaultRows = size === 'full' ? 4 : size === 'half' ? 2 : 1;
+  const rows = defaultRows;
+
+  const usableHeight = height - paddingY * 2;
+  const rowSpacing = usableHeight / (rows + 0.2);
+  const guideLineHeight = Math.min(54, Math.max(34, rowSpacing * 0.7));
+
+  // Determine what each row displays
+  // If 'both': Row 1 can be uppercase, Row 2 lowercase, etc.
+  const rowConfigs = Array.from({ length: rows }, (_, idx) => {
+    let textToDisplay = '';
+    if (caseMode === 'upper') {
+      textToDisplay = letter;
+    } else if (caseMode === 'lower') {
+      textToDisplay = lowerLetter;
+    } else {
+      // Both: Alternate or display "A a"
+      textToDisplay = idx % 2 === 0 ? `${letter} ${lowerLetter}` : `${letter} ${lowerLetter}`;
+    }
+    return {
+      id: idx,
+      y: paddingY + idx * rowSpacing + 12,
+      text: textToDisplay,
+    };
+  });
+
+  // Calculate items per row (repeats to trace across the line)
+  const repeats = size === 'quarter' ? 3 : 5;
+  const usableWidth = width - paddingX * 2;
+  const colSpacing = usableWidth / repeats;
+
+  return (
+    <g className="letter-tracing-block">
+      {/* Title */}
+      <text
+        x={paddingX}
+        y={paddingY - 10}
+        fill="#2D2200"
+        fontSize={size === 'quarter' ? '12' : '14'}
+        fontWeight="700"
+        fontFamily="Nunito, sans-serif"
+      >
+        Letter Practice: Trace the letter {letter}
+      </text>
+
+      {rowConfigs.map((row) => (
+        <g key={row.id}>
+          {/* Handwriting guide lines behind letters */}
+          <HandwritingGuideLines
+            x={paddingX}
+            y={row.y}
+            width={usableWidth}
+            lineHeight={guideLineHeight}
+            showDescender={['g', 'j', 'p', 'q', 'y'].includes(lowerLetter)}
+          />
+
+          {/* Repeat items along the line */}
+          {Array.from({ length: repeats }).map((_, colIdx) => {
+            const isModel = colIdx === 0;
+            const itemX = paddingX + colIdx * colSpacing + colSpacing * 0.5;
+            const textY = row.y + guideLineHeight - 4; // Aligned with baseline
+
+            return (
+              <g key={colIdx}>
+                {isModel ? (
+                  // Solid reference letter
+                  <text
+                    x={itemX}
+                    y={textY}
+                    textAnchor="middle"
+                    fill="#2D2200"
+                    fontFamily="Nunito, sans-serif"
+                    fontSize={guideLineHeight * 0.85}
+                    fontWeight="800"
+                  >
+                    {row.text}
+                  </text>
+                ) : (
+                  // Dashed outline letter to trace
+                  <g>
+                    {/* Faint gray fill so child sees shape clearly */}
+                    <text
+                      x={itemX}
+                      y={textY}
+                      textAnchor="middle"
+                      fill="#E8E4D8"
+                      fontFamily="Nunito, sans-serif"
+                      fontSize={guideLineHeight * 0.85}
+                      fontWeight="800"
+                      opacity="0.6"
+                    >
+                      {row.text}
+                    </text>
+                    {/* Crisp dashed stroke */}
+                    <text
+                      x={itemX}
+                      y={textY}
+                      textAnchor="middle"
+                      fill="none"
+                      stroke="#2D2200"
+                      strokeWidth="2.2"
+                      strokeDasharray="4,4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      fontFamily="Nunito, sans-serif"
+                      fontSize={guideLineHeight * 0.85}
+                      fontWeight="800"
+                    >
+                      {row.text}
+                    </text>
+                    {/* Small start helper dot for children */}
+                    <circle
+                      cx={itemX - guideLineHeight * 0.28}
+                      cy={row.y + 10}
+                      r="2.5"
+                      fill="#009BD9"
+                    />
+                  </g>
+                )}
+              </g>
+            );
+          })}
+        </g>
+      ))}
+
+      {/* Optional Character Corner */}
+      <CharacterCorner config={instance.character} blockWidth={width} blockHeight={height} />
+    </g>
+  );
+};
+
+export const LetterTracingBlockDefinition: BlockDefinition = {
+  id: 'letter-tracing',
+  displayName: 'Letter Tracing',
+  description: 'Uppercase and lowercase letters with solid guide and dashed outlines to trace on handwriting lines.',
+  category: 'letters',
+  skillTags: ['alphabet', 'letter formation', 'phonics'],
+  ageRange: '3–5',
+  allowedSizes: ['full', 'half', 'quarter'],
+  settingsSchema: [
+    {
+      key: 'letter',
+      label: 'Letter (A-Z)',
+      type: 'select',
+      options: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((char) => ({
+        label: char,
+        value: char,
+      })),
+      helperText: 'Choose which letter to practice.',
+    },
+    {
+      key: 'caseMode',
+      label: 'Letter Case',
+      type: 'select',
+      options: [
+        { label: 'Both (Aa)', value: 'both' },
+        { label: 'Uppercase Only (A)', value: 'upper' },
+        { label: 'Lowercase Only (a)', value: 'lower' },
+      ],
+    },
+  ],
+  defaultSettings: {
+    letter: 'A',
+    caseMode: 'both',
+  },
+  render: (props) => <LetterTracingRenderer {...props} />,
+};

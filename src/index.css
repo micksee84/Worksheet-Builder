@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+    color: #2D2200;
+  }
+}
+
+/* Custom Scrollbar for sidebars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #E2DEC9;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C4BEB0;
+}
+
+/* Print Stylesheet: Vector-clean print output */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide app navigation, sidebars, modals, overlays */
+  header,
+  aside,
+  .no-print,
+  #app-interactive-shell {
+    display: none !important;
+  }
+
+  /* Reveal printed worksheet pages */
+  #worksheet-print-container {
+    display: block !important;
+    position: static !important;
+  }
+
+  .worksheet-print-page {
+    page-break-after: always !important;
+    break-after: page !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .worksheet-svg-surface {
+    box-shadow: none !important;
+    border: none !important;
+    max-height: 98vh !important;
+    width: auto !important;
+  }
+}

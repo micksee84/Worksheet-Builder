@@ -1,0 +1,51 @@
+{
+  "id": "template-tracing-lines-warm-up",
+  "title": "Tracing Lines Warm-Up",
+  "pageSize": "letter",
+  "createdAt": 1729200000000,
+  "updatedAt": 1729200000000,
+  "pages": [
+    {
+      "id": "page-1",
+      "title": "Sunshine Motor Skills: Tracing Lines",
+      "layout": "2-half",
+      "showDateName": true,
+      "slots": [
+        {
+          "id": "slot-1",
+          "size": "half",
+          "label": "Top Half",
+          "block": {
+            "instanceId": "inst-template-1-1",
+            "blockId": "line-tracing",
+            "settings": {
+              "lineStyle": "wave",
+              "lineCount": 4
+            },
+            "character": {
+              "id": "buddy",
+              "corner": "top-right"
+            }
+          }
+        },
+        {
+          "id": "slot-2",
+          "size": "half",
+          "label": "Bottom Half",
+          "block": {
+            "instanceId": "inst-template-1-2",
+            "blockId": "line-tracing",
+            "settings": {
+              "lineStyle": "zigzag",
+              "lineCount": 4
+            },
+            "character": {
+              "id": "finn",
+              "corner": "top-right"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

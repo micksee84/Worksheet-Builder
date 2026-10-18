@@ -1,0 +1,51 @@
+{
+  "id": "template-letter-a-practice",
+  "title": "Letter A Practice",
+  "pageSize": "letter",
+  "createdAt": 1729200000000,
+  "updatedAt": 1729200000000,
+  "pages": [
+    {
+      "id": "page-1",
+      "title": "My Awesome Letter A Worksheet",
+      "layout": "2-half",
+      "showDateName": true,
+      "slots": [
+        {
+          "id": "slot-1",
+          "size": "half",
+          "label": "Top Half",
+          "block": {
+            "instanceId": "inst-template-2-1",
+            "blockId": "letter-tracing",
+            "settings": {
+              "letter": "A",
+              "caseMode": "both"
+            },
+            "character": {
+              "id": "ollie",
+              "corner": "top-right"
+            }
+          }
+        },
+        {
+          "id": "slot-2",
+          "size": "half",
+          "label": "Bottom Half",
+          "block": {
+            "instanceId": "inst-template-2-2",
+            "blockId": "draw-and-write",
+            "settings": {
+              "prompt": "Draw something that starts with A (apple, astronaut, alligator):",
+              "writingLinesCount": 2
+            },
+            "character": {
+              "id": "faye",
+              "corner": "bottom-right"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

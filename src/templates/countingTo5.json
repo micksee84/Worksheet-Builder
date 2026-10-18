@@ -1,0 +1,51 @@
+{
+  "id": "template-counting-to-5",
+  "title": "Counting to 5",
+  "pageSize": "letter",
+  "createdAt": 1729200000000,
+  "updatedAt": 1729200000000,
+  "pages": [
+    {
+      "id": "page-1",
+      "title": "Sunshine Math: Count & Color to 5",
+      "layout": "2-half",
+      "showDateName": true,
+      "slots": [
+        {
+          "id": "slot-1",
+          "size": "half",
+          "label": "Top Half",
+          "block": {
+            "instanceId": "inst-template-3-1",
+            "blockId": "number-tracing",
+            "settings": {
+              "number": 5,
+              "shape": "stars"
+            },
+            "character": {
+              "id": "hana",
+              "corner": "top-right"
+            }
+          }
+        },
+        {
+          "id": "slot-2",
+          "size": "half",
+          "label": "Bottom Half",
+          "block": {
+            "instanceId": "inst-template-3-2",
+            "blockId": "count-circle",
+            "settings": {
+              "count": 4,
+              "shape": "apples"
+            },
+            "character": {
+              "id": "rusty",
+              "corner": "top-right"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

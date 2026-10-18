@@ -1,0 +1,6 @@
+{
+  "name": "Sunshine Brigade Worksheet Builder",
+  "description": "A free, playful drag-and-drop tool for parents and teachers to build custom printable worksheets for children ages 3–5, with vector PDF export and starter templates.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
