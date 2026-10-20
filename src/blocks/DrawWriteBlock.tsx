@@ -17,7 +17,7 @@ export const DrawWriteRenderer: React.FC<BlockRenderProps> = ({
   width,
   height,
 }) => {
-  const prompt = (instance.settings.prompt || 'Draw your favourite animal:').trim();
+  const prompt = (instance.settings.prompt || 'Draw your favourite animal.').trim();
   const requestedLines = Number(instance.settings.writingLinesCount) || (size === 'quarter' ? 1 : 2);
   const writingLinesCount = Math.min(size === 'quarter' ? 2 : 3, Math.max(1, requestedLines));
 
@@ -55,22 +55,21 @@ export const DrawWriteRenderer: React.FC<BlockRenderProps> = ({
         y={drawingBoxY}
         width={usableWidth}
         height={drawingBoxHeight}
-        rx="10"
-        ry="10"
+        rx="12"
+        ry="12"
         fill="#FFFFFF"
         stroke="#2D2200"
         strokeWidth="2.5"
       />
 
       {/* Small corner pencil or drawing hint icon inside drawing box */}
-      <g opacity="0.25">
+      <g>
         <text
           x={paddingX + usableWidth - 16}
           y={drawingBoxY + 22}
           textAnchor="end"
-          fill="#2D2200"
+          fill="#B6B2A6"
           fontSize="11"
-          fontStyle="italic"
           fontFamily="Nunito, sans-serif"
         >
           draw here
@@ -102,7 +101,7 @@ export const DrawWriteRenderer: React.FC<BlockRenderProps> = ({
 
 export const DrawWriteBlockDefinition: BlockDefinition = {
   id: 'draw-and-write',
-  displayName: 'Draw & Write Box',
+  displayName: 'Draw and write',
   description: 'An empty bordered drawing area with a prompt line and preschool handwriting lines below.',
   category: 'creative',
   skillTags: ['creative drawing', 'early writing', 'expression', 'fine motor'],
@@ -113,7 +112,7 @@ export const DrawWriteBlockDefinition: BlockDefinition = {
       key: 'prompt',
       label: 'Prompt Text',
       type: 'text',
-      placeholder: 'e.g. Draw your favourite animal:',
+      placeholder: 'e.g. Draw your favourite animal.',
       helperText: 'Instruction prompt shown above the drawing box.',
     },
     {

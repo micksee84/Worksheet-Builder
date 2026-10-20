@@ -131,7 +131,9 @@ export const LineTracingRenderer: React.FC<BlockRenderProps> = ({
         fontWeight="700"
         fontFamily="Nunito, sans-serif"
       >
-        Trace the lines from left to right:
+        {size === 'quarter'
+          ? 'Follow the dashes to the star.'
+          : 'Start at the big dot. Follow the dashes to the star.'}
       </text>
 
       {/* Render each tracing line */}
@@ -145,9 +147,9 @@ export const LineTracingRenderer: React.FC<BlockRenderProps> = ({
           <path
             d={line.path}
             fill="none"
-            stroke="#2D2200"
-            strokeWidth="2.5"
-            strokeDasharray="6,5"
+            stroke="#B6B2A6"
+            strokeWidth="4"
+            strokeDasharray="12,12"
             strokeLinecap="round"
             strokeLinejoin="round"
           />

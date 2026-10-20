@@ -1,7 +1,7 @@
 /**
  * @license
- * Sunshine Brigade Worksheet Builder - Reusable Kid-Friendly Coloring Shapes
- * Crisp black line work (with white fill) perfect for 3-5 year olds to count and color.
+ * Sunshine Brigade Worksheet Builder - Reusable Kid-Friendly Colouring Shapes
+ * Crisp black line work (with white fill) perfect for 3-5 year olds to count and colour.
  */
 
 import React from 'react';
@@ -32,7 +32,7 @@ export const KidShape: React.FC<RenderShapeProps> = ({ type, cx, cy, size }) => 
           points={points.join(' ')}
           fill="#FFFFFF"
           stroke="#2D2200"
-          strokeWidth="2.2"
+          strokeWidth="3"
           strokeLinejoin="round"
         />
       );
@@ -50,7 +50,7 @@ export const KidShape: React.FC<RenderShapeProps> = ({ type, cx, cy, size }) => 
                 C ${cx + r * 1.1} ${cy + r * 0.3}, ${cx + r * 0.9} ${cy - r * 0.9}, ${cx} ${cy - r * 0.5} Z`}
             fill="#FFFFFF"
             stroke="#2D2200"
-            strokeWidth="2.2"
+            strokeWidth="3"
             strokeLinejoin="round"
           />
           {/* Stem */}
@@ -58,7 +58,7 @@ export const KidShape: React.FC<RenderShapeProps> = ({ type, cx, cy, size }) => 
             d={`M ${cx} ${cy - r * 0.5} Q ${cx + r * 0.2} ${cy - r * 0.95} ${cx + r * 0.3} ${cy - r * 1.05}`}
             fill="none"
             stroke="#2D2200"
-            strokeWidth="2.2"
+            strokeWidth="3"
             strokeLinecap="round"
           />
           {/* Little leaf */}
@@ -85,7 +85,7 @@ export const KidShape: React.FC<RenderShapeProps> = ({ type, cx, cy, size }) => 
               C ${cx + r * 1.1} ${cy - r * 0.8}, ${cx + r * 1.2} ${cy + r * 0.1}, ${cx} ${cy + r * 0.8} Z`}
           fill="#FFFFFF"
           stroke="#2D2200"
-          strokeWidth="2.2"
+          strokeWidth="3"
           strokeLinejoin="round"
         />
       );
@@ -102,7 +102,7 @@ export const KidShape: React.FC<RenderShapeProps> = ({ type, cx, cy, size }) => 
             ry={r}
             fill="#FFFFFF"
             stroke="#2D2200"
-            strokeWidth="2.2"
+            strokeWidth="3"
           />
           {/* Knot */}
           <polygon
@@ -144,7 +144,7 @@ export const KidShape: React.FC<RenderShapeProps> = ({ type, cx, cy, size }) => 
             r={r * 0.35}
             fill="#FFFFFF"
             stroke="#2D2200"
-            strokeWidth="2.2"
+            strokeWidth="3"
           />
         </g>
       );
@@ -159,7 +159,7 @@ export const KidShape: React.FC<RenderShapeProps> = ({ type, cx, cy, size }) => 
           r={r}
           fill="#FFFFFF"
           stroke="#2D2200"
-          strokeWidth="2.2"
+          strokeWidth="3"
         />
       );
   }

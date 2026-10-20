@@ -55,7 +55,7 @@ export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
         fontWeight="700"
         fontFamily="Nunito, sans-serif"
       >
-        Name & Word Tracing:
+        Trace the word. Start on the left.
       </text>
 
       {rows.map(({ idx, y, isModel }) => {
@@ -86,29 +86,12 @@ export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
                 {rawText}
               </text>
             ) : (
-              // Dashed outline to trace
+              // Word to trace: solid Trace colour, the child draws over it
               <g>
                 <text
                   x={textX}
                   y={textY}
-                  fill="#EDE8DA"
-                  fontFamily="Nunito, sans-serif"
-                  fontSize={fontSize}
-                  fontWeight="800"
-                  letterSpacing="4"
-                  opacity="0.6"
-                >
-                  {rawText}
-                </text>
-                <text
-                  x={textX}
-                  y={textY}
-                  fill="none"
-                  stroke="#2D2200"
-                  strokeWidth="2.2"
-                  strokeDasharray="4,4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                  fill="#B6B2A6"
                   fontFamily="Nunito, sans-serif"
                   fontSize={fontSize}
                   fontWeight="800"
@@ -130,8 +113,8 @@ export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
 
 export const WordTracingBlockDefinition: BlockDefinition = {
   id: 'word-tracing',
-  displayName: 'Name & Word Tracing',
-  description: 'Type a child name or sight word; renders as dashed traceable text on handwriting lines.',
+  displayName: 'Name and word tracing',
+  description: 'Type a name or sight word. It appears as grey letters to trace on handwriting lines.',
   category: 'letters',
   skillTags: ['name writing', 'early literacy', 'sight words'],
   ageRange: '3–5',
@@ -157,7 +140,7 @@ export const WordTracingBlockDefinition: BlockDefinition = {
       key: 'showSolidModel',
       label: 'Solid Model on First Line',
       type: 'boolean',
-      helperText: 'Show a solid black reference word on the first line.',
+      helperText: 'Show a solid word to copy on the first line.',
     },
   ],
   defaultSettings: {

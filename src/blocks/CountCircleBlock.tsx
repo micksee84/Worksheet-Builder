@@ -71,7 +71,7 @@ export const CountCircleRenderer: React.FC<BlockRenderProps> = ({
         fontWeight="700"
         fontFamily="Nunito, sans-serif"
       >
-        Count the items. Circle the correct number:
+        Count them. Circle the number.
       </text>
 
       {/* Objects to count */}
@@ -87,7 +87,7 @@ export const CountCircleRenderer: React.FC<BlockRenderProps> = ({
         y1={height - bottomChoicesHeight - 8}
         x2={width - paddingX - 10}
         y2={height - bottomChoicesHeight - 8}
-        stroke="#E2DEC9"
+        stroke="#B6B2A6"
         strokeWidth="1.5"
         strokeDasharray="4,4"
       />
@@ -134,7 +134,7 @@ export const CountCircleRenderer: React.FC<BlockRenderProps> = ({
 
 export const CountCircleBlockDefinition: BlockDefinition = {
   id: 'count-circle',
-  displayName: 'Count & Circle',
+  displayName: 'Count and circle',
   description: 'Count N simple objects and circle the matching numeral among three choices.',
   category: 'numbers',
   skillTags: ['counting', 'quantity recognition', 'number discrimination'],
