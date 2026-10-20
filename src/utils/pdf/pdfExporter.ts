@@ -7,9 +7,9 @@
 
 import { jsPDF } from 'jspdf';
 import { svg2pdf } from 'svg2pdf.js';
-import { Worksheet } from '../../types';
-import { PAGE_SPECS } from '../../config/appConfig';
+import { Worksheet, PageSizeId } from '../../types';
 import { trackEvent } from '../analytics';
+import { registerPdfFonts } from './pdfFonts';
 
 export interface ExportPdfOptions {
   fileName?: string;
@@ -18,13 +18,15 @@ export interface ExportPdfOptions {
 }
 
 /**
- * Exports all pages of the worksheet to a high-resolution vector PDF
+ * Exports all pages of the worksheet to a high-resolution vector PDF.
+ * If the brand fonts can't be loaded, this fails on purpose so the caller falls back
+ * to the browser print dialog, which draws the real fonts, rather than saving a PDF
+ * whose tracing letters are in the wrong typeface.
  */
 export async function exportWorksheetToPdf(
   worksheet: Worksheet,
   options: ExportPdfOptions = {}
 ): Promise<void> {
-  const spec = PAGE_SPECS[worksheet.pageSize] || PAGE_SPECS.letter;
   const isA4 = worksheet.pageSize === 'a4';
 
   try {
@@ -34,6 +36,8 @@ export async function exportWorksheetToPdf(
       unit: 'pt',
       format: isA4 ? 'a4' : 'letter',
     });
+
+    await registerPdfFonts(pdf);
 
     const pdfPageWidth = pdf.internal.pageSize.getWidth();
     const pdfPageHeight = pdf.internal.pageSize.getHeight();
@@ -46,20 +50,21 @@ export async function exportWorksheetToPdf(
       // Look up rendered SVG element in DOM
       const svgId = `print-svg-page-${worksheet.pages[i].id}`;
       const svgElem = document.getElementById(svgId) as unknown as SVGSVGElement | null;
-
-      if (svgElem) {
-        // Clone to avoid mutating live DOM
-        const clonedSvg = svgElem.cloneNode(true) as SVGSVGElement;
-        clonedSvg.setAttribute('width', `${pdfPageWidth}pt`);
-        clonedSvg.setAttribute('height', `${pdfPageHeight}pt`);
-
-        await svg2pdf(clonedSvg, pdf, {
-          x: 0,
-          y: 0,
-          width: pdfPageWidth,
-          height: pdfPageHeight,
-        });
+      if (!svgElem) {
+        throw new Error(`Page ${i + 1} is not ready to export`);
       }
+
+      // Clone to avoid mutating live DOM
+      const clonedSvg = svgElem.cloneNode(true) as SVGSVGElement;
+      clonedSvg.setAttribute('width', `${pdfPageWidth}pt`);
+      clonedSvg.setAttribute('height', `${pdfPageHeight}pt`);
+
+      await svg2pdf(clonedSvg, pdf, {
+        x: 0,
+        y: 0,
+        width: pdfPageWidth,
+        height: pdfPageHeight,
+      });
     }
 
     const cleanTitle = worksheet.title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
@@ -81,9 +86,27 @@ export async function exportWorksheetToPdf(
     options.onSuccess?.();
   } catch (error) {
     console.error('Vector PDF generation error:', error);
-    // If svg2pdf encounters an issue, fallback to print dialog
+    // If fonts or svg2pdf fail, fall back to the print dialog
     options.onError?.(error instanceof Error ? error : new Error(String(error)));
   }
+}
+
+const PRINT_PAGE_STYLE_ID = 'sb-print-page-size';
+
+/**
+ * Sets the printed paper size and removes browser margins, so the page prints
+ * at true size instead of being shrunk to fit inside the default margins.
+ */
+function applyPrintPageSize(pageSize: PageSizeId): void {
+  if (typeof document === 'undefined') return;
+  let style = document.getElementById(PRINT_PAGE_STYLE_ID) as HTMLStyleElement | null;
+  if (!style) {
+    style = document.createElement('style');
+    style.id = PRINT_PAGE_STYLE_ID;
+    document.head.appendChild(style);
+  }
+  const size = pageSize === 'a4' ? 'A4' : 'letter';
+  style.textContent = `@page { size: ${size} portrait; margin: 0; }`;
 }
 
 /**
@@ -100,6 +123,7 @@ export function printWorksheetNative(worksheet: Worksheet, onSuccess?: () => voi
     pageSize: worksheet.pageSize,
   });
 
+  applyPrintPageSize(worksheet.pageSize);
   window.print();
   onSuccess?.();
 }

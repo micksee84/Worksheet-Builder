@@ -23,11 +23,18 @@
   background: #C4BEB0;
 }
 
+/* Default printed paper size with no browser margins.
+   The Print button replaces this with A4 when that page size is chosen. */
+@page {
+  size: letter portrait;
+  margin: 0;
+}
+
 /* Print Stylesheet: Vector-clean print output */
 @media print {
   body {
     background: #FFFFFF !important;
-    color: #000000 !important;
+    color: #2D2200 !important;
     margin: 0 !important;
     padding: 0 !important;
   }
