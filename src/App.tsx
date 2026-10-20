@@ -37,7 +37,8 @@ import {
   loadWorksheetFromStorage,
 } from './utils/storage';
 import {
-  encodeWorksheetToHash,
+  buildShareUrl,
+  clearShareHash,
   decodeWorksheetFromHash,
 } from './utils/shareLink';
 import { exportWorksheetToPdf, printWorksheetNative } from './utils/pdf/pdfExporter';
@@ -63,7 +64,7 @@ function createInitialWorksheet(): Worksheet {
     pages: [
       {
         id: 'page_1',
-        title: 'Sunshine Pre-Writing & Letters',
+        title: 'Lines and letters',
         layout: '2-half',
         showDateName: true,
         slots: [
@@ -137,6 +138,21 @@ export default function App() {
   });
   const sensors = useSensors(pointerSensor, touchSensor);
 
+  // Always-current copy of the worksheet, so updates never work from a stale value
+  // and history can be recorded outside React's state updater (which may run twice).
+  const worksheetRef = useRef(worksheet);
+
+  const setWorksheetNow = useCallback((next: Worksheet) => {
+    worksheetRef.current = next;
+    setWorksheet(next);
+  }, []);
+
+  // A share link has been read into state at this point. Remove it from the address bar
+  // so refreshing later loads the latest autosaved work, not the original link.
+  useEffect(() => {
+    clearShareHash();
+  }, []);
+
   // Autosave to localStorage on worksheet update
   useEffect(() => {
     saveWorksheetToStorage(worksheet);
@@ -145,18 +161,14 @@ export default function App() {
   // Helper to push state changes with history
   const updateWorksheet = useCallback(
     (updater: (prev: Worksheet) => Worksheet) => {
-      setWorksheet((prev) => {
-        const next = updater(prev);
-        // Push previous to history
-        setHistory((h) => [...h.slice(-20), prev]);
-        setFuture([]);
-        return {
-          ...next,
-          updatedAt: Date.now(),
-        };
-      });
+      const prev = worksheetRef.current;
+      const next = { ...updater(prev), updatedAt: Date.now() };
+      setHistory((h) => [...h.slice(-19), prev]);
+      setFuture([]);
+      setWorksheetNow(next);
+      return next;
     },
-    []
+    [setWorksheetNow]
   );
 
   // Undo / Redo handlers
@@ -164,17 +176,19 @@ export default function App() {
     if (history.length === 0) return;
     const previous = history[history.length - 1];
     setHistory((h) => h.slice(0, h.length - 1));
-    setFuture((f) => [worksheet, ...f]);
-    setWorksheet(previous);
-  }, [history, worksheet]);
+    setFuture((f) => [worksheetRef.current, ...f]);
+    setWorksheetNow(previous);
+    setActivePageIndex((idx) => Math.min(idx, previous.pages.length - 1));
+  }, [history, setWorksheetNow]);
 
   const handleRedo = useCallback(() => {
     if (future.length === 0) return;
     const next = future[0];
     setFuture((f) => f.slice(1));
-    setHistory((h) => [...h, worksheet]);
-    setWorksheet(next);
-  }, [future, worksheet]);
+    setHistory((h) => [...h, worksheetRef.current]);
+    setWorksheetNow(next);
+    setActivePageIndex((idx) => Math.min(idx, next.pages.length - 1));
+  }, [future, setWorksheetNow]);
 
   // Active page safe access
   const activePage = worksheet.pages[activePageIndex] || worksheet.pages[0];
@@ -183,43 +197,49 @@ export default function App() {
   const selectedSlot = activePage.slots.find((s) => s.id === selectedSlotRef?.slotId) || null;
   const selectedBlockDef = selectedSlot?.block ? getBlockById(selectedSlot.block.blockId) || null : null;
 
-  // Add block to first available slot on active page
+  // Add block to first empty slot on the active page.
+  // If the page is full, never overwrite an activity: start a new page right after it.
   const handleAddBlockToActivePage = useCallback(
     (blockId: string) => {
-      let placed = false;
+      const current = worksheetRef.current;
+      const pageIdx = Math.min(activePageIndex, current.pages.length - 1);
+      const page = current.pages[pageIdx];
+      const emptySlot = page.slots.find((s) => s.block === null);
 
-      updateWorksheet((prev) => {
-        const newPages = prev.pages.map((p, pIdx) => {
-          if (pIdx !== activePageIndex) return p;
-
-          // Find first empty slot
-          const emptySlot = p.slots.find((s) => s.block === null);
-          if (emptySlot) {
-            placed = true;
-            return {
-              ...p,
-              slots: p.slots.map((s) =>
-                s.id === emptySlot.id
-                  ? { ...s, block: createBlockInstance(blockId) }
-                  : s
-              ),
-            };
-          }
-
-          // If no empty slot, replace the first slot
-          placed = true;
-          return {
-            ...p,
-            slots: p.slots.map((s, idx) =>
-              idx === 0 ? { ...s, block: createBlockInstance(blockId) } : s
-            ),
-          };
+      if (emptySlot) {
+        updateWorksheet((prev) => ({
+          ...prev,
+          pages: prev.pages.map((p, idx) =>
+            idx !== pageIdx
+              ? p
+              : {
+                  ...p,
+                  slots: p.slots.map((s) =>
+                    s.id === emptySlot.id ? { ...s, block: createBlockInstance(blockId) } : s
+                  ),
+                }
+          ),
+        }));
+        trackEvent('block_added', { blockId, pageIndex: pageIdx });
+      } else {
+        const slots = createSlotsForPreset(page.layout);
+        slots[0].block = createBlockInstance(blockId);
+        const newPage: Page = {
+          id: `page_${Date.now()}`,
+          title: page.title,
+          layout: page.layout,
+          showDateName: page.showDateName,
+          slots,
+        };
+        updateWorksheet((prev) => {
+          const pages = [...prev.pages];
+          pages.splice(pageIdx + 1, 0, newPage);
+          return { ...prev, pages };
         });
-
-        return { ...prev, pages: newPages };
-      });
-
-      trackEvent('block_added', { blockId, pageIndex: activePageIndex });
+        setActivePageIndex(pageIdx + 1);
+        trackEvent('page_added', { pageCount: current.pages.length + 1 });
+        trackEvent('block_added', { blockId, pageIndex: pageIdx + 1 });
+      }
 
       // Close mobile drawer if open
       setIsMobileSidebarOpen(false);
@@ -373,7 +393,7 @@ export default function App() {
       const newPageNumber = prev.pages.length + 1;
       const newPage: Page = {
         id: `page_${Date.now()}`,
-        title: `Worksheet Activity ${newPageNumber}`,
+        title: `Page ${newPageNumber}`,
         layout: '2-half',
         showDateName: true,
         slots: createSlotsForPreset('2-half'),
@@ -416,33 +436,53 @@ export default function App() {
     [updateWorksheet, worksheet.pages.length]
   );
 
-  // Change page layout preset
+  // Change page layout preset.
+  // Blocks keep their order. If the new layout has fewer slots, the extra blocks
+  // move onto new pages (same layout) right after this one instead of being deleted.
   const handleChangePageLayout = useCallback(
     (pageId: string, newPreset: PageLayoutPreset) => {
-      updateWorksheet((prev) => {
-        const newPages = prev.pages.map((p) => {
-          if (p.id !== pageId) return p;
+      const current = worksheetRef.current;
+      const pageIdx = current.pages.findIndex((p) => p.id === pageId);
+      if (pageIdx === -1) return;
+      const page = current.pages[pageIdx];
 
-          const newSlots = createSlotsForPreset(newPreset);
-          // Preserve existing blocks as far as possible
-          const existingBlocks = p.slots.map((s) => s.block).filter(Boolean);
+      const existingBlocks = page.slots
+        .map((s) => s.block)
+        .filter((b): b is BlockInstance => Boolean(b));
+      const slotsPerPage = createSlotsForPreset(newPreset).length;
 
-          newSlots.forEach((slot, idx) => {
-            if (existingBlocks[idx]) {
-              slot.block = existingBlocks[idx];
-            }
-          });
+      const chunks: BlockInstance[][] = [];
+      for (let i = 0; i < Math.max(existingBlocks.length, 1); i += slotsPerPage) {
+        chunks.push(existingBlocks.slice(i, i + slotsPerPage));
+      }
 
-          return {
-            ...p,
-            layout: newPreset,
-            slots: newSlots,
-          };
+      const rebuiltPages: Page[] = chunks.map((blocks, chunkIdx) => {
+        const slots = createSlotsForPreset(newPreset);
+        blocks.forEach((block, i) => {
+          slots[i].block = block;
         });
-        return { ...prev, pages: newPages };
+        return {
+          ...page,
+          id: chunkIdx === 0 ? page.id : `page_${Date.now()}_${chunkIdx}`,
+          layout: newPreset,
+          slots,
+        };
       });
 
+      updateWorksheet((prev) => {
+        const pages = [...prev.pages];
+        pages.splice(pageIdx, 1, ...rebuiltPages);
+        return { ...prev, pages };
+      });
+
+      // The selected slot id may not exist in the new layout
+      setSelectedSlotRef(null);
+      setIsInspectorOpen(false);
+
       trackEvent('page_layout_changed', { layout: newPreset });
+      if (rebuiltPages.length > 1) {
+        trackEvent('page_added', { pageCount: current.pages.length + rebuiltPages.length - 1 });
+      }
     },
     [updateWorksheet]
   );
@@ -474,25 +514,25 @@ export default function App() {
     [updateWorksheet]
   );
 
-  // Copy share link
+  // Copy share link.
+  // Only the clipboard gets the link. The address bar is left alone, so a later
+  // refresh keeps loading the latest autosave instead of this snapshot.
   const handleCopyShareLink = useCallback(() => {
-    const hash = encodeWorksheetToHash(worksheet);
-    const fullUrl = `${window.location.origin}${window.location.pathname}${hash}`;
+    const fullUrl = buildShareUrl(worksheet);
+    if (!fullUrl) return;
     navigator.clipboard.writeText(fullUrl).catch((err) => {
       console.warn('Clipboard write failed:', err);
     });
-    // Update browser URL hash without reload
-    window.history.replaceState(null, '', hash);
   }, [worksheet]);
 
-  // Load a template
+  // Load a template.
+  // Goes through history so Undo brings back the worksheet the parent was working on.
   const handleSelectTemplate = useCallback(
     (template: TemplateItem) => {
       const cloned = JSON.parse(JSON.stringify(template.worksheet)) as Worksheet;
       cloned.id = `ws_${Date.now()}`;
-      cloned.updatedAt = Date.now();
 
-      setWorksheet(cloned);
+      updateWorksheet(() => cloned);
       setActivePageIndex(0);
       setIsTemplateModalOpen(false);
       setSelectedSlotRef(null);
@@ -503,7 +543,7 @@ export default function App() {
         pageCount: cloned.pages.length,
       });
     },
-    []
+    [updateWorksheet]
   );
 
   // PDF Export

@@ -11,6 +11,9 @@ import { PAGE_SPECS } from '../config/appConfig';
 import { calculateSlotGeometries, SlotGeometry } from '../utils/layoutPresets';
 import { getBlockById } from '../registry/blockRegistry';
 
+// Ink sticker title size in pt. Super Joyful is never set below 24.
+const TITLE_FONT_SIZE = 26;
+
 interface WorksheetPageSvgProps {
   page: Page;
   pageIndex: number;
@@ -55,21 +58,6 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
         width={pageWidth}
         height={pageHeight}
         fill="#FFFFFF"
-        stroke="#E2DEC9"
-        strokeWidth="1"
-      />
-
-      {/* Decorative subtle border inset for printable page */}
-      <rect
-        x={margin * 0.5}
-        y={margin * 0.5}
-        width={pageWidth - margin}
-        height={pageHeight - margin}
-        fill="none"
-        stroke="#EAE6D6"
-        strokeWidth="0.8"
-        rx="4"
-        ry="4"
       />
 
       {/* ==================================================== */}
@@ -77,18 +65,34 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
       {/* "Name: ______ Date: ______" and Editable Title        */}
       {/* ==================================================== */}
       <g className="worksheet-header" transform={`translate(${margin}, ${margin})`}>
-        {/* Page Title */}
-        <text
-          x="0"
-          y="24"
-          fill="#2D2200"
-          fontSize="22"
-          fontWeight="800"
-          fontFamily="Super Joyful, Nunito, sans-serif"
-          letterSpacing="0.2"
-        >
-          {page.title || `Worksheet - Page ${pageIndex + 1}`}
-        </text>
+        {/* Page Title: Ink Style sticker. Built from three layers so it survives PDF export:
+            a flat ink shadow (6% down-right), an ink outline (3.2% all round), then white letters. */}
+        {(() => {
+          const titleText = page.title || `Page ${pageIndex + 1}`;
+          const size = TITLE_FONT_SIZE;
+          const outline = size * 0.032 * 2; // stroke is centred, so double it to sit 3.2% outside
+          const shadow = size * 0.06;
+          const common = {
+            y: 24,
+            fontSize: size,
+            fontFamily: 'Super Joyful, Nunito, sans-serif',
+            fontWeight: 'normal',
+            letterSpacing: 0.4,
+          };
+          return (
+            <g className="ink-sticker-title">
+              <text {...common} x={shadow} dy={shadow} fill="#2D2200" stroke="#2D2200" strokeWidth={outline} strokeLinejoin="round">
+                {titleText}
+              </text>
+              <text {...common} x={0} fill="#2D2200" stroke="#2D2200" strokeWidth={outline} strokeLinejoin="round">
+                {titleText}
+              </text>
+              <text {...common} x={0} fill="#FFFFFF">
+                {titleText}
+              </text>
+            </g>
+          );
+        })()}
 
         {/* Name and Date Line */}
         {page.showDateName && (
@@ -145,7 +149,7 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
           y2={headerHeight - margin * 0.75}
           stroke="#2D2200"
           strokeWidth="1.5"
-          strokeDasharray="6,4"
+          strokeLinecap="round"
         />
       </g>
 
@@ -158,6 +162,8 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
           if (!geom) return null;
 
           const hasBlock = Boolean(slot.block);
+          // Empty slots are an editing aid only: leave them off printed pages and PDFs
+          if (!hasBlock && !isInteractive) return null;
           const isSelected = isInteractive && slot.block?.instanceId === selectedInstanceId;
           const blockDef = slot.block ? getBlockById(slot.block.blockId) : null;
 
@@ -180,11 +186,11 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
                 y="0"
                 width={geom.width}
                 height={geom.height}
-                rx="8"
-                ry="8"
-                fill={hasBlock ? '#FFFFFF' : '#FAF8F0'}
-                stroke={isSelected ? '#009BD9' : hasBlock ? '#2D2200' : '#C4BEB0'}
-                strokeWidth={isSelected ? '3' : hasBlock ? '1.8' : '1.5'}
+                rx="12"
+                ry="12"
+                fill="#FFFFFF"
+                stroke={isSelected ? '#009BD9' : hasBlock ? '#2D2200' : '#B6B2A6'}
+                strokeWidth={isSelected ? '3' : hasBlock ? '2.25' : '1.5'}
                 strokeDasharray={hasBlock ? 'none' : '6,6'}
               />
 
@@ -207,8 +213,8 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
                       y="2"
                       width={geom.width - 4}
                       height={geom.height - 4}
-                      rx="6"
-                      ry="6"
+                      rx="10"
+                      ry="10"
                       fill="none"
                       stroke="#009BD9"
                       strokeWidth="2"
@@ -275,26 +281,39 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
         })}
       </g>
 
-      {/* Page footer branding (subtle kid-friendly footer) */}
-      <g transform={`translate(${margin}, ${pageHeight - margin * 0.6})`}>
+      {/* Page footer: Ink Style. Rule above, tagline left, site and page number right. */}
+      <g transform={`translate(${margin}, ${pageHeight - margin + 6})`}>
+        <line
+          x1="0"
+          y1="0"
+          x2={pageWidth - margin * 2}
+          y2="0"
+          stroke="#2D2200"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
         <text
           x="0"
-          y="0"
-          fill="#A39C8E"
+          y="14"
+          fill="#2D2200"
           fontSize="9"
+          fontWeight="700"
+          letterSpacing="0.18"
           fontFamily="Nunito, sans-serif"
         >
-          Sunshine Brigade Worksheet Builder • Free printable for ages 3–5
+          Learn. Wonder. Shine.
         </text>
         <text
           x={pageWidth - margin * 2}
-          y="0"
+          y="14"
           textAnchor="end"
-          fill="#A39C8E"
+          fill="#2D2200"
           fontSize="9"
+          fontWeight="700"
+          letterSpacing="0.18"
           fontFamily="Nunito, sans-serif"
         >
-          Page {pageIndex + 1}
+          sunshinebrigade.ca · Free for home and classroom use · Page {pageIndex + 1}
         </text>
       </g>
     </svg>

@@ -26,16 +26,25 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
   const paddingY = size === 'quarter' ? 24 : 32;
 
   // Split block vertically:
-  // Top section: Left = large numeral (solid & dashed) | Right = objects to count and color
+  // Top section: Left = large numeral (solid & dashed) | Right = objects to count and colour
   // Bottom section: handwriting line with repeated dashed numbers
   const isQuarter = size === 'quarter';
   const topSectionHeight = height * (isQuarter ? 0.6 : 0.65);
   const bottomSectionY = topSectionHeight + paddingY * 0.4;
   const bottomSectionHeight = height - bottomSectionY - paddingY;
 
-  // Layout for objects to count and color:
+  // Big numerals: size and spacing scale with the number of digits, so "10"
+  // never overlaps its traced copy or the shapes beside it.
+  const digits = String(num).length;
+  const bigFontSize = (isQuarter ? 58 : 78) * (digits > 1 ? 0.75 : 1);
+  const numeralWidth = bigFontSize * 0.62 * digits; // Nunito Black digit width ~0.62em
+  const solidNumeralX = paddingX + numeralWidth / 2;
+  const tracedNumeralX = solidNumeralX + numeralWidth + 10;
+  const numeralsRight = tracedNumeralX + numeralWidth / 2;
+
+  // Layout for objects to count and colour:
   // Arrange in up to 2 rows of items
-  const itemsAreaX = isQuarter ? width * 0.44 : width * 0.38;
+  const itemsAreaX = Math.max(isQuarter ? width * 0.44 : width * 0.38, numeralsRight + 14);
   const itemsAreaWidth = width - itemsAreaX - paddingX;
   const itemsAreaHeight = topSectionHeight - paddingY;
 
@@ -67,49 +76,33 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
         fontWeight="700"
         fontFamily="Nunito, sans-serif"
       >
-        Count, color and trace: {num}
+        Count, colour and trace {num}.
       </text>
 
       {/* Left side: Large Numeral model + large dashed trace */}
       <g className="large-numerals">
         {/* Solid reference numeral */}
         <text
-          x={paddingX + (isQuarter ? 20 : 32)}
+          x={solidNumeralX}
           y={topSectionHeight * 0.72}
           textAnchor="middle"
           fill="#2D2200"
           fontFamily="Nunito, sans-serif"
-          fontSize={isQuarter ? '58' : '78'}
+          fontSize={bigFontSize}
           fontWeight="900"
         >
           {num}
         </text>
 
-        {/* Big dashed numeral to trace */}
+        {/* Big numeral to trace, in Trace colour */}
         <g>
           <text
-            x={paddingX + (isQuarter ? 70 : 108)}
+            x={tracedNumeralX}
             y={topSectionHeight * 0.72}
             textAnchor="middle"
-            fill="#EFECE2"
+            fill="#B6B2A6"
             fontFamily="Nunito, sans-serif"
-            fontSize={isQuarter ? '58' : '78'}
-            fontWeight="900"
-            opacity="0.7"
-          >
-            {num}
-          </text>
-          <text
-            x={paddingX + (isQuarter ? 70 : 108)}
-            y={topSectionHeight * 0.72}
-            textAnchor="middle"
-            fill="none"
-            stroke="#2D2200"
-            strokeWidth="2.8"
-            strokeDasharray="5,4"
-            strokeLinecap="round"
-            fontFamily="Nunito, sans-serif"
-            fontSize={isQuarter ? '58' : '78'}
+            fontSize={bigFontSize}
             fontWeight="900"
           >
             {num}
@@ -117,19 +110,18 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
         </g>
       </g>
 
-      {/* Right side: Shapes to count and color */}
+      {/* Right side: Shapes to count and colour */}
       <g className="count-shapes-container">
         {num === 0 ? (
           <text
             x={itemsAreaX + itemsAreaWidth * 0.5}
             y={paddingY + itemsAreaHeight * 0.5}
             textAnchor="middle"
-            fill="#6B5838"
+            fill="#2D2200"
             fontSize="14"
-            fontStyle="italic"
             fontFamily="Nunito, sans-serif"
           >
-            Zero means none!
+            Zero means none.
           </text>
         ) : (
           shapes.map((s) => (
@@ -173,11 +165,7 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
                     x={itemX}
                     y={textY}
                     textAnchor="middle"
-                    fill="none"
-                    stroke="#2D2200"
-                    strokeWidth="2"
-                    strokeDasharray="4,4"
-                    strokeLinecap="round"
+                    fill="#B6B2A6"
                     fontFamily="Nunito, sans-serif"
                     fontSize="28"
                     fontWeight="800"
@@ -217,7 +205,7 @@ export const NumberTracingBlockDefinition: BlockDefinition = {
     },
     {
       key: 'shape',
-      label: 'Shape to Count & Color',
+      label: 'Shape to count and colour',
       type: 'select',
       options: [
         { label: 'Stars', value: 'stars' },

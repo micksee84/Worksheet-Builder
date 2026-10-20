@@ -2,9 +2,12 @@
  * @license
  * Sunshine Brigade Worksheet Builder - Share Link Encoder/Decoder
  * Encodes worksheet JSON into URL hash so users can share without any backend server.
+ * Incoming links are validated before use, and the hash is removed from the address bar
+ * once read, so a later refresh loads the parent's latest saved work, not the old link.
  */
 
 import { Worksheet } from '../types';
+import { validateWorksheet } from './validateWorksheet';
 
 export function encodeWorksheetToHash(worksheet: Worksheet): string {
   try {
@@ -17,6 +20,24 @@ export function encodeWorksheetToHash(worksheet: Worksheet): string {
   } catch (err) {
     console.error('Error encoding worksheet to URL:', err);
     return '';
+  }
+}
+
+/** Builds the full shareable URL without touching the current address bar. */
+export function buildShareUrl(worksheet: Worksheet): string {
+  const hash = encodeWorksheetToHash(worksheet);
+  if (typeof window === 'undefined' || !hash) return '';
+  return `${window.location.origin}${window.location.pathname}${hash}`;
+}
+
+/** Removes a #ws= share hash from the address bar without reloading. */
+export function clearShareHash(): void {
+  try {
+    if (typeof window === 'undefined') return;
+    if (!window.location.hash.startsWith('#ws=')) return;
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+  } catch (err) {
+    console.warn('Could not clear share link from URL:', err);
   }
 }
 
@@ -35,11 +56,7 @@ export function decodeWorksheetFromHash(): Worksheet | null {
         .call(atob(base64), (c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     );
-    const parsed = JSON.parse(jsonStr) as Worksheet;
-    if (parsed && Array.isArray(parsed.pages)) {
-      return parsed;
-    }
-    return null;
+    return validateWorksheet(JSON.parse(jsonStr));
   } catch (err) {
     console.warn('Could not decode worksheet from URL hash:', err);
     return null;

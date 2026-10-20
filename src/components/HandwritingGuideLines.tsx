@@ -27,9 +27,10 @@ export const HandwritingGuideLines: React.FC<HandwritingGuideLinesProps> = ({
   width,
   lineHeight,
   showDescender = false,
-  strokeColor = '#C4BEB0',
-  dashedColor = '#A39C8E',
-  baselineColor = '#6A6355',
+  // Ink Style: guide lines in Trace colour, the baseline in Ink so letters have a clear floor.
+  strokeColor = '#B6B2A6',
+  dashedColor = '#B6B2A6',
+  baselineColor = '#2D2200',
 }) => {
   const topY = y;
   const midY = y + lineHeight * 0.5;
@@ -45,7 +46,7 @@ export const HandwritingGuideLines: React.FC<HandwritingGuideLinesProps> = ({
         x2={x + width}
         y2={topY}
         stroke={strokeColor}
-        strokeWidth="1.2"
+        strokeWidth="1.5"
         strokeLinecap="round"
       />
       {/* Midline - dashed */}
@@ -55,7 +56,7 @@ export const HandwritingGuideLines: React.FC<HandwritingGuideLinesProps> = ({
         x2={x + width}
         y2={midY}
         stroke={dashedColor}
-        strokeWidth="1.2"
+        strokeWidth="1.5"
         strokeDasharray="4,4"
         strokeLinecap="round"
       />
@@ -66,7 +67,7 @@ export const HandwritingGuideLines: React.FC<HandwritingGuideLinesProps> = ({
         x2={x + width}
         y2={baseY}
         stroke={baselineColor}
-        strokeWidth="1.6"
+        strokeWidth="1.5"
         strokeLinecap="round"
       />
       {/* Descender line if requested */}
@@ -77,8 +78,8 @@ export const HandwritingGuideLines: React.FC<HandwritingGuideLinesProps> = ({
           x2={x + width}
           y2={descenderY}
           stroke={strokeColor}
-          strokeWidth="1"
-          strokeDasharray="2,2"
+          strokeWidth="1.5"
+          strokeDasharray="4,4"
           strokeLinecap="round"
         />
       )}

@@ -57,6 +57,13 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
   const usableWidth = width - paddingX * 2;
   const colSpacing = usableWidth / repeats;
 
+  // Fit the letters to their column so "G g" never runs into the next copy.
+  // Nunito ExtraBold letters are roughly 0.68em wide, a space roughly 0.3em.
+  const sampleText = caseMode === 'both' ? `${letter} ${lowerLetter}` : letter;
+  const textWidthEm =
+    sampleText.replace(/ /g, '').length * 0.68 + (sampleText.split(' ').length - 1) * 0.3;
+  const letterFontSize = Math.min(guideLineHeight * 0.85, (colSpacing * 0.82) / textWidthEm);
+
   return (
     <g className="letter-tracing-block">
       {/* Title */}
@@ -68,7 +75,7 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
         fontWeight="700"
         fontFamily="Nunito, sans-serif"
       >
-        Letter Practice: Trace the letter {letter}
+        {size === 'quarter' ? `Trace the letter ${letter}.` : `Trace the letter ${letter}. Start at the dot.`}
       </text>
 
       {rowConfigs.map((row) => (
@@ -98,40 +105,22 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
                     textAnchor="middle"
                     fill="#2D2200"
                     fontFamily="Nunito, sans-serif"
-                    fontSize={guideLineHeight * 0.85}
+                    fontSize={letterFontSize}
                     fontWeight="800"
                   >
                     {row.text}
                   </text>
                 ) : (
-                  // Dashed outline letter to trace
+                  // Letter to trace: solid Trace colour, the child draws over it
                   <g>
-                    {/* Faint gray fill so child sees shape clearly */}
+                    {/* Trace letter */}
                     <text
                       x={itemX}
                       y={textY}
                       textAnchor="middle"
-                      fill="#E8E4D8"
+                      fill="#B6B2A6"
                       fontFamily="Nunito, sans-serif"
-                      fontSize={guideLineHeight * 0.85}
-                      fontWeight="800"
-                      opacity="0.6"
-                    >
-                      {row.text}
-                    </text>
-                    {/* Crisp dashed stroke */}
-                    <text
-                      x={itemX}
-                      y={textY}
-                      textAnchor="middle"
-                      fill="none"
-                      stroke="#2D2200"
-                      strokeWidth="2.2"
-                      strokeDasharray="4,4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      fontFamily="Nunito, sans-serif"
-                      fontSize={guideLineHeight * 0.85}
+                      fontSize={letterFontSize}
                       fontWeight="800"
                     >
                       {row.text}
@@ -140,8 +129,8 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
                     <circle
                       cx={itemX - guideLineHeight * 0.28}
                       cy={row.y + 10}
-                      r="2.5"
-                      fill="#009BD9"
+                      r="3"
+                      fill="#2D2200"
                     />
                   </g>
                 )}
@@ -160,7 +149,7 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
 export const LetterTracingBlockDefinition: BlockDefinition = {
   id: 'letter-tracing',
   displayName: 'Letter Tracing',
-  description: 'Uppercase and lowercase letters with solid guide and dashed outlines to trace on handwriting lines.',
+  description: 'A solid letter to copy, then grey letters to trace on handwriting lines.',
   category: 'letters',
   skillTags: ['alphabet', 'letter formation', 'phonics'],
   ageRange: '3–5',
