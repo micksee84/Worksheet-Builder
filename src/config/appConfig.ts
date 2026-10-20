@@ -75,6 +75,16 @@ export const PAGE_SPECS = {
 
 export type PageSizeId = keyof typeof PAGE_SPECS;
 
+/**
+ * URL for a file in /public. Works whether the builder is served from the site root
+ * or from a sub-folder (like GitHub Pages: /Worksheet-Builder/), because Vite sets
+ * BASE_URL from the `base` option at build time.
+ */
+export function assetUrl(path: string): string {
+  const base = import.meta.env.BASE_URL || '/';
+  return `${base.endsWith('/') ? base : `${base}/`}${path.replace(/^\//, '')}`;
+}
+
 // Available characters
 export const CHARACTERS = [
   { id: 'buddy', name: 'Buddy', species: 'Bear', color: '#A06535' },

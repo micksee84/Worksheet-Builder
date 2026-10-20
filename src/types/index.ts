@@ -7,7 +7,14 @@ import React from 'react';
 import { PageSizeId, CharacterId } from '../config/appConfig';
 export type { PageSizeId, CharacterId };
 
-export type BlockCategory = 'pre-writing' | 'letters' | 'numbers' | 'creative';
+export type BlockCategory =
+  | 'pre-writing'
+  | 'letters'
+  | 'numbers'
+  | 'thinking'
+  | 'feelings'
+  | 'world'
+  | 'creative';
 
 export type BlockSize = 'full' | 'half' | 'quarter';
 

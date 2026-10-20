@@ -5,6 +5,9 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    // Relative base so the same build works at the site root, in a sub-folder
+    // (GitHub Pages: /Worksheet-Builder/) and inside an embed on the Framer site.
+    base: './',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

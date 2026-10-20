@@ -10,6 +10,8 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { KidShape, ShapeType } from './svgShapes';
 import { CharacterCorner } from '../components/CharacterCorner';
+import { createRandom, blockSeed } from '../utils/seededRandom';
+import { Instruction } from '../components/Instruction';
 
 export const CountCircleRenderer: React.FC<BlockRenderProps> = ({
   instance,
@@ -17,23 +19,19 @@ export const CountCircleRenderer: React.FC<BlockRenderProps> = ({
   width,
   height,
 }) => {
-  const count = Math.min(10, Math.max(1, Number(instance.settings.count) ?? 4));
+  const count = Math.min(10, Math.max(1, Number(instance.settings.count) || 4));
   const shape: ShapeType = instance.settings.shape || 'apples';
 
   const paddingX = size === 'quarter' ? 20 : 32;
   const paddingY = size === 'quarter' ? 22 : 30;
 
-  // Generate 3 choices: [choice1, choice2, choice3] containing `count`
-  // E.g. if count is 4: choices could be 3, 4, 5. If count is 1: 1, 2, 3. If count is 10: 8, 9, 10.
-  let choices: number[] = [];
-  if (count <= 2) {
-    choices = [1, 2, 3];
-  } else if (count >= 9) {
-    choices = [8, 9, 10];
-  } else {
-    // Randomize or place correctly in middle/sides
-    choices = [count - 1, count, count + 1];
-  }
+  // Three numbers to choose from: the answer plus its neighbours, in a shuffled order
+  // (seeded, so the preview and the print match). Never always in the middle.
+  let choices: number[];
+  if (count <= 2) choices = [1, 2, 3];
+  else if (count >= 9) choices = [8, 9, 10];
+  else choices = [count - 1, count, count + 1];
+  choices = createRandom(blockSeed(instance.instanceId, instance.settings)).shuffle(choices);
 
   // Object display area
   const bottomChoicesHeight = size === 'quarter' ? 56 : 72;
@@ -62,17 +60,7 @@ export const CountCircleRenderer: React.FC<BlockRenderProps> = ({
 
   return (
     <g className="count-circle-block">
-      {/* Instruction */}
-      <text
-        x={paddingX}
-        y={paddingY - 6}
-        fill="#2D2200"
-        fontSize={size === 'quarter' ? '12' : '14'}
-        fontWeight="700"
-        fontFamily="Nunito, sans-serif"
-      >
-        Count them. Circle the number.
-      </text>
+      <Instruction x={paddingX} y={paddingY - 6} cue="finger" size={size} text={size === 'quarter' ? 'Count. Circle the number.' : 'Count them with your finger. Circle the number.'} />
 
       {/* Objects to count */}
       <g className="objects-grid">
@@ -143,7 +131,7 @@ export const CountCircleBlockDefinition: BlockDefinition = {
   settingsSchema: [
     {
       key: 'count',
-      label: 'Number of Items (1 to 10)',
+      label: 'How many to count (1 to 10)',
       type: 'number',
       min: 1,
       max: 10,
@@ -152,7 +140,7 @@ export const CountCircleBlockDefinition: BlockDefinition = {
     },
     {
       key: 'shape',
-      label: 'Object Shape',
+      label: 'Things to count',
       type: 'select',
       options: [
         { label: 'Apples', value: 'apples' },
@@ -162,10 +150,12 @@ export const CountCircleBlockDefinition: BlockDefinition = {
         { label: 'Flowers', value: 'flowers' },
       ],
     },
+    { key: 'variant', label: 'Mix it up', type: 'number', min: 1, max: 20, step: 1, helperText: 'Change this to move the right answer.' },
   ],
   defaultSettings: {
     count: 4,
     shape: 'apples',
+    variant: 1,
   },
   render: (props) => <CountCircleRenderer {...props} />,
 };

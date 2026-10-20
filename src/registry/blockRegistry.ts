@@ -16,14 +16,46 @@ import { WordTracingBlockDefinition } from '../blocks/WordTracingBlock';
 import { NumberTracingBlockDefinition } from '../blocks/NumberTracingBlock';
 import { CountCircleBlockDefinition } from '../blocks/CountCircleBlock';
 import { DrawWriteBlockDefinition } from '../blocks/DrawWriteBlock';
+import { TracePathBlockDefinition } from '../blocks/TracePathBlock';
+import { CutGlueBlockDefinition } from '../blocks/CutGlueBlock';
+import { BeginningSoundsBlockDefinition } from '../blocks/BeginningSoundsBlock';
+import { RhymeMatchBlockDefinition } from '../blocks/RhymeMatchBlock';
+import { QuickDotsBlockDefinition } from '../blocks/QuickDotsBlock';
+import { PatternNextBlockDefinition } from '../blocks/PatternNextBlock';
+import { CompareSizeBlockDefinition } from '../blocks/CompareSizeBlock';
+import { ShapeHuntBlockDefinition } from '../blocks/ShapeHuntBlock';
+import { SpotDifferenceBlockDefinition } from '../blocks/SpotDifferenceBlock';
+import { MazeBlockDefinition } from '../blocks/MazeBlock';
+import { FeelingsBlockDefinition } from '../blocks/FeelingsBlock';
+import { SortItBlockDefinition } from '../blocks/SortItBlock';
 
 // Central list of all available block definitions
+// Order here is the order in the library, within each development area.
 export const REGISTERED_BLOCKS: BlockDefinition[] = [
+  // Pre-writing and fine motor
+  TracePathBlockDefinition,
   LineTracingBlockDefinition,
+  CutGlueBlockDefinition,
+  // Early literacy
   LetterTracingBlockDefinition,
   WordTracingBlockDefinition,
-  NumberTracingBlockDefinition,
+  BeginningSoundsBlockDefinition,
+  RhymeMatchBlockDefinition,
+  // Early maths
   CountCircleBlockDefinition,
+  QuickDotsBlockDefinition,
+  NumberTracingBlockDefinition,
+  PatternNextBlockDefinition,
+  CompareSizeBlockDefinition,
+  ShapeHuntBlockDefinition,
+  // Thinking and problem solving
+  SpotDifferenceBlockDefinition,
+  MazeBlockDefinition,
+  // Social and emotional
+  FeelingsBlockDefinition,
+  // Science and our world
+  SortItBlockDefinition,
+  // Creative
   DrawWriteBlockDefinition,
 ];
 

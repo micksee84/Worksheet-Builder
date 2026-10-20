@@ -10,6 +10,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
 import { CharacterCorner } from '../components/CharacterCorner';
+import { Instruction } from '../components/Instruction';
 
 export const DrawWriteRenderer: React.FC<BlockRenderProps> = ({
   instance,
@@ -37,17 +38,7 @@ export const DrawWriteRenderer: React.FC<BlockRenderProps> = ({
 
   return (
     <g className="draw-and-write-block">
-      {/* Prompt Text */}
-      <text
-        x={paddingX}
-        y={paddingY + 12}
-        fill="#2D2200"
-        fontSize={size === 'quarter' ? '12' : '14'}
-        fontWeight="700"
-        fontFamily="Nunito, sans-serif"
-      >
-        {prompt}
-      </text>
+      <Instruction x={paddingX} y={paddingY + 12} cue="crayon" size={size} text={prompt} maxWidth={usableWidth} />
 
       {/* Empty Bordered Drawing Box */}
       <rect
@@ -126,7 +117,7 @@ export const DrawWriteBlockDefinition: BlockDefinition = {
     },
   ],
   defaultSettings: {
-    prompt: 'Draw your favourite animal and write its name:',
+    prompt: 'Draw your favourite animal. Write its name.',
     writingLinesCount: 2,
   },
   render: (props) => <DrawWriteRenderer {...props} />,

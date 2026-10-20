@@ -1,16 +1,19 @@
 /**
  * @license
- * Sunshine Brigade Worksheet Builder - Starter Block 3: Name / Word Tracing
- * Features:
- * - Parents or teachers type child's name or vocabulary word (e.g., "EMMA", "SUN", "CAT")
- * - Rendered as dashed traceable text on standard handwriting guidelines
- * - Repeated to fill the block rows
+ * Sunshine Brigade Worksheet Builder - My Name and Words
+ * Skill: writing their own name, the first word most children learn to write.
+ * A grown-up types the name (or a word) once. It appears on handwriting lines in three modes:
+ * - Trace (easier): grey letters on every line to draw over.
+ * - Half trace (core): the start of the word to trace, the rest to finish alone.
+ * - Write alone (stretch): a solid word to copy, then empty lines.
+ * The name is only stored on this device. It is never sent anywhere.
  */
 
 import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
 import { CharacterCorner } from '../components/CharacterCorner';
+import { Instruction } from '../components/Instruction';
 
 export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
   instance,
@@ -38,25 +41,32 @@ export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
   const calculatedFontSize = Math.min(maxFontSize, (usableWidth * 0.85) / charCount);
   const fontSize = Math.max(22, calculatedFontSize);
 
+  const mode: 'trace' | 'half' | 'alone' =
+    instance.settings.mode === 'half' || instance.settings.mode === 'alone' ? instance.settings.mode : 'trace';
+  // Write alone always shows the word to copy first
+  const showModel = mode === 'alone' || Boolean(instance.settings.showSolidModel);
+  const traceText =
+    mode === 'half' ? rawText.slice(0, Math.max(1, Math.ceil(rawText.length / 2))) : mode === 'alone' ? '' : rawText;
+  const instruction =
+    mode === 'alone'
+      ? 'Copy the word on each line.'
+      : mode === 'half'
+        ? size === 'quarter'
+          ? 'Trace, then finish the word.'
+          : 'Trace the start, then finish the word on your own.'
+        : size === 'quarter'
+          ? 'Trace the word.'
+          : 'Trace the word. Start on the left.';
+
   const rows = Array.from({ length: repeatCount }, (_, idx) => {
-    const isModel = idx === 0 && Boolean(instance.settings.showSolidModel);
+    const isModel = idx === 0 && showModel;
     const y = paddingY + idx * rowHeight + 10;
     return { idx, y, isModel };
   });
 
   return (
     <g className="word-tracing-block">
-      {/* Title */}
-      <text
-        x={paddingX}
-        y={paddingY - 10}
-        fill="#2D2200"
-        fontSize={size === 'quarter' ? '12' : '14'}
-        fontWeight="700"
-        fontFamily="Nunito, sans-serif"
-      >
-        Trace the word. Start on the left.
-      </text>
+      <Instruction x={paddingX} y={paddingY - 8} cue="pencil" size={size} text={instruction} />
 
       {rows.map(({ idx, y, isModel }) => {
         const textY = y + guideLineHeight - 4;
@@ -97,7 +107,7 @@ export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
                   fontWeight="800"
                   letterSpacing="4"
                 >
-                  {rawText}
+                  {traceText}
                 </text>
               </g>
             )}
@@ -113,8 +123,8 @@ export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
 
 export const WordTracingBlockDefinition: BlockDefinition = {
   id: 'word-tracing',
-  displayName: 'Name and word tracing',
-  description: 'Type a name or sight word. It appears as grey letters to trace on handwriting lines.',
+  displayName: 'My name and words',
+  description: 'Type a name or word once. Trace it, finish it, or copy it alone on handwriting lines.',
   category: 'letters',
   skillTags: ['name writing', 'early literacy', 'sight words'],
   ageRange: '3–5',
@@ -122,14 +132,24 @@ export const WordTracingBlockDefinition: BlockDefinition = {
   settingsSchema: [
     {
       key: 'text',
-      label: 'Word or Name to Trace',
+      label: 'Name or word',
       type: 'text',
-      placeholder: 'e.g. EMMA, CAT, SUNSHINE',
-      helperText: 'Type the word or name for the child to trace.',
+      placeholder: 'e.g. Emma, cat, sun',
+      helperText: 'Stays on this device only.',
+    },
+    {
+      key: 'mode',
+      label: 'How to practise',
+      type: 'select',
+      options: [
+        { label: 'Trace (easier)', value: 'trace' },
+        { label: 'Half trace, half on their own', value: 'half' },
+        { label: 'Write alone (stretch)', value: 'alone' },
+      ],
     },
     {
       key: 'repeatCount',
-      label: 'Number of Rows',
+      label: 'Number of lines',
       type: 'number',
       min: 1,
       max: 5,
@@ -138,13 +158,14 @@ export const WordTracingBlockDefinition: BlockDefinition = {
     },
     {
       key: 'showSolidModel',
-      label: 'Solid Model on First Line',
+      label: 'Solid word to copy on the first line',
       type: 'boolean',
       helperText: 'Show a solid word to copy on the first line.',
     },
   ],
   defaultSettings: {
-    text: 'SUNSHINE',
+    text: 'Sunshine',
+    mode: 'trace',
     repeatCount: 3,
     showSolidModel: true,
   },
