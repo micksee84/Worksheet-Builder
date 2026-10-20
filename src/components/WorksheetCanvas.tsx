@@ -9,7 +9,7 @@
  * - Quick action overlay over active slot
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Page, PageSizeId, Slot, PageLayoutPreset, BlockInstance } from '../types';
 import { PAGE_SPECS } from '../config/appConfig';
@@ -44,6 +44,9 @@ interface WorksheetCanvasProps {
   onOpenSettings: (pageId: string, slot: Slot) => void;
 }
 
+const DEFAULT_ZOOM = { single: 0.85, grid: 0.32 } as const;
+const ZOOM_RANGE = { single: [0.5, 1.2], grid: [0.2, 0.6] } as const;
+
 // Droppable Slot Overlay Target for DnD
 const DroppableSlotOverlay: React.FC<{
   pageId: string;
@@ -56,6 +59,8 @@ const DroppableSlotOverlay: React.FC<{
   onSelect: () => void;
   onOpenSettings: () => void;
   onDeleteBlock: () => void;
+  /** Grid thumbnails: accept drops only, no click handling or hover controls. */
+  dropOnly?: boolean;
 }> = ({
   pageId,
   slot,
@@ -67,6 +72,7 @@ const DroppableSlotOverlay: React.FC<{
   onSelect,
   onOpenSettings,
   onDeleteBlock,
+  dropOnly = false,
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: `droppable-${pageId}-${slot.id}`,
@@ -77,6 +83,27 @@ const DroppableSlotOverlay: React.FC<{
       size: slot.size,
     },
   });
+
+  if (dropOnly) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={{ position: 'absolute', left: x, top: y, width, height, pointerEvents: 'none' }}
+        className={`rounded-xl transition-colors ${
+          isOver ? 'bg-[#009BD9]/15 border-[6px] border-dashed border-[#009BD9]' : ''
+        }`}
+      >
+        {isOver && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            {/* Drawn at page scale, so the label is large enough to read once the thumbnail shrinks it */}
+            <span className="text-4xl font-black text-[#009BD9] bg-white px-8 py-4 rounded-full border-4 border-[#009BD9]">
+              Drop here
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -152,13 +179,33 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
   onDeleteBlock,
   onOpenSettings,
 }) => {
-  const [zoomLevel, setZoomLevel] = useState<number>(0.85); // 0.65 to 1.2
+  const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
+  const [zoomLevel, setZoomLevel] = useState<number>(DEFAULT_ZOOM.single);
+  const [gridZoom, setGridZoom] = useState<number>(DEFAULT_ZOOM.grid);
   const activePage = pages[activePageIndex] || pages[0];
   const spec = PAGE_SPECS[pageSize as keyof typeof PAGE_SPECS] || PAGE_SPECS.letter;
   const geometries = calculateSlotGeometries(pageSize, activePage.layout);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const isGrid = viewMode === 'grid';
+  const currentZoom = isGrid ? gridZoom : zoomLevel;
 
   const handleZoom = (delta: number) => {
-    setZoomLevel((prev) => Math.min(1.2, Math.max(0.5, Number((prev + delta).toFixed(2)))));
+    const [min, max] = isGrid ? ZOOM_RANGE.grid : ZOOM_RANGE.single;
+    const setter = isGrid ? setGridZoom : setZoomLevel;
+    setter((prev) => Math.min(max, Math.max(min, Number((prev + delta).toFixed(2)))));
+  };
+
+  const resetZoom = () => (isGrid ? setGridZoom(DEFAULT_ZOOM.grid) : setZoomLevel(DEFAULT_ZOOM.single));
+
+  // Start every page (and every view switch) at the top of the sheet, not wherever the last page was scrolled to.
+  useEffect(() => {
+    if (!isGrid) scrollRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [activePageIndex, isGrid]);
+
+  const openPage = (idx: number) => {
+    onSelectPageIndex(idx);
+    setViewMode('single');
   };
 
   return (
@@ -254,26 +301,52 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
             </div>
           )}
 
+          {/* View toggle: one page at a time, or every page side by side */}
+          <div
+            role="group"
+            aria-label="Page view"
+            className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9] gap-1"
+          >
+            {([
+              { id: 'single', label: 'One page', Icon: FileText },
+              { id: 'grid', label: 'All pages', Icon: LayoutGrid },
+            ] as const).map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setViewMode(id)}
+                aria-pressed={viewMode === id}
+                className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-bold rounded-md transition-all ${
+                  viewMode === id ? 'bg-white text-[#2D2200] shadow-xs' : 'text-[#6B5838] hover:text-[#2D2200]'
+                }`}
+                title={id === 'grid' ? 'See all pages side by side' : 'Edit one page at a time'}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">{label}</span>
+              </button>
+            ))}
+          </div>
+
           <div className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9] gap-1">
             <button
-              onClick={() => handleZoom(-0.1)}
+              onClick={() => handleZoom(isGrid ? -0.04 : -0.1)}
               className="p-1 text-[#6B5838] hover:text-[#2D2200] rounded"
               title="Zoom out"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
             <span className="text-[11px] font-mono font-bold text-[#2D2200] w-10 text-center">
-              {Math.round(zoomLevel * 100)}%
+              {Math.round(currentZoom * 100)}%
             </span>
             <button
-              onClick={() => handleZoom(0.1)}
+              onClick={() => handleZoom(isGrid ? 0.04 : 0.1)}
               className="p-1 text-[#6B5838] hover:text-[#2D2200] rounded"
               title="Zoom in"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => setZoomLevel(0.85)}
+              onClick={resetZoom}
               className="p-1 text-[#6B5838] hover:text-[#2D2200] rounded"
               title="Reset Zoom"
             >
@@ -300,17 +373,124 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
         </span>
       </div>
 
-      {/* To-Scale Interactive Viewport Area */}
-      <div className="flex-1 overflow-auto p-8 flex items-center justify-center">
+      {/* To-Scale Interactive Viewport Area.
+          Centring uses margin:auto on a sizer, never align-items/justify-content: center. Flex centring
+          pushes an overflowing child past the scroll origin, which is what hid the top of the page. */}
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto p-8 flex">
+        {isGrid ? (
+          <div className="m-auto w-full">
+            <p className="text-xs text-[#6B5838] font-medium mb-4">
+              Tap a page to choose it. Double-tap or use Edit to open it. Drag blocks onto any page.
+            </p>
+            <div className="flex flex-wrap gap-6 items-start">
+              {pages.map((page, idx) => {
+                const pageGeoms = calculateSlotGeometries(pageSize, page.layout);
+                const isActive = idx === activePageIndex;
+                return (
+                  <div key={page.id} className="flex flex-col gap-2 shrink-0">
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Page ${idx + 1}${page.title ? `: ${page.title}` : ''}${isActive ? ' (selected)' : ''}`}
+                      aria-pressed={isActive}
+                      onClick={() => onSelectPageIndex(idx)}
+                      onDoubleClick={() => openPage(idx)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') openPage(idx);
+                        if (e.key === ' ') {
+                          e.preventDefault();
+                          onSelectPageIndex(idx);
+                        }
+                      }}
+                      style={{ width: spec.width * gridZoom, height: spec.height * gridZoom }}
+                      className={`relative rounded-md bg-white cursor-pointer transition-shadow focus:outline-none focus-visible:outline-[3px] focus-visible:outline-[#009BD9] focus-visible:outline-offset-[3px] ${
+                        isActive
+                          ? 'outline-[3px] outline outline-[#2D2200] outline-offset-[3px] shadow-[4px_4px_0_#2D2200]'
+                          : 'shadow-lg hover:shadow-[3px_3px_0_#2D2200]'
+                      }`}
+                    >
+                      <div
+                        style={{
+                          width: spec.width,
+                          height: spec.height,
+                          transform: `scale(${gridZoom})`,
+                          transformOrigin: 'top left',
+                        }}
+                        className="absolute top-0 left-0 select-none pointer-events-none"
+                      >
+                        <WorksheetPageSvg
+                          page={page}
+                          pageIndex={idx}
+                          pageSize={pageSize}
+                          isInteractive={true}
+                        />
+                        {page.slots.map((slot) => {
+                          const geom = pageGeoms[slot.id];
+                          if (!geom) return null;
+                          return (
+                            <DroppableSlotOverlay
+                              key={slot.id}
+                              pageId={page.id}
+                              slot={slot}
+                              x={geom.x}
+                              y={geom.y}
+                              width={geom.width}
+                              height={geom.height}
+                              isSelected={false}
+                              onSelect={() => {}}
+                              onOpenSettings={() => {}}
+                              onDeleteBlock={() => {}}
+                              dropOnly
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div
+                      className="flex items-center justify-between gap-2"
+                      style={{ width: spec.width * gridZoom }}
+                    >
+                      <span className="text-xs font-bold text-[#2D2200] truncate">
+                        {idx + 1}. {page.title || `Page ${idx + 1}`}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => openPage(idx)}
+                        className="shrink-0 px-2.5 py-1 text-[11px] font-bold text-[#2D2200] bg-white border border-[#2D2200] rounded-full hover:bg-[#F2B800] active:bg-[#009BD9] transition-colors"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Add-page tile at the end of the grid */}
+              <button
+                type="button"
+                onClick={onAddPage}
+                style={{ width: spec.width * gridZoom, height: spec.height * gridZoom }}
+                className="shrink-0 flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-[#009BD9] text-[#009BD9] font-bold text-xs hover:bg-white/60 transition-colors"
+              >
+                <Plus className="w-6 h-6" />
+                Add page
+              </button>
+            </div>
+          </div>
+        ) : (
+        <div
+          // Sizer: occupies the page's real on-screen size so the scroll area matches what you see
+          style={{ width: spec.width * zoomLevel, height: spec.height * zoomLevel }}
+          className="relative shrink-0 m-auto"
+        >
         <div
           style={{
             transform: `scale(${zoomLevel})`,
-            transformOrigin: 'top center',
-            transition: 'transform 0.1s ease-out',
+            transformOrigin: 'top left',
             width: `${spec.width}px`,
             height: `${spec.height}px`,
           }}
-          className="relative shrink-0 select-none shadow-2xl rounded-xs"
+          className="absolute top-0 left-0 select-none shadow-2xl rounded-xs"
         >
           {/* Base SVG Page (True Vector Output) */}
           <WorksheetPageSvg
@@ -348,6 +528,8 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
             })}
           </div>
         </div>
+        </div>
+        )}
       </div>
     </div>
   );
