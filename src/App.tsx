@@ -52,6 +52,7 @@ import { BlockSettingsDrawer } from './components/BlockSettingsDrawer';
 import { TemplateGalleryModal } from './components/TemplateGalleryModal';
 import { DonationToast } from './components/DonationToast';
 import { PrintContainer } from './components/PrintContainer';
+import { TooltipLayer } from './components/TooltipLayer';
 
 // Initial default blank/starter worksheet
 function createInitialWorksheet(): Worksheet {
@@ -685,6 +686,9 @@ export default function App() {
           isVisible={showDonationToast}
           onDismiss={() => setShowDonationToast(false)}
         />
+
+        {/* Branded tooltips for every control that has a title */}
+        <TooltipLayer />
       </div>
     </DndContext>
   );

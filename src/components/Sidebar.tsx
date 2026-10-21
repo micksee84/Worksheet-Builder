@@ -97,7 +97,7 @@ const DraggableBlockCard: React.FC<{
             onAdd(block.id);
           }}
           className="p-1.5 text-[#6B5838] hover:text-[#2D2200] hover:bg-[#F2B800] hover:text-white rounded-lg transition-colors shrink-0"
-          title="Add to active page slot"
+          title="Add to the next empty space"
         >
           <Plus className="w-4 h-4" />
         </button>
@@ -178,6 +178,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             <button
               onClick={onCloseMobile}
+              title="Close the activity list"
               className="md:hidden p-1.5 text-[#6B5838] hover:text-[#2D2200] rounded-lg"
             >
               <X className="w-5 h-5" />
@@ -197,6 +198,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
+                title="Clear the search"
                 className="absolute right-2.5 top-2.5 text-[#A39C8E] hover:text-[#2D2200]"
               >
                 <X className="w-3.5 h-3.5" />

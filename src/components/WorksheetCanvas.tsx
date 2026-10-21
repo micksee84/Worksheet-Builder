@@ -45,14 +45,12 @@ interface WorksheetCanvasProps {
 }
 
 const DEFAULT_ZOOM = { single: 0.85, grid: 0.32 } as const;
-const ZOOM_RANGE = { single: [0.25, 2.5], grid: [0.2, 0.6] } as const;
-// Breathing room kept around the page when it is fitted or centred.
-const FIT_GUTTER = 32;
-// How much of the viewport the pasteboard extends past each page edge. Less than 1 keeps a sliver of
-// the page on screen even when it is pushed right to the side, like Affinity's pasteboard.
-const PASTEBOARD_REACH = 0.85;
-
-const clampZoom = (z: number) => Math.min(ZOOM_RANGE.single[1], Math.max(ZOOM_RANGE.single[0], Number(z.toFixed(3))));
+const ZOOM_RANGE = { grid: [0.2, 0.6] } as const;
+// Single-page view: the page is framed to fill the canvas, and can be zoomed in up to 200% of its real size.
+const MAX_ZOOM = 2;
+const ZOOM_STEP = 1.25;
+// Room kept between the page and the canvas edge, when framed and at the edges while panning.
+const FRAME_GUTTER = 24;
 
 const isTypingTarget = (el: EventTarget | null) => {
   const node = el as HTMLElement | null;
@@ -60,6 +58,10 @@ const isTypingTarget = (el: EventTarget | null) => {
   const tag = node.tagName;
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || node.isContentEditable;
 };
+
+// Space should still press a focused button, so only treat it as the hand tool elsewhere.
+const isActivatable = (el: EventTarget | null) =>
+  !!(el as HTMLElement | null)?.closest?.('button, a[href], [role="button"], [role="tab"], summary');
 
 // Droppable Slot Overlay Target for DnD
 const DroppableSlotOverlay: React.FC<{
@@ -157,7 +159,7 @@ const DroppableSlotOverlay: React.FC<{
               onOpenSettings();
             }}
             className="p-1 text-[#2D2200] hover:text-[#009BD9] hover:bg-[#FAF8F0] rounded"
-            title="Edit Settings"
+            title="Change this activity's settings"
           >
             <Settings2 className="w-3.5 h-3.5" />
           </button>
@@ -168,7 +170,7 @@ const DroppableSlotOverlay: React.FC<{
               onDeleteBlock();
             }}
             className="p-1 text-[#E52311] hover:bg-red-50 rounded"
-            title="Remove block"
+            title="Remove this activity"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -194,7 +196,6 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
   onOpenSettings,
 }) => {
   const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
-  const [zoomLevel, setZoomLevel] = useState<number>(DEFAULT_ZOOM.single);
   const [gridZoom, setGridZoom] = useState<number>(DEFAULT_ZOOM.grid);
   const activePage = pages[activePageIndex] || pages[0];
   const spec = PAGE_SPECS[pageSize as keyof typeof PAGE_SPECS] || PAGE_SPECS.letter;
@@ -202,136 +203,133 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const isGrid = viewMode === 'grid';
-  const currentZoom = isGrid ? gridZoom : zoomLevel;
 
-  /* ---------- Pasteboard (single-page view) ----------
-     Works like Affinity: the page sits on a pasteboard much bigger than the screen, so you can scroll,
-     drag or pinch it anywhere, including the middle. The pasteboard reaches most of a viewport past
-     every page edge, so any part of the page can be brought to the centre at any zoom. */
+  /* ---------- Framed page (single-page view) ----------
+     The page is always framed to fill the canvas. You can zoom in from there up to 200% of its real
+     size, and only while zoomed in can you hold Space and drag to move around the page. Panning stops
+     at the page edges, so the page can never get lost off screen. */
   const [viewport, setViewport] = useState({ w: 0, h: 0 });
+  // 'fit' follows the canvas size; a number is a zoom the user chose.
+  const [zoomChoice, setZoomChoice] = useState<'fit' | number>('fit');
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [panning, setPanning] = useState(false);
-  const panRef = useRef<{ x: number; y: number; left: number; top: number; id: number } | null>(null);
-  // A zoom that should keep one point of the page under one point of the screen, applied after render.
-  const pendingAnchor = useRef<{ px: number; py: number; ax: number; ay: number } | null>(null);
-  const pendingCentre = useRef(true);
-  const didInitialFit = useRef(false);
-
-  const pageW = spec.width * zoomLevel;
-  const pageH = spec.height * zoomLevel;
-  const marginX = Math.max(160, Math.round(viewport.w * PASTEBOARD_REACH));
-  const marginY = Math.max(160, Math.round(viewport.h * PASTEBOARD_REACH));
-
-  // Latest values for the native wheel listener, which is bound once.
-  const live = useRef({ zoomLevel, marginX, marginY, isGrid });
-  live.current = { zoomLevel, marginX, marginY, isGrid };
+  const panRef = useRef<{ x: number; y: number; px: number; py: number; id: number } | null>(null);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(() => setViewport({ w: el.clientWidth, h: el.clientHeight }));
+    const measure = () => setViewport({ w: el.clientWidth, h: el.clientHeight });
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
-    setViewport({ w: el.clientWidth, h: el.clientHeight });
+    measure();
     return () => ro.disconnect();
-  }, []);
+  }, [isGrid]);
 
-  const fitZoom = useCallback(() => {
-    if (!viewport.w || !viewport.h) return DEFAULT_ZOOM.single;
-    return clampZoom(
-      Math.min((viewport.w - FIT_GUTTER * 2) / spec.width, (viewport.h - FIT_GUTTER * 2) / spec.height),
-    );
-  }, [viewport.w, viewport.h, spec.width, spec.height]);
+  const fitZoom =
+    viewport.w && viewport.h
+      ? Math.min(MAX_ZOOM, (viewport.w - FRAME_GUTTER * 2) / spec.width, (viewport.h - FRAME_GUTTER * 2) / spec.height)
+      : DEFAULT_ZOOM.single;
+  const zoomLevel = zoomChoice === 'fit' ? fitZoom : Math.min(MAX_ZOOM, Math.max(fitZoom, zoomChoice));
+  const isZoomedIn = zoomLevel > fitZoom + 0.001;
+  const pageW = spec.width * zoomLevel;
+  const pageH = spec.height * zoomLevel;
 
-  // Zoom so the page point under (ax, ay) in the viewport stays put. Without an anchor, use the centre.
-  const zoomTo = useCallback((next: number, ax?: number, ay?: number) => {
-    const el = scrollRef.current;
-    const { zoomLevel: z, marginX: mx, marginY: my } = live.current;
-    const target = clampZoom(next);
-    if (!el || target === z) return;
-    const x = ax ?? el.clientWidth / 2;
-    const y = ay ?? el.clientHeight / 2;
-    pendingAnchor.current = {
-      px: (el.scrollLeft + x - mx) / z,
-      py: (el.scrollTop + y - my) / z,
-      ax: x,
-      ay: y,
-    };
-    setZoomLevel(target);
-  }, []);
+  // Keep the page from being dragged further than its own edges.
+  const clampPan = useCallback(
+    (x: number, y: number, pw = pageW, ph = pageH) => {
+      const limit = (size: number, view: number, v: number) => {
+        if (size + FRAME_GUTTER * 2 <= view) return 0;
+        const max = (size - view) / 2 + FRAME_GUTTER;
+        return Math.min(max, Math.max(-max, v));
+      };
+      return { x: limit(pw, viewport.w, x), y: limit(ph, viewport.h, y) };
+    },
+    [pageW, pageH, viewport.w, viewport.h],
+  );
+
+  const pageLeft = (viewport.w - pageW) / 2 + pan.x;
+  const pageTop = (viewport.h - pageH) / 2 + pan.y;
+
+  const live = useRef({ zoomLevel, fitZoom, pageLeft, pageTop, isGrid, isZoomedIn });
+  live.current = { zoomLevel, fitZoom, pageLeft, pageTop, isGrid, isZoomedIn };
+
+  // Zoom to `next`, keeping the page point under (ax, ay) where it is. Defaults to the canvas centre.
+  const zoomTo = useCallback(
+    (next: number, ax?: number, ay?: number) => {
+      const { zoomLevel: z, fitZoom: fit, pageLeft: left, pageTop: top } = live.current;
+      const target = Math.min(MAX_ZOOM, Math.max(fit, next));
+      if (target <= fit + 0.001) {
+        setZoomChoice('fit');
+        setPan({ x: 0, y: 0 });
+        return;
+      }
+      const x = ax ?? viewport.w / 2;
+      const y = ay ?? viewport.h / 2;
+      const px = (x - left) / z;
+      const py = (y - top) / z;
+      const pw = spec.width * target;
+      const ph = spec.height * target;
+      setZoomChoice(target);
+      setPan(clampPan(x - px * target - (viewport.w - pw) / 2, y - py * target - (viewport.h - ph) / 2, pw, ph));
+    },
+    [viewport.w, viewport.h, spec.width, spec.height, clampPan],
+  );
 
   const fitPage = useCallback(() => {
-    pendingCentre.current = true;
-    setZoomLevel(fitZoom());
-  }, [fitZoom]);
+    setZoomChoice('fit');
+    setPan({ x: 0, y: 0 });
+  }, []);
 
-  const handleZoom = (delta: number) => {
+  const handleZoom = (dir: 1 | -1) => {
     if (isGrid) {
       const [min, max] = ZOOM_RANGE.grid;
-      setGridZoom((prev) => Math.min(max, Math.max(min, Number((prev + delta).toFixed(2)))));
+      setGridZoom((prev) => Math.min(max, Math.max(min, Number((prev + dir * 0.04).toFixed(2)))));
       return;
     }
-    zoomTo(zoomLevel + delta);
+    zoomTo(dir > 0 ? zoomLevel * ZOOM_STEP : zoomLevel / ZOOM_STEP);
   };
 
   const resetZoom = () => (isGrid ? setGridZoom(DEFAULT_ZOOM.grid) : fitPage());
+  const currentZoom = isGrid ? gridZoom : zoomLevel;
 
-  // Open fitted to the window, like a document in Affinity, once the viewport has a size.
+  // A new page, paper size or coming back from the grid starts framed again.
   useEffect(() => {
-    if (didInitialFit.current || !viewport.w || !viewport.h) return;
-    didInitialFit.current = true;
     fitPage();
-  }, [viewport.w, viewport.h, fitPage]);
+  }, [activePageIndex, isGrid, pageSize, fitPage]);
 
-  // Switching pages, paper size or coming back from the grid recentres the page.
-  useEffect(() => {
-    if (!isGrid) pendingCentre.current = true;
-  }, [activePageIndex, isGrid, pageSize]);
-
-  // Apply any pending centring or anchored zoom after the pasteboard has its new size.
+  // Re-clamp when the canvas is resized so the page never ends up stranded.
   useLayoutEffect(() => {
-    const el = scrollRef.current;
-    if (!el || isGrid || !viewport.w) return;
-    const a = pendingAnchor.current;
-    if (a) {
-      pendingAnchor.current = null;
-      el.scrollLeft = marginX + a.px * zoomLevel - a.ax;
-      el.scrollTop = marginY + a.py * zoomLevel - a.ay;
-      return;
-    }
-    if (pendingCentre.current) {
-      pendingCentre.current = false;
-      el.scrollLeft = marginX + pageW / 2 - el.clientWidth / 2;
-      // Centre a page that fits; otherwise show its top with a little room above.
-      el.scrollTop =
-        pageH + FIT_GUTTER * 2 <= el.clientHeight
-          ? marginY + pageH / 2 - el.clientHeight / 2
-          : marginY - FIT_GUTTER;
-    }
-  });
+    setPan((p) => {
+      const c = clampPan(p.x, p.y);
+      return c.x === p.x && c.y === p.y ? p : c;
+    });
+  }, [clampPan]);
 
-  // Ctrl/Cmd + wheel and trackpad pinch zoom around the pointer. Plain wheel/trackpad scrolling pans.
+  // Ctrl/Cmd + scroll and trackpad pinch zoom around the pointer, between framed and 200%.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
-      if (live.current.isGrid || !(e.ctrlKey || e.metaKey)) return;
+      if (live.current.isGrid) return;
       e.preventDefault();
+      if (!(e.ctrlKey || e.metaKey)) return;
       const rect = el.getBoundingClientRect();
       const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-      // A mouse-wheel notch arrives as one big delta: step 20% like Affinity. A trackpad pinch sends
-      // many small deltas: follow them smoothly.
-      const factor = Math.abs(dy) >= 40 ? (dy < 0 ? 1.2 : 1 / 1.2) : Math.exp(-dy * 0.01);
+      // A mouse-wheel notch is one big delta: step like the buttons. A pinch sends small deltas: follow them.
+      const factor = Math.abs(dy) >= 40 ? (dy < 0 ? ZOOM_STEP : 1 / ZOOM_STEP) : Math.exp(-dy * 0.01);
       zoomTo(live.current.zoomLevel * factor, e.clientX - rect.left, e.clientY - rect.top);
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [zoomTo]);
+  }, [zoomTo, isGrid]);
 
-  // Hold Space to get the hand tool (as in Affinity). Ctrl/Cmd + 0 fits the page, Ctrl/Cmd +/- zoom.
+  // Space is the hand tool, but only while zoomed in. Ctrl/Cmd + 0 frames the page, Ctrl/Cmd +/- zoom.
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (live.current.isGrid || isTypingTarget(e.target)) return;
       if (e.code === 'Space') {
+        if (!live.current.isZoomedIn || isActivatable(e.target)) return;
         e.preventDefault();
         if (!e.repeat) setSpaceHeld(true);
         return;
@@ -342,10 +340,10 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
         fitPage();
       } else if (e.key === '=' || e.key === '+') {
         e.preventDefault();
-        zoomTo(live.current.zoomLevel * 1.2);
+        zoomTo(live.current.zoomLevel * ZOOM_STEP);
       } else if (e.key === '-') {
         e.preventDefault();
-        zoomTo(live.current.zoomLevel / 1.2);
+        zoomTo(live.current.zoomLevel / ZOOM_STEP);
       }
     };
     const up = (e: KeyboardEvent) => {
@@ -362,34 +360,39 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
     };
   }, [fitPage, zoomTo]);
 
-  // Drag to pan: middle mouse anywhere, Space + drag anywhere, or a plain drag on the empty pasteboard.
+  const canPan = !isGrid && isZoomedIn && spaceHeld;
+
+  useEffect(() => {
+    if (!canPan) return;
+    const prev = document.body.style.userSelect;
+    document.body.style.userSelect = 'none';
+    window.getSelection()?.removeAllRanges();
+    return () => {
+      document.body.style.userSelect = prev;
+    };
+  }, [canPan]);
+
+  // Hold Space and drag. Captured before the page sees it, so blocks are not picked up by accident.
   const onPanPointerDownCapture = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (isGrid || e.pointerType === 'touch') return;
-    const el = scrollRef.current;
-    if (!el) return;
-    const onBackground = e.target === e.currentTarget || (e.target as HTMLElement).dataset?.pasteboard === 'true';
-    const wantsPan = e.button === 1 || (e.button === 0 && (spaceHeld || onBackground));
-    if (!wantsPan) return;
+    if (!canPan || e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
-    panRef.current = { x: e.clientX, y: e.clientY, left: el.scrollLeft, top: el.scrollTop, id: e.pointerId };
-    el.setPointerCapture(e.pointerId);
+    panRef.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y, id: e.pointerId };
+    e.currentTarget.setPointerCapture(e.pointerId);
     setPanning(true);
   };
 
   const onPanPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const p = panRef.current;
-    const el = scrollRef.current;
-    if (!p || !el || p.id !== e.pointerId) return;
-    el.scrollLeft = p.left - (e.clientX - p.x);
-    el.scrollTop = p.top - (e.clientY - p.y);
+    if (!p || p.id !== e.pointerId) return;
+    setPan(clampPan(p.px + e.clientX - p.x, p.py + e.clientY - p.y));
   };
 
   const endPan = (e: React.PointerEvent<HTMLDivElement>) => {
     const p = panRef.current;
     if (!p || p.id !== e.pointerId) return;
     panRef.current = null;
-    scrollRef.current?.releasePointerCapture(e.pointerId);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
     setPanning(false);
   };
 
@@ -408,6 +411,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
             <button
               key={p.id}
               onClick={() => onSelectPageIndex(idx)}
+              title={`Go to page ${idx + 1}${p.title ? `: ${p.title}` : ''}`}
               className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
                 idx === activePageIndex
                   ? 'bg-[#2D2200] text-white shadow-xs'
@@ -422,7 +426,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
           <button
             onClick={onAddPage}
             className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-[#009BD9] hover:bg-[#FAF8F0] rounded-lg border border-dashed border-[#009BD9] transition-colors"
-            title="Add a new page"
+            title="Add a new blank page"
           >
             <Plus className="w-3.5 h-3.5" />
             Add Page
@@ -445,7 +449,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
                     ? 'bg-white text-[#2D2200] shadow-xs'
                     : 'text-[#6B5838] hover:text-[#2D2200]'
                 }`}
-                title={preset.displayName}
+                title={`Split this page: ${preset.displayName}`}
               >
                 {preset.id === '1-full'
                   ? '1 Full'
@@ -469,7 +473,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
                 onClick={() => onMovePage(activePageIndex, activePageIndex - 1)}
                 disabled={activePageIndex === 0}
                 className="p-1.5 text-[#6B5838] hover:text-[#2D2200] disabled:opacity-30 rounded"
-                title="Move page left"
+                title="Move this page earlier"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -477,14 +481,14 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
                 onClick={() => onMovePage(activePageIndex, activePageIndex + 1)}
                 disabled={activePageIndex === pages.length - 1}
                 className="p-1.5 text-[#6B5838] hover:text-[#2D2200] disabled:opacity-30 rounded"
-                title="Move page right"
+                title="Move this page later"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
               <button
                 onClick={() => onDeletePage(activePageIndex)}
                 className="p-1.5 text-[#E52311] hover:bg-red-50 rounded"
-                title="Delete current page"
+                title="Delete this page"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -519,26 +523,34 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
 
           <div className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9] gap-1">
             <button
-              onClick={() => (isGrid ? handleZoom(-0.04) : zoomTo(zoomLevel / 1.2))}
-              className="p-1 text-[#6B5838] hover:text-[#2D2200] rounded"
-              title={isGrid ? 'Zoom out' : 'Zoom out (Ctrl/Cmd + scroll to zoom at the pointer)'}
+              onClick={() => handleZoom(-1)}
+              disabled={!isGrid && !isZoomedIn}
+              className="p-1 text-[#6B5838] hover:text-[#2D2200] rounded disabled:opacity-35 disabled:cursor-default"
+              title={isGrid ? 'Make the pages smaller' : 'Zoom out (Ctrl/Cmd + −)'}
+              aria-label="Zoom out"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
-            <span className="text-[11px] font-mono font-bold text-[#2D2200] w-10 text-center">
+            <span
+              className="text-[11px] font-mono font-bold text-[#2D2200] w-10 text-center"
+              title={isGrid ? 'Size of the page previews' : 'Current zoom'}
+            >
               {Math.round(currentZoom * 100)}%
             </span>
             <button
-              onClick={() => (isGrid ? handleZoom(0.04) : zoomTo(zoomLevel * 1.2))}
-              className="p-1 text-[#6B5838] hover:text-[#2D2200] rounded"
-              title="Zoom in"
+              onClick={() => handleZoom(1)}
+              disabled={!isGrid && zoomLevel >= MAX_ZOOM - 0.001}
+              className="p-1 text-[#6B5838] hover:text-[#2D2200] rounded disabled:opacity-35 disabled:cursor-default"
+              title={isGrid ? 'Make the pages bigger' : 'Zoom in, up to 200% (Ctrl/Cmd + +)'}
+              aria-label="Zoom in"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={resetZoom}
               className="p-1 text-[#6B5838] hover:text-[#2D2200] rounded"
-              title={isGrid ? 'Reset zoom' : 'Fit page to window (Ctrl/Cmd + 0)'}
+              title={isGrid ? 'Reset the preview size' : 'Fit the whole page in the frame (Ctrl/Cmd + 0)'}
+              aria-label={isGrid ? 'Reset preview size' : 'Fit page'}
             >
               <Maximize2 className="w-3.5 h-3.5" />
             </button>
@@ -558,32 +570,22 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
             className="flex-1 px-2.5 py-1 text-xs font-bold text-[#2D2200] bg-white border border-[#E2DEC9] rounded-md focus:outline-none focus:ring-1 focus:ring-[#009BD9]"
           />
         </div>
-        <span className="ml-4 text-[11px] text-[#A39C8E] font-medium hidden md:inline text-right">
+        <span className="text-[11px] text-[#A39C8E] font-medium hidden md:inline">
           {spec.displayName}
-          {!isGrid && (
-            <span className="hidden xl:inline">
-              {' '}· Drag the background or hold Space to move the page · Ctrl/Cmd + scroll to zoom
-            </span>
-          )}
         </span>
       </div>
 
-      {/* To-Scale Interactive Viewport Area.
-          Centring uses margin:auto on a sizer, never align-items/justify-content: center. Flex centring
-          pushes an overflowing child past the scroll origin, which is what hid the top of the page. */}
+      {/* To-Scale Interactive Viewport Area. In single-page view the page is framed to fill this area and
+          positioned absolutely (centre + pan), so nothing scrolls and the page can never be cut off. */}
       <div
         ref={scrollRef}
+        data-canvas="viewport"
         onPointerDownCapture={onPanPointerDownCapture}
         onPointerMove={onPanPointerMove}
         onPointerUp={endPan}
         onPointerCancel={endPan}
-        onAuxClick={(e) => e.button === 1 && e.preventDefault()}
-        className={`flex-1 min-h-0 overflow-auto overscroll-contain ${isGrid ? 'p-8 flex' : 'relative'}`}
-        style={
-          isGrid
-            ? undefined
-            : { cursor: panning ? 'grabbing' : spaceHeld ? 'grab' : undefined }
-        }
+        className={`flex-1 min-h-0 ${isGrid ? 'overflow-auto p-8 flex' : 'overflow-hidden relative select-none'}`}
+        style={isGrid ? undefined : { cursor: panning ? 'grabbing' : canPan ? 'grab' : undefined }}
       >
         {isGrid ? (
           <div className="m-auto w-full">
@@ -687,15 +689,8 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
           </div>
         ) : (
         <div
-          // Pasteboard: the page plus most of a viewport of room on every side, so the page can be
-          // scrolled or dragged anywhere on screen, including dead centre.
-          data-pasteboard="true"
-          style={{ width: pageW + marginX * 2, height: pageH + marginY * 2 }}
-          className="relative"
-        >
-        <div
-          // Sizer: occupies the page's real on-screen size so the scroll area matches what you see
-          style={{ width: pageW, height: pageH, left: marginX, top: marginY }}
+          // The page, framed in the canvas. Its position is the centre plus any Space-drag pan.
+          style={{ width: pageW, height: pageH, left: pageLeft, top: pageTop, visibility: viewport.w ? 'visible' : 'hidden' }}
           className="absolute"
         >
         <div
@@ -744,9 +739,13 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
           </div>
         </div>
         </div>
-        </div>
         )}
       </div>
+      {!isGrid && isZoomedIn && !panning && (
+        <p className="pointer-events-none absolute bottom-3 right-4 whitespace-nowrap text-[11px] font-bold text-white bg-[#2D2200]/85 rounded-full px-3 py-1.5 shadow-sm">
+          Hold Space and drag to move around the page
+        </p>
+      )}
     </div>
   );
 };
