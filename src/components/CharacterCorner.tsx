@@ -9,7 +9,7 @@
 
 import React, { useState } from 'react';
 import { BlockCharacterConfig } from '../types';
-import { CHARACTERS } from '../config/appConfig';
+import { CHARACTERS, assetUrl } from '../config/appConfig';
 
 interface CharacterCornerProps {
   config?: BlockCharacterConfig | null;
@@ -50,7 +50,7 @@ export const CharacterCorner: React.FC<CharacterCornerProps> = ({
     y = blockHeight - badgeSize - padding;
   }
 
-  const imageHref = `/characters/${config.id}.svg`;
+  const imageHref = assetUrl(`characters/${config.id}.svg`);
 
   return (
     <g className="character-corner-badge" pointerEvents="none">

@@ -3,7 +3,7 @@
  * Sunshine Brigade Worksheet Builder - Left Sidebar & Block Library
  * Features:
  * - Search & skill tags filter
- * - Grouped by category (Pre-writing, Letters, Numbers, Creative)
+ * - Grouped by development area (pre-writing, literacy, maths, thinking, feelings, world, creative)
  * - Draggable block cards (via @dnd-kit useDraggable)
  * - Tap to add for mobile & quick workflow
  */
@@ -21,10 +21,13 @@ interface SidebarProps {
 }
 
 const CATEGORY_LABELS: Record<BlockCategory, { label: string; color: string; badge: string }> = {
-  'pre-writing': { label: 'Pre-Writing & Motor', color: '#F2B800', badge: 'Lines' },
-  'letters': { label: 'Letters & Phonics', color: '#009BD9', badge: 'Alphabet' },
-  'numbers': { label: 'Numbers & Counting', color: '#E52311', badge: 'Math' },
-  'creative': { label: 'Creative & Expression', color: '#69B34C', badge: 'Art' },
+  'pre-writing': { label: 'Pre-writing and fine motor', color: '#F2B800', badge: 'Lines' },
+  'letters': { label: 'Early literacy', color: '#009BD9', badge: 'Letters' },
+  'numbers': { label: 'Early maths', color: '#E52311', badge: 'Maths' },
+  'thinking': { label: 'Thinking and problem solving', color: '#2D2200', badge: 'Thinking' },
+  'feelings': { label: 'Social and emotional', color: '#F2B800', badge: 'Feelings' },
+  'world': { label: 'Science and our world', color: '#009BD9', badge: 'World' },
+  'creative': { label: 'Creative and expression', color: '#E52311', badge: 'Art' },
 };
 
 const DraggableBlockCard: React.FC<{
@@ -137,7 +140,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [allBlocks, searchQuery, selectedTag]);
 
   // Group by category
-  const categories: BlockCategory[] = ['pre-writing', 'letters', 'numbers', 'creative'];
+  const categories: BlockCategory[] = [
+    'pre-writing',
+    'letters',
+    'numbers',
+    'thinking',
+    'feelings',
+    'world',
+    'creative',
+  ];
 
   return (
     <>
@@ -222,10 +233,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Scrollable Block List Grouped by Category */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6">
           <div className="bg-[#FFF9E6] border border-[#F2B800]/30 rounded-xl p-3 text-xs text-[#6B5838] leading-relaxed">
-            <span className="font-bold text-[#2D2200]">💡 Tip: </span>
-            Drag any card onto a page slot, or click <Plus className="inline w-3.5 h-3.5 text-[#009BD9]" /> to instantly place it!
+            <span className="font-bold text-[#2D2200]">Tip: </span>
+            Drag an activity onto the page, or tap <Plus className="inline w-3.5 h-3.5 text-[#009BD9]" /> to add it to the next empty space.
           </div>
 
           {categories.map((cat) => {

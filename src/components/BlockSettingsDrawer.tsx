@@ -8,7 +8,7 @@
 
 import React from 'react';
 import { BlockInstance, BlockDefinition, CharacterCorner, Slot } from '../types';
-import { CHARACTERS, CharacterId } from '../config/appConfig';
+import { CHARACTERS, CharacterId, assetUrl } from '../config/appConfig';
 import { X, Trash2, Sparkles, Smile } from 'lucide-react';
 
 interface BlockSettingsDrawerProps {
@@ -221,7 +221,7 @@ export const BlockSettingsDrawer: React.FC<BlockSettingsDrawerProps> = ({
                   }`}
                 >
                   <img
-                    src={`/characters/${char.id}.svg`}
+                    src={assetUrl(`characters/${char.id}.svg`)}
                     alt={char.name}
                     className="w-8 h-8 rounded-full"
                     onError={(e) => {

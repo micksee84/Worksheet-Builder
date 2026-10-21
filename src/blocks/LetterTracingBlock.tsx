@@ -11,6 +11,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
 import { CharacterCorner } from '../components/CharacterCorner';
+import { Instruction } from '../components/Instruction';
 
 export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
   instance,
@@ -26,7 +27,7 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
   const paddingY = size === 'quarter' ? 28 : 36;
 
   // Decide row count based on block size
-  const defaultRows = size === 'full' ? 4 : size === 'half' ? 2 : 1;
+  const defaultRows = size === 'full' ? 4 : 2;
   const rows = defaultRows;
 
   const usableHeight = height - paddingY * 2;
@@ -66,17 +67,7 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
 
   return (
     <g className="letter-tracing-block">
-      {/* Title */}
-      <text
-        x={paddingX}
-        y={paddingY - 10}
-        fill="#2D2200"
-        fontSize={size === 'quarter' ? '12' : '14'}
-        fontWeight="700"
-        fontFamily="Nunito, sans-serif"
-      >
-        {size === 'quarter' ? `Trace the letter ${letter}.` : `Trace the letter ${letter}. Start at the dot.`}
-      </text>
+      <Instruction x={paddingX} y={paddingY - 8} cue="pencil" size={size} text={size === 'quarter' ? `Trace the letter ${letter}.` : `Trace the letter ${letter}. Start at the dot.`} />
 
       {rowConfigs.map((row) => (
         <g key={row.id}>
@@ -148,7 +139,7 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
 
 export const LetterTracingBlockDefinition: BlockDefinition = {
   id: 'letter-tracing',
-  displayName: 'Letter Tracing',
+  displayName: 'Letter tracing',
   description: 'A solid letter to copy, then grey letters to trace on handwriting lines.',
   category: 'letters',
   skillTags: ['alphabet', 'letter formation', 'phonics'],

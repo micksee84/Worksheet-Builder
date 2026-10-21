@@ -11,6 +11,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
 import { CharacterCorner } from '../components/CharacterCorner';
+import { Instruction } from '../components/Instruction';
 import { KidShape, ShapeType } from './svgShapes';
 
 export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
@@ -19,7 +20,7 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
   width,
   height,
 }) => {
-  const num = Math.min(10, Math.max(0, Number(instance.settings.number) ?? 5));
+  const num = Math.min(10, Math.max(0, Number.isFinite(Number(instance.settings.number)) ? Number(instance.settings.number) : 5));
   const shape: ShapeType = instance.settings.shape || 'stars';
 
   const paddingX = size === 'quarter' ? 22 : 36;
@@ -46,17 +47,18 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
   // Arrange in up to 2 rows of items
   const itemsAreaX = Math.max(isQuarter ? width * 0.44 : width * 0.38, numeralsRight + 14);
   const itemsAreaWidth = width - itemsAreaX - paddingX;
-  const itemsAreaHeight = topSectionHeight - paddingY;
+  // Shapes stay inside the top section, clear of the practice line below
+  const itemsAreaHeight = topSectionHeight - paddingY - 28 - 8;
 
   const cols = Math.min(5, Math.max(2, Math.ceil(num / 2)));
-  const rows = num > 5 ? 2 : 1;
-  const itemSize = Math.min(38, Math.max(22, (itemsAreaWidth / cols) * 0.7));
+  const rows = Math.max(1, Math.ceil(num / cols));
+  const itemSize = Math.min(38, Math.max(18, (itemsAreaWidth / cols) * 0.7), (itemsAreaHeight / rows) * 0.8);
 
   const shapes = Array.from({ length: num }, (_, i) => {
     const colIdx = i % cols;
     const rowIdx = Math.floor(i / cols);
     const cx = itemsAreaX + (colIdx + 0.5) * (itemsAreaWidth / cols);
-    const cy = paddingY + 28 + (rowIdx + 0.5) * (itemsAreaHeight / Math.max(rows, 1.5));
+    const cy = paddingY + 28 + (rowIdx + 0.5) * (itemsAreaHeight / rows);
     return { id: i, cx, cy };
   });
 
@@ -67,17 +69,7 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
 
   return (
     <g className="number-tracing-block">
-      {/* Title */}
-      <text
-        x={paddingX}
-        y={paddingY - 6}
-        fill="#2D2200"
-        fontSize={isQuarter ? '12' : '14'}
-        fontWeight="700"
-        fontFamily="Nunito, sans-serif"
-      >
-        Count, colour and trace {num}.
-      </text>
+      <Instruction x={paddingX} y={paddingY - 6} cue="crayon" size={size} text={`Count, colour and trace ${num}.`} />
 
       {/* Left side: Large Numeral model + large dashed trace */}
       <g className="large-numerals">
@@ -187,7 +179,7 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
 
 export const NumberTracingBlockDefinition: BlockDefinition = {
   id: 'number-tracing',
-  displayName: 'Number Tracing & Counting',
+  displayName: 'Number tracing and counting',
   description: 'A numeral to trace plus that many simple shapes to count and colour, with line practice below.',
   category: 'numbers',
   skillTags: ['number formation', 'counting', 'one-to-one correspondence'],

@@ -17,6 +17,7 @@
  */
 
 import type { jsPDF } from 'jspdf';
+import { assetUrl } from '../../config/appConfig';
 
 interface FontFile {
   url: string;
@@ -26,11 +27,11 @@ interface FontFile {
 }
 
 const FONT_FILES: FontFile[] = [
-  { url: '/fonts/Nunito_400Regular.ttf', family: 'Nunito', style: 'normal', required: true },
-  { url: '/fonts/Nunito_700Bold.ttf', family: 'Nunito', style: 'bold', required: true },
-  { url: '/fonts/Nunito_800ExtraBold.ttf', family: 'Nunito', style: '800normal', required: true },
-  { url: '/fonts/Nunito_900Black.ttf', family: 'Nunito', style: '900normal', required: true },
-  { url: '/fonts/SuperJoyful.ttf', family: 'Super Joyful', style: 'normal', required: false },
+  { url: assetUrl('fonts/Nunito_400Regular.ttf'), family: 'Nunito', style: 'normal', required: true },
+  { url: assetUrl('fonts/Nunito_700Bold.ttf'), family: 'Nunito', style: 'bold', required: true },
+  { url: assetUrl('fonts/Nunito_800ExtraBold.ttf'), family: 'Nunito', style: '800normal', required: true },
+  { url: assetUrl('fonts/Nunito_900Black.ttf'), family: 'Nunito', style: '900normal', required: true },
+  { url: assetUrl('fonts/SuperJoyful.ttf'), family: 'Super Joyful', style: 'normal', required: false },
 ];
 
 interface LoadedFont extends FontFile {

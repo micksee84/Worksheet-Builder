@@ -39,7 +39,9 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
 
   return (
     <svg
-      id={`print-svg-page-${page.id}`}
+      // Only the hidden print copy carries this id: the PDF exporter finds pages by it,
+      // and on-screen previews (single page and the all-pages grid) must never be picked up.
+      id={isInteractive ? undefined : `print-svg-page-${page.id}`}
       viewBox={`0 0 ${pageWidth} ${pageHeight}`}
       width="100%"
       height="100%"

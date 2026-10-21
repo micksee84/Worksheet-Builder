@@ -10,10 +10,11 @@
 import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
+import { Instruction } from '../components/Instruction';
 
 export type LineStyle = 'straight' | 'wave' | 'zigzag' | 'loops' | 'castle';
 
-function generateLinePath(
+export function generateLinePath(
   style: LineStyle,
   startX: number,
   endX: number,
@@ -122,19 +123,7 @@ export const LineTracingRenderer: React.FC<BlockRenderProps> = ({
 
   return (
     <g className="line-tracing-block">
-      {/* Title / Instruction */}
-      <text
-        x={paddingX}
-        y={paddingY - 6}
-        fill="#2D2200"
-        fontSize={size === 'quarter' ? '12' : '14'}
-        fontWeight="700"
-        fontFamily="Nunito, sans-serif"
-      >
-        {size === 'quarter'
-          ? 'Follow the dashes to the star.'
-          : 'Start at the big dot. Follow the dashes to the star.'}
-      </text>
+      <Instruction x={paddingX} y={paddingY - 6} cue="pencil" size={size} text={size === 'quarter' ? 'Follow the dashes to the star.' : 'Start at the big dot. Follow the dashes to the star.'} />
 
       {/* Render each tracing line */}
       {lines.map((line) => (
@@ -170,7 +159,7 @@ export const LineTracingRenderer: React.FC<BlockRenderProps> = ({
 
 export const LineTracingBlockDefinition: BlockDefinition = {
   id: 'line-tracing',
-  displayName: 'Line Tracing',
+  displayName: 'Line tracing',
   description: 'Dashed straight, zigzag, wave, or loop lines to trace left-to-right.',
   category: 'pre-writing',
   skillTags: ['pencil control', 'hand-eye coordination', 'fine motor'],
