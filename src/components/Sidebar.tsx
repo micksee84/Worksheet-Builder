@@ -233,7 +233,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Scrollable Block List Grouped by Category */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6">
           <div className="bg-[#FFF9E6] border border-[#F2B800]/30 rounded-xl p-3 text-xs text-[#6B5838] leading-relaxed">
             <span className="font-bold text-[#2D2200]">Tip: </span>
             Drag an activity onto the page, or tap <Plus className="inline w-3.5 h-3.5 text-[#009BD9]" /> to add it to the next empty space.

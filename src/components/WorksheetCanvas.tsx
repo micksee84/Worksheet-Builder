@@ -9,7 +9,7 @@
  * - Quick action overlay over active slot
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Page, PageSizeId, Slot, PageLayoutPreset, BlockInstance } from '../types';
 import { PAGE_SPECS } from '../config/appConfig';
@@ -45,7 +45,21 @@ interface WorksheetCanvasProps {
 }
 
 const DEFAULT_ZOOM = { single: 0.85, grid: 0.32 } as const;
-const ZOOM_RANGE = { single: [0.5, 1.2], grid: [0.2, 0.6] } as const;
+const ZOOM_RANGE = { single: [0.25, 2.5], grid: [0.2, 0.6] } as const;
+// Breathing room kept around the page when it is fitted or centred.
+const FIT_GUTTER = 32;
+// How much of the viewport the pasteboard extends past each page edge. Less than 1 keeps a sliver of
+// the page on screen even when it is pushed right to the side, like Affinity's pasteboard.
+const PASTEBOARD_REACH = 0.85;
+
+const clampZoom = (z: number) => Math.min(ZOOM_RANGE.single[1], Math.max(ZOOM_RANGE.single[0], Number(z.toFixed(3))));
+
+const isTypingTarget = (el: EventTarget | null) => {
+  const node = el as HTMLElement | null;
+  if (!node) return false;
+  const tag = node.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || node.isContentEditable;
+};
 
 // Droppable Slot Overlay Target for DnD
 const DroppableSlotOverlay: React.FC<{
@@ -190,18 +204,194 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
   const isGrid = viewMode === 'grid';
   const currentZoom = isGrid ? gridZoom : zoomLevel;
 
+  /* ---------- Pasteboard (single-page view) ----------
+     Works like Affinity: the page sits on a pasteboard much bigger than the screen, so you can scroll,
+     drag or pinch it anywhere, including the middle. The pasteboard reaches most of a viewport past
+     every page edge, so any part of the page can be brought to the centre at any zoom. */
+  const [viewport, setViewport] = useState({ w: 0, h: 0 });
+  const [spaceHeld, setSpaceHeld] = useState(false);
+  const [panning, setPanning] = useState(false);
+  const panRef = useRef<{ x: number; y: number; left: number; top: number; id: number } | null>(null);
+  // A zoom that should keep one point of the page under one point of the screen, applied after render.
+  const pendingAnchor = useRef<{ px: number; py: number; ax: number; ay: number } | null>(null);
+  const pendingCentre = useRef(true);
+  const didInitialFit = useRef(false);
+
+  const pageW = spec.width * zoomLevel;
+  const pageH = spec.height * zoomLevel;
+  const marginX = Math.max(160, Math.round(viewport.w * PASTEBOARD_REACH));
+  const marginY = Math.max(160, Math.round(viewport.h * PASTEBOARD_REACH));
+
+  // Latest values for the native wheel listener, which is bound once.
+  const live = useRef({ zoomLevel, marginX, marginY, isGrid });
+  live.current = { zoomLevel, marginX, marginY, isGrid };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setViewport({ w: el.clientWidth, h: el.clientHeight }));
+    ro.observe(el);
+    setViewport({ w: el.clientWidth, h: el.clientHeight });
+    return () => ro.disconnect();
+  }, []);
+
+  const fitZoom = useCallback(() => {
+    if (!viewport.w || !viewport.h) return DEFAULT_ZOOM.single;
+    return clampZoom(
+      Math.min((viewport.w - FIT_GUTTER * 2) / spec.width, (viewport.h - FIT_GUTTER * 2) / spec.height),
+    );
+  }, [viewport.w, viewport.h, spec.width, spec.height]);
+
+  // Zoom so the page point under (ax, ay) in the viewport stays put. Without an anchor, use the centre.
+  const zoomTo = useCallback((next: number, ax?: number, ay?: number) => {
+    const el = scrollRef.current;
+    const { zoomLevel: z, marginX: mx, marginY: my } = live.current;
+    const target = clampZoom(next);
+    if (!el || target === z) return;
+    const x = ax ?? el.clientWidth / 2;
+    const y = ay ?? el.clientHeight / 2;
+    pendingAnchor.current = {
+      px: (el.scrollLeft + x - mx) / z,
+      py: (el.scrollTop + y - my) / z,
+      ax: x,
+      ay: y,
+    };
+    setZoomLevel(target);
+  }, []);
+
+  const fitPage = useCallback(() => {
+    pendingCentre.current = true;
+    setZoomLevel(fitZoom());
+  }, [fitZoom]);
+
   const handleZoom = (delta: number) => {
-    const [min, max] = isGrid ? ZOOM_RANGE.grid : ZOOM_RANGE.single;
-    const setter = isGrid ? setGridZoom : setZoomLevel;
-    setter((prev) => Math.min(max, Math.max(min, Number((prev + delta).toFixed(2)))));
+    if (isGrid) {
+      const [min, max] = ZOOM_RANGE.grid;
+      setGridZoom((prev) => Math.min(max, Math.max(min, Number((prev + delta).toFixed(2)))));
+      return;
+    }
+    zoomTo(zoomLevel + delta);
   };
 
-  const resetZoom = () => (isGrid ? setGridZoom(DEFAULT_ZOOM.grid) : setZoomLevel(DEFAULT_ZOOM.single));
+  const resetZoom = () => (isGrid ? setGridZoom(DEFAULT_ZOOM.grid) : fitPage());
 
-  // Start every page (and every view switch) at the top of the sheet, not wherever the last page was scrolled to.
+  // Open fitted to the window, like a document in Affinity, once the viewport has a size.
   useEffect(() => {
-    if (!isGrid) scrollRef.current?.scrollTo({ top: 0, left: 0 });
-  }, [activePageIndex, isGrid]);
+    if (didInitialFit.current || !viewport.w || !viewport.h) return;
+    didInitialFit.current = true;
+    fitPage();
+  }, [viewport.w, viewport.h, fitPage]);
+
+  // Switching pages, paper size or coming back from the grid recentres the page.
+  useEffect(() => {
+    if (!isGrid) pendingCentre.current = true;
+  }, [activePageIndex, isGrid, pageSize]);
+
+  // Apply any pending centring or anchored zoom after the pasteboard has its new size.
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el || isGrid || !viewport.w) return;
+    const a = pendingAnchor.current;
+    if (a) {
+      pendingAnchor.current = null;
+      el.scrollLeft = marginX + a.px * zoomLevel - a.ax;
+      el.scrollTop = marginY + a.py * zoomLevel - a.ay;
+      return;
+    }
+    if (pendingCentre.current) {
+      pendingCentre.current = false;
+      el.scrollLeft = marginX + pageW / 2 - el.clientWidth / 2;
+      // Centre a page that fits; otherwise show its top with a little room above.
+      el.scrollTop =
+        pageH + FIT_GUTTER * 2 <= el.clientHeight
+          ? marginY + pageH / 2 - el.clientHeight / 2
+          : marginY - FIT_GUTTER;
+    }
+  });
+
+  // Ctrl/Cmd + wheel and trackpad pinch zoom around the pointer. Plain wheel/trackpad scrolling pans.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (live.current.isGrid || !(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      // A mouse-wheel notch arrives as one big delta: step 20% like Affinity. A trackpad pinch sends
+      // many small deltas: follow them smoothly.
+      const factor = Math.abs(dy) >= 40 ? (dy < 0 ? 1.2 : 1 / 1.2) : Math.exp(-dy * 0.01);
+      zoomTo(live.current.zoomLevel * factor, e.clientX - rect.left, e.clientY - rect.top);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [zoomTo]);
+
+  // Hold Space to get the hand tool (as in Affinity). Ctrl/Cmd + 0 fits the page, Ctrl/Cmd +/- zoom.
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (live.current.isGrid || isTypingTarget(e.target)) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (!e.repeat) setSpaceHeld(true);
+        return;
+      }
+      if (!(e.ctrlKey || e.metaKey)) return;
+      if (e.key === '0') {
+        e.preventDefault();
+        fitPage();
+      } else if (e.key === '=' || e.key === '+') {
+        e.preventDefault();
+        zoomTo(live.current.zoomLevel * 1.2);
+      } else if (e.key === '-') {
+        e.preventDefault();
+        zoomTo(live.current.zoomLevel / 1.2);
+      }
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.code === 'Space') setSpaceHeld(false);
+    };
+    const blur = () => setSpaceHeld(false);
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    window.addEventListener('blur', blur);
+    return () => {
+      window.removeEventListener('keydown', down);
+      window.removeEventListener('keyup', up);
+      window.removeEventListener('blur', blur);
+    };
+  }, [fitPage, zoomTo]);
+
+  // Drag to pan: middle mouse anywhere, Space + drag anywhere, or a plain drag on the empty pasteboard.
+  const onPanPointerDownCapture = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isGrid || e.pointerType === 'touch') return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const onBackground = e.target === e.currentTarget || (e.target as HTMLElement).dataset?.pasteboard === 'true';
+    const wantsPan = e.button === 1 || (e.button === 0 && (spaceHeld || onBackground));
+    if (!wantsPan) return;
+    e.preventDefault();
+    e.stopPropagation();
+    panRef.current = { x: e.clientX, y: e.clientY, left: el.scrollLeft, top: el.scrollTop, id: e.pointerId };
+    el.setPointerCapture(e.pointerId);
+    setPanning(true);
+  };
+
+  const onPanPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const p = panRef.current;
+    const el = scrollRef.current;
+    if (!p || !el || p.id !== e.pointerId) return;
+    el.scrollLeft = p.left - (e.clientX - p.x);
+    el.scrollTop = p.top - (e.clientY - p.y);
+  };
+
+  const endPan = (e: React.PointerEvent<HTMLDivElement>) => {
+    const p = panRef.current;
+    if (!p || p.id !== e.pointerId) return;
+    panRef.current = null;
+    scrollRef.current?.releasePointerCapture(e.pointerId);
+    setPanning(false);
+  };
 
   const openPage = (idx: number) => {
     onSelectPageIndex(idx);
@@ -329,9 +519,9 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
 
           <div className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9] gap-1">
             <button
-              onClick={() => handleZoom(isGrid ? -0.04 : -0.1)}
+              onClick={() => (isGrid ? handleZoom(-0.04) : zoomTo(zoomLevel / 1.2))}
               className="p-1 text-[#6B5838] hover:text-[#2D2200] rounded"
-              title="Zoom out"
+              title={isGrid ? 'Zoom out' : 'Zoom out (Ctrl/Cmd + scroll to zoom at the pointer)'}
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
@@ -339,7 +529,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
               {Math.round(currentZoom * 100)}%
             </span>
             <button
-              onClick={() => handleZoom(isGrid ? 0.04 : 0.1)}
+              onClick={() => (isGrid ? handleZoom(0.04) : zoomTo(zoomLevel * 1.2))}
               className="p-1 text-[#6B5838] hover:text-[#2D2200] rounded"
               title="Zoom in"
             >
@@ -348,7 +538,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
             <button
               onClick={resetZoom}
               className="p-1 text-[#6B5838] hover:text-[#2D2200] rounded"
-              title="Reset Zoom"
+              title={isGrid ? 'Reset zoom' : 'Fit page to window (Ctrl/Cmd + 0)'}
             >
               <Maximize2 className="w-3.5 h-3.5" />
             </button>
@@ -368,15 +558,33 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
             className="flex-1 px-2.5 py-1 text-xs font-bold text-[#2D2200] bg-white border border-[#E2DEC9] rounded-md focus:outline-none focus:ring-1 focus:ring-[#009BD9]"
           />
         </div>
-        <span className="text-[11px] text-[#A39C8E] font-medium hidden md:inline">
+        <span className="ml-4 text-[11px] text-[#A39C8E] font-medium hidden md:inline text-right">
           {spec.displayName}
+          {!isGrid && (
+            <span className="hidden xl:inline">
+              {' '}· Drag the background or hold Space to move the page · Ctrl/Cmd + scroll to zoom
+            </span>
+          )}
         </span>
       </div>
 
       {/* To-Scale Interactive Viewport Area.
           Centring uses margin:auto on a sizer, never align-items/justify-content: center. Flex centring
           pushes an overflowing child past the scroll origin, which is what hid the top of the page. */}
-      <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto p-8 flex">
+      <div
+        ref={scrollRef}
+        onPointerDownCapture={onPanPointerDownCapture}
+        onPointerMove={onPanPointerMove}
+        onPointerUp={endPan}
+        onPointerCancel={endPan}
+        onAuxClick={(e) => e.button === 1 && e.preventDefault()}
+        className={`flex-1 min-h-0 overflow-auto overscroll-contain ${isGrid ? 'p-8 flex' : 'relative'}`}
+        style={
+          isGrid
+            ? undefined
+            : { cursor: panning ? 'grabbing' : spaceHeld ? 'grab' : undefined }
+        }
+      >
         {isGrid ? (
           <div className="m-auto w-full">
             <p className="text-xs text-[#6B5838] font-medium mb-4">
@@ -479,9 +687,16 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
           </div>
         ) : (
         <div
+          // Pasteboard: the page plus most of a viewport of room on every side, so the page can be
+          // scrolled or dragged anywhere on screen, including dead centre.
+          data-pasteboard="true"
+          style={{ width: pageW + marginX * 2, height: pageH + marginY * 2 }}
+          className="relative"
+        >
+        <div
           // Sizer: occupies the page's real on-screen size so the scroll area matches what you see
-          style={{ width: spec.width * zoomLevel, height: spec.height * zoomLevel }}
-          className="relative shrink-0 m-auto"
+          style={{ width: pageW, height: pageH, left: marginX, top: marginY }}
+          className="absolute"
         >
         <div
           style={{
@@ -527,6 +742,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
               );
             })}
           </div>
+        </div>
         </div>
         </div>
         )}
