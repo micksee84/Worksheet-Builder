@@ -4,7 +4,7 @@ A clean, extendable, browser-based drag-and-drop tool for parents and teachers t
 
 ## Architectural Overview
 
-- **Zero-Backend Privacy**: All state lives in the browser (`localStorage` and URL hash). Never stores or transmits children's names or typed text.
+- **Accounts and privacy**: Grown-ups sign in with a passwordless email code (Supabase). Each worksheet saves to their account, private to them by row-level security, with `localStorage` as the instant offline copy. Worksheet contents can include typed words, so they are never logged or sent to analytics. Setup: [`docs/LOGIN_SETUP.md`](docs/LOGIN_SETUP.md).
 - **Central Block Registry (`/src/registry/blockRegistry.ts`)**: Defines every activity as a pure self-contained block.
 - **Fixed Slot Grid System (`/src/utils/layoutPresets.ts`)**: Pages use fixed, snapped layout presets (`1-full`, `2-half`, `4-quarter`, `top-half-2-quarter`, `2-quarter-bottom-half`).
 - **Pure SVG Vector Pipeline**: Blocks output pure SVG vector markup. This ensures crisp print quality at any resolution, with `@media print` and client-side vector PDF generation (`jsPDF` + `svg2pdf.js`).

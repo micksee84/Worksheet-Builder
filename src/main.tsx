@@ -11,4 +11,13 @@ import '@fontsource/nunito/latin-800.css';
 import '@fontsource/nunito/latin-900.css';
 import './index.css';
 
-createRoot(document.getElementById('root')!).render(<App />);
+import { AuthProvider } from './auth/AuthProvider';
+import { AuthGate } from './auth/AuthGate';
+
+createRoot(document.getElementById('root')!).render(
+  <AuthProvider>
+    <AuthGate>
+      <App />
+    </AuthGate>
+  </AuthProvider>
+);
