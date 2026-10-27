@@ -21,7 +21,6 @@ import {
   BookOpen,
   Menu,
   Check,
-  SunMedium,
 } from 'lucide-react';
 
 interface TopBarProps {
@@ -79,18 +78,22 @@ export const TopBar: React.FC<TopBarProps> = ({
         </button>
 
         {/* Brand Lockup */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-[#F2B800] flex items-center justify-center text-[#2D2200] shadow-xs">
-            <SunMedium className="w-5 h-5 text-[#2D2200]" />
-          </div>
-          <div className="hidden sm:block">
-            <h1 className="text-sm font-extrabold text-[#2D2200] tracking-tight font-sans whitespace-nowrap">
-              Sunshine Brigade
-            </h1>
-            <span className="text-[10px] font-bold text-[#009BD9] tracking-wider uppercase block">
-              Worksheet Builder
-            </span>
-          </div>
+        <div className="flex flex-col justify-center shrink-0">
+          <h1 className="m-0 leading-none">
+            <picture>
+              <source media="(min-width: 640px)" srcSet={`${import.meta.env.BASE_URL}sb-logo-header.svg`} />
+              <img
+                src={`${import.meta.env.BASE_URL}sb-logo-icon.svg`}
+                alt="Sunshine Brigade"
+                draggable={false}
+                className="h-8 sm:h-7 w-auto select-none"
+                loading="eager"
+              />
+            </picture>
+          </h1>
+          <span className="hidden sm:block text-[10px] font-bold text-[#009BD9] tracking-wider uppercase mt-0.5">
+            Worksheet Builder
+          </span>
         </div>
 
         <div className="hidden lg:block w-px h-6 bg-[#E2DEC9] mx-1" />
