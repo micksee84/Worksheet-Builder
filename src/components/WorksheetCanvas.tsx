@@ -204,17 +204,20 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
 
   const isGrid = viewMode === 'grid';
 
-  /* ---------- Framed page (single-page view) ----------
-     The page is always framed to fill the canvas. You can zoom in from there up to 200% of its real
-     size, and only while zoomed in can you hold Space and drag to move around the page. Panning stops
-     at the page edges, so the page can never get lost off screen. */
+  /* ---------- Single-page view: scrolling and zoom ----------
+     Works like a document editor. The page opens framed to fit the canvas. Zoom in (buttons, pinch,
+     or Ctrl/Cmd + scroll) and the canvas becomes an ordinary scroll area: the scroll wheel, trackpad
+     and touch move around the page, Shift + wheel scrolls sideways, and Space + drag also works.
+     Plain scrolling is never taken over, so when there is nothing to scroll (the page fits) it passes
+     through to the website the builder is embedded in. */
   const [viewport, setViewport] = useState({ w: 0, h: 0 });
   // 'fit' follows the canvas size; a number is a zoom the user chose.
   const [zoomChoice, setZoomChoice] = useState<'fit' | number>('fit');
-  const [pan, setPan] = useState({ x: 0, y: 0 });
   const [spaceHeld, setSpaceHeld] = useState(false);
   const [panning, setPanning] = useState(false);
-  const panRef = useRef<{ x: number; y: number; px: number; py: number; id: number } | null>(null);
+  const panRef = useRef<{ x: number; y: number; sl: number; st: number; id: number } | null>(null);
+  // Scroll position to apply once a zoom change has been laid out (keeps the point under the cursor still).
+  const pendingScroll = useRef<{ left: number; top: number } | null>(null);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -235,51 +238,61 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
   const pageW = spec.width * zoomLevel;
   const pageH = spec.height * zoomLevel;
 
-  // Keep the page from being dragged further than its own edges.
-  const clampPan = useCallback(
-    (x: number, y: number, pw = pageW, ph = pageH) => {
-      const limit = (size: number, view: number, v: number) => {
-        if (size + FRAME_GUTTER * 2 <= view) return 0;
-        const max = (size - view) / 2 + FRAME_GUTTER;
-        return Math.min(max, Math.max(-max, v));
-      };
-      return { x: limit(pw, viewport.w, x), y: limit(ph, viewport.h, y) };
+  // The scrollable stage: at least the canvas size, or the page plus a gutter all round when zoomed in.
+  // The page sits centred in it, so it is centred when it fits and scrolls edge to edge when it doesn't.
+  const stageSize = useCallback(
+    (z: number) => {
+      const w = Math.max(viewport.w, spec.width * z + FRAME_GUTTER * 2);
+      const h = Math.max(viewport.h, spec.height * z + FRAME_GUTTER * 2);
+      return { w, h, left: (w - spec.width * z) / 2, top: (h - spec.height * z) / 2 };
     },
-    [pageW, pageH, viewport.w, viewport.h],
+    [viewport.w, viewport.h, spec.width, spec.height],
   );
+  const stage = stageSize(zoomLevel);
 
-  const pageLeft = (viewport.w - pageW) / 2 + pan.x;
-  const pageTop = (viewport.h - pageH) / 2 + pan.y;
+  const live = useRef({ zoomLevel, fitZoom, isGrid, isZoomedIn });
+  live.current = { zoomLevel, fitZoom, isGrid, isZoomedIn };
 
-  const live = useRef({ zoomLevel, fitZoom, pageLeft, pageTop, isGrid, isZoomedIn });
-  live.current = { zoomLevel, fitZoom, pageLeft, pageTop, isGrid, isZoomedIn };
-
-  // Zoom to `next`, keeping the page point under (ax, ay) where it is. Defaults to the canvas centre.
+  // Zoom to `next`, keeping the page point under (ax, ay) (canvas coordinates) where it is.
+  // Defaults to the centre of what is on screen.
   const zoomTo = useCallback(
     (next: number, ax?: number, ay?: number) => {
-      const { zoomLevel: z, fitZoom: fit, pageLeft: left, pageTop: top } = live.current;
+      const el = scrollRef.current;
+      const { zoomLevel: z, fitZoom: fit } = live.current;
       const target = Math.min(MAX_ZOOM, Math.max(fit, next));
       if (target <= fit + 0.001) {
         setZoomChoice('fit');
-        setPan({ x: 0, y: 0 });
+        pendingScroll.current = { left: 0, top: 0 };
         return;
       }
-      const x = ax ?? viewport.w / 2;
-      const y = ay ?? viewport.h / 2;
-      const px = (x - left) / z;
-      const py = (y - top) / z;
-      const pw = spec.width * target;
-      const ph = spec.height * target;
+      if (!el) return;
+      const x = ax ?? el.clientWidth / 2;
+      const y = ay ?? el.clientHeight / 2;
+      const before = stageSize(z);
+      const after = stageSize(target);
+      // Page point under the cursor, in page units.
+      const px = (el.scrollLeft + x - before.left) / z;
+      const py = (el.scrollTop + y - before.top) / z;
+      pendingScroll.current = { left: after.left + px * target - x, top: after.top + py * target - y };
       setZoomChoice(target);
-      setPan(clampPan(x - px * target - (viewport.w - pw) / 2, y - py * target - (viewport.h - ph) / 2, pw, ph));
     },
-    [viewport.w, viewport.h, spec.width, spec.height, clampPan],
+    [stageSize],
   );
 
   const fitPage = useCallback(() => {
     setZoomChoice('fit');
-    setPan({ x: 0, y: 0 });
+    pendingScroll.current = { left: 0, top: 0 };
   }, []);
+
+  // Apply the scroll position for a zoom change once the new stage size is on screen.
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    const p = pendingScroll.current;
+    if (!el || !p || isGrid) return;
+    pendingScroll.current = null;
+    el.scrollLeft = Math.max(0, p.left);
+    el.scrollTop = Math.max(0, p.top);
+  }, [zoomLevel, isGrid, stage.w, stage.h]);
 
   const handleZoom = (dir: 1 | -1) => {
     if (isGrid) {
@@ -298,22 +311,14 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
     fitPage();
   }, [activePageIndex, isGrid, pageSize, fitPage]);
 
-  // Re-clamp when the canvas is resized so the page never ends up stranded.
-  useLayoutEffect(() => {
-    setPan((p) => {
-      const c = clampPan(p.x, p.y);
-      return c.x === p.x && c.y === p.y ? p : c;
-    });
-  }, [clampPan]);
-
-  // Ctrl/Cmd + scroll and trackpad pinch zoom around the pointer, between framed and 200%.
+  // Ctrl/Cmd + scroll and trackpad pinch (which browsers report as Ctrl + wheel) zoom around the
+  // pointer, between framed and 200%. Every other wheel event is left alone so it scrolls normally.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
-      if (live.current.isGrid) return;
+      if (live.current.isGrid || !(e.ctrlKey || e.metaKey)) return;
       e.preventDefault();
-      if (!(e.ctrlKey || e.metaKey)) return;
       const rect = el.getBoundingClientRect();
       const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
       // A mouse-wheel notch is one big delta: step like the buttons. A pinch sends small deltas: follow them.
@@ -372,20 +377,23 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
     };
   }, [canPan]);
 
-  // Hold Space and drag. Captured before the page sees it, so blocks are not picked up by accident.
+  // Hold Space and drag to scroll (a hand tool for people who know it). Captured before the page sees
+  // it, so blocks are not picked up by accident.
   const onPanPointerDownCapture = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!canPan || e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
-    panRef.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y, id: e.pointerId };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    const el = e.currentTarget;
+    panRef.current = { x: e.clientX, y: e.clientY, sl: el.scrollLeft, st: el.scrollTop, id: e.pointerId };
+    el.setPointerCapture(e.pointerId);
     setPanning(true);
   };
 
   const onPanPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const p = panRef.current;
     if (!p || p.id !== e.pointerId) return;
-    setPan(clampPan(p.px + e.clientX - p.x, p.py + e.clientY - p.y));
+    e.currentTarget.scrollLeft = p.sl - (e.clientX - p.x);
+    e.currentTarget.scrollTop = p.st - (e.clientY - p.y);
   };
 
   const endPan = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -541,7 +549,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
               onClick={() => handleZoom(1)}
               disabled={!isGrid && zoomLevel >= MAX_ZOOM - 0.001}
               className="p-1 text-[#6B5838] hover:text-[#2D2200] rounded disabled:opacity-35 disabled:cursor-default"
-              title={isGrid ? 'Make the pages bigger' : 'Zoom in, up to 200% (Ctrl/Cmd + +)'}
+              title={isGrid ? 'Make the pages bigger' : 'Zoom in, up to 200% (pinch, or Ctrl/Cmd + scroll). Scroll to move around.'}
               aria-label="Zoom in"
             >
               <ZoomIn className="w-3.5 h-3.5" />
@@ -575,8 +583,9 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
         </span>
       </div>
 
-      {/* To-Scale Interactive Viewport Area. In single-page view the page is framed to fill this area and
-          positioned absolutely (centre + pan), so nothing scrolls and the page can never be cut off. */}
+      {/* To-scale canvas. A normal scroll area in both views. In single-page view the page sits centred
+          on a stage that grows with the zoom, so it fits when framed and scrolls when zoomed in. While
+          zoomed in, scrolling past the end does not drag the surrounding website along. */}
       <div
         ref={scrollRef}
         data-canvas="viewport"
@@ -584,8 +593,15 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
         onPointerMove={onPanPointerMove}
         onPointerUp={endPan}
         onPointerCancel={endPan}
-        className={`flex-1 min-h-0 ${isGrid ? 'overflow-auto p-8 flex' : 'overflow-hidden relative select-none'}`}
-        style={isGrid ? undefined : { cursor: panning ? 'grabbing' : canPan ? 'grab' : undefined }}
+        className={`flex-1 min-h-0 ${isGrid ? 'overflow-auto p-8 flex' : 'overflow-auto relative select-none'}`}
+        style={
+          isGrid
+            ? undefined
+            : {
+                cursor: panning ? 'grabbing' : canPan ? 'grab' : undefined,
+                overscrollBehavior: isZoomedIn ? 'contain' : 'auto',
+              }
+        }
       >
         {isGrid ? (
           <div className="m-auto w-full">
@@ -689,8 +705,12 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
           </div>
         ) : (
         <div
-          // The page, framed in the canvas. Its position is the centre plus any Space-drag pan.
-          style={{ width: pageW, height: pageH, left: pageLeft, top: pageTop, visibility: viewport.w ? 'visible' : 'hidden' }}
+          // The stage: what scrolls. The page sits centred on it.
+          style={{ width: stage.w, height: stage.h, visibility: viewport.w ? 'visible' : 'hidden' }}
+          className="relative"
+        >
+        <div
+          style={{ width: pageW, height: pageH, left: stage.left, top: stage.top }}
           className="absolute"
         >
         <div
@@ -739,13 +759,9 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
           </div>
         </div>
         </div>
+        </div>
         )}
       </div>
-      {!isGrid && isZoomedIn && !panning && (
-        <p className="pointer-events-none absolute bottom-3 right-4 whitespace-nowrap text-[11px] font-bold text-white bg-[#2D2200]/85 rounded-full px-3 py-1.5 shadow-sm">
-          Hold Space and drag to move around the page
-        </p>
-      )}
     </div>
   );
 };
