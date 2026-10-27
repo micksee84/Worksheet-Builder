@@ -78,23 +78,23 @@ export const TopBar: React.FC<TopBarProps> = ({
         </button>
 
         {/* Brand Lockup */}
-        <div className="flex flex-col justify-center shrink-0">
-          <h1 className="m-0 leading-none">
-            <picture>
-              <source media="(min-width: 640px)" srcSet={`${import.meta.env.BASE_URL}sb-logo-header.svg`} />
-              <img
-                src={`${import.meta.env.BASE_URL}sb-logo-icon.svg`}
-                alt="Sunshine Brigade"
-                draggable={false}
-                className="h-8 sm:h-7 w-auto select-none"
-                loading="eager"
-              />
-            </picture>
-          </h1>
-          <span className="hidden sm:block text-[10px] font-bold text-[#009BD9] tracking-wider uppercase mt-0.5">
-            Worksheet Builder
+        <h1 className="m-0 flex items-center gap-3 shrink-0 font-normal">
+          <picture className="shrink-0">
+            <source media="(min-width: 640px)" srcSet={`${import.meta.env.BASE_URL}sb-logo-header.svg`} />
+            <img
+              src={`${import.meta.env.BASE_URL}sb-logo-icon.svg`}
+              alt="Sunshine Brigade"
+              draggable={false}
+              className="h-8 sm:h-7 w-auto select-none"
+              loading="eager"
+            />
+          </picture>
+          <span className="hidden lg:block w-[1.5px] h-6 bg-[#2D2200]/20" aria-hidden="true" />
+          {/* App name: Super Joyful ink die-cut (screen header, never under 24px) */}
+          <span className="hidden lg:block ink-die-cut text-[24px] whitespace-nowrap select-none">
+            Worksheet builder
           </span>
-        </div>
+        </h1>
 
         <div className="hidden lg:block w-px h-6 bg-[#E2DEC9] mx-1" />
 
@@ -167,7 +167,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#2D2200] bg-[#FAF8F0] hover:bg-[#F2F2E2] border border-[#E2DEC9] rounded-lg transition-colors whitespace-nowrap"
           title="Start from a ready-made worksheet"
         >
-          <BookOpen className="w-3.5 h-3.5 text-[#009BD9]" />
+          <BookOpen className="w-3.5 h-3.5 text-[#2D2200]" />
           <span className="hidden md:inline">Templates</span>
         </button>
 
@@ -215,7 +215,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 }}
                 className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-[#2D2200] hover:bg-[#FAF8F0] rounded-lg text-left transition-colors"
               >
-                <Download className="w-4 h-4 text-[#009BD9]" />
+                <Download className="w-4 h-4 text-[#2D2200]" />
                 <div>
                   <div>Download Vector PDF</div>
                   <div className="text-[10px] text-[#6B5838] font-normal">

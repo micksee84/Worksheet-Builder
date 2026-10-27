@@ -661,7 +661,7 @@ export default function App() {
         <DragOverlay>
           {draggedBlockDef && (
             <div className="w-64 bg-white border-2 border-[#009BD9] rounded-xl p-3 shadow-2xl opacity-90 select-none pointer-events-none scale-105">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#009BD9]">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B5F45]">
                 {draggedBlockDef.category}
               </span>
               <h4 className="text-sm font-extrabold text-[#2D2200]">

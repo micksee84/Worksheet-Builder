@@ -25,12 +25,12 @@ export const TemplateGalleryModal: React.FC<TemplateGalleryModalProps> = ({
   const templates = getAllTemplates();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2D2200]/50 backdrop-blur-xs animate-in fade-in">
       <div className="bg-white border border-[#E2DEC9] rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Modal Header */}
         <div className="px-6 py-5 border-b border-[#E2DEC9] bg-[#FAF8F0] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#009BD9]/15 flex items-center justify-center text-[#009BD9]">
+            <div className="w-8 h-8 rounded-lg bg-[#F2B800] flex items-center justify-center text-[#2D2200]">
               <BookOpen className="w-4 h-4" />
             </div>
             <div>
@@ -59,10 +59,10 @@ export const TemplateGalleryModal: React.FC<TemplateGalleryModalProps> = ({
             >
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#009BD9]">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#6B5F45]">
                     {tpl.category}
                   </span>
-                  <span className="text-[10px] font-mono text-[#6B5838] bg-white px-2 py-0.5 rounded border border-[#E2DEC9]">
+                  <span className="text-[10px] font-semibold text-[#6B5838] bg-white px-2 py-0.5 rounded border border-[#E2DEC9]">
                     {tpl.worksheet.pages.length} page
                   </span>
                 </div>

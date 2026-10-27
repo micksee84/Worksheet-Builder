@@ -67,7 +67,7 @@ export const BlockSettingsDrawer: React.FC<BlockSettingsDrawerProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2DEC9] bg-[#FAF8F0]">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#009BD9]">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#6B5F45]">
             {blockDef.category} • {slot.size} Slot
           </span>
           <h2 className="text-xl font-extrabold text-[#2D2200] font-sans">
@@ -108,7 +108,7 @@ export const BlockSettingsDrawer: React.FC<BlockSettingsDrawerProps> = ({
                     {field.label}
                   </label>
                   {field.type === 'number' && (
-                    <span className="text-xs font-mono font-bold text-[#009BD9] bg-[#FAF8F0] px-2 py-0.5 rounded">
+                    <span className="text-xs font-bold tabular-nums text-[#2D2200] bg-[#FAF8F0] px-2 py-0.5 rounded-full">
                       {val}
                     </span>
                   )}
@@ -278,7 +278,7 @@ export const BlockSettingsDrawer: React.FC<BlockSettingsDrawerProps> = ({
 
         <button
           onClick={onClose}
-          className="px-5 py-2 text-xs font-bold text-white bg-[#2D2200] hover:bg-black rounded-lg transition-colors"
+          className="px-5 py-2 text-xs font-bold text-white bg-[#2D2200] hover:bg-[#F2B800] hover:text-[#2D2200] rounded-lg transition-colors"
         >
           Done
         </button>

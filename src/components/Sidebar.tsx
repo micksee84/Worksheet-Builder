@@ -155,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile Backdrop */}
       {isOpenOnMobile && (
         <div
-          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          className="fixed inset-0 bg-[#2D2200]/40 z-40 md:hidden"
           onClick={onCloseMobile}
         />
       )}
@@ -238,7 +238,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6">
           <div className="bg-[#FFF9E6] border border-[#F2B800]/30 rounded-xl p-3 text-xs text-[#6B5838] leading-relaxed">
             <span className="font-bold text-[#2D2200]">Tip: </span>
-            Drag an activity onto the page, or tap <Plus className="inline w-3.5 h-3.5 text-[#009BD9]" /> to add it to the next empty space.
+            Drag an activity onto the page, or tap <Plus className="inline w-3.5 h-3.5 text-[#2D2200]" /> to add it to the next empty space.
           </div>
 
           {categories.map((cat) => {
@@ -251,7 +251,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <h3 className="text-xs font-bold uppercase tracking-wider text-[#6B5838]">
                     {CATEGORY_LABELS[cat].label}
                   </h3>
-                  <span className="text-[11px] font-mono text-[#A39C8E]">
+                  <span className="text-[11px] font-semibold tabular-nums text-[#6B5F45]">
                     {catBlocks.length}
                   </span>
                 </div>
@@ -280,7 +280,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   setSearchQuery('');
                   setSelectedTag(null);
                 }}
-                className="mt-2 text-xs font-bold text-[#009BD9] hover:underline"
+                className="mt-2 text-xs font-bold text-[#2D2200] underline hover:text-[#009BD9]"
               >
                 Clear all filters
               </button>

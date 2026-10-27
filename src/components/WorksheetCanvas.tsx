@@ -143,7 +143,7 @@ const DroppableSlotOverlay: React.FC<{
       {/* Drag hover hint */}
       {isOver && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg">
-          <span className="text-xs font-black text-[#009BD9] bg-[#FAF8F0] px-3 py-1.5 rounded-full border border-[#009BD9] shadow-sm">
+          <span className="text-xs font-black text-[#2D2200] bg-[#FAF8F0] px-3 py-1.5 rounded-full border-[1.5px] border-[#2D2200]">
             Drop block here!
           </span>
         </div>
@@ -425,7 +425,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
 
           <button
             onClick={onAddPage}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-[#009BD9] hover:bg-[#FAF8F0] rounded-lg border border-dashed border-[#009BD9] transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-[#2D2200] hover:bg-[#FAF8F0] rounded-lg border border-dashed border-[#009BD9] transition-colors"
             title="Add a new blank page"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -532,7 +532,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
             <span
-              className="text-[11px] font-mono font-bold text-[#2D2200] w-10 text-center"
+              className="text-[11px] font-bold tabular-nums text-[#2D2200] w-10 text-center"
               title={isGrid ? 'Size of the page previews' : 'Current zoom'}
             >
               {Math.round(currentZoom * 100)}%
