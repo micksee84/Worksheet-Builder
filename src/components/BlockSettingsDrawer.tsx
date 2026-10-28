@@ -6,7 +6,7 @@
  * and corner placement.
  */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { BlockInstance, BlockDefinition, CharacterCorner, Slot } from '../types';
 import { CHARACTERS, CharacterId, assetUrl } from '../config/appConfig';
 import { X, Trash2, Sparkles, Smile } from 'lucide-react';
@@ -33,6 +33,33 @@ export const BlockSettingsDrawer: React.FC<BlockSettingsDrawerProps> = ({
   onUpdateCharacter,
   onRemoveBlock,
 }) => {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const visible = Boolean(isOpen && slot && blockDef && instance);
+
+  // Close by clicking or tapping anywhere outside the panel (the page, the canvas, the
+  // sidebar), or by pressing Escape, as well as with Done or the X. Settings save as you
+  // change them, so closing never loses anything. Clicking a placed block is the one
+  // exception: that keeps the panel open and shows that block's settings instead.
+  useEffect(() => {
+    if (!visible) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const panel = panelRef.current;
+      const target = e.target as Element | null;
+      if (!panel || !target || panel.contains(target)) return;
+      if (target.closest?.('[data-opens-settings]')) return;
+      onClose();
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [visible, onClose]);
+
   if (!isOpen || !slot || !blockDef || !instance) return null;
 
   const currentSettings = instance.settings;
@@ -63,7 +90,12 @@ export const BlockSettingsDrawer: React.FC<BlockSettingsDrawerProps> = ({
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white border-l border-[#E2DEC9] shadow-2xl flex flex-col transition-transform duration-200">
+    <div
+      ref={panelRef}
+      role="dialog"
+      aria-label={`${blockDef.displayName} settings`}
+      className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white border-l border-[#E2DEC9] shadow-2xl flex flex-col transition-transform duration-200"
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2DEC9] bg-[#FAF8F0]">
         <div>

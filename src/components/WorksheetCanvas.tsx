@@ -125,6 +125,9 @@ const DroppableSlotOverlay: React.FC<{
     <div
       ref={setNodeRef}
       onClick={onSelect}
+      // Clicking a placed block opens (or switches) its settings, so it doesn't count as
+      // clicking away from the settings panel.
+      data-opens-settings={slot.block ? '' : undefined}
       style={{
         position: 'absolute',
         left: `${x}px`,
@@ -199,7 +202,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
   const [gridZoom, setGridZoom] = useState<number>(DEFAULT_ZOOM.grid);
   const activePage = pages[activePageIndex] || pages[0];
   const spec = PAGE_SPECS[pageSize as keyof typeof PAGE_SPECS] || PAGE_SPECS.letter;
-  const geometries = calculateSlotGeometries(pageSize, activePage.layout);
+  const geometries = calculateSlotGeometries(pageSize, activePage.layout, activePage.showDateName);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const isGrid = viewMode === 'grid';
@@ -610,7 +613,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
             </p>
             <div className="flex flex-wrap gap-6 items-start">
               {pages.map((page, idx) => {
-                const pageGeoms = calculateSlotGeometries(pageSize, page.layout);
+                const pageGeoms = calculateSlotGeometries(pageSize, page.layout, page.showDateName);
                 const isActive = idx === activePageIndex;
                 return (
                   <div key={page.id} className="flex flex-col gap-2 shrink-0">

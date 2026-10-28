@@ -10,6 +10,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 import { createRandom, blockSeed, SeededRandom } from '../utils/seededRandom';
 
 // Dot positions on a 0..1 card, like a dice face
@@ -54,10 +55,11 @@ export const QuickDotsRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
     };
   });
 
-  const paddingX = size === 'quarter' ? 18 : 36;
-  const paddingY = size === 'quarter' ? 26 : 32;
-  const top = paddingY + 6;
-  const rowH = (height - top - paddingY + 14) / rowCount;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
+  const top = sp.contentTop;
+  const rowH = (sp.contentBottom - top) / rowCount;
   const card = Math.min(rowH * 0.8, size === 'quarter' ? 64 : 84);
   const choiceR = Math.min(rowH * 0.3, size === 'quarter' ? 18 : 24);
   const choicesLeft = paddingX + card + (size === 'quarter' ? 16 : 40);
@@ -67,7 +69,7 @@ export const QuickDotsRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
     <g className="quick-dots-block">
       <Instruction
         x={paddingX}
-        y={paddingY - 6}
+        y={sp.instructionY}
         cue="eye"
         size={size}
         text={size === 'quarter' ? 'How many? Circle it.' : 'Look quickly. How many dots? Circle the number.'}

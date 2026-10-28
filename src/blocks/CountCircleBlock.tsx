@@ -12,6 +12,7 @@ import { KidShape, ShapeType } from './svgShapes';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { createRandom, blockSeed } from '../utils/seededRandom';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing, HALF_SPACE } from '../utils/spacing';
 
 export const CountCircleRenderer: React.FC<BlockRenderProps> = ({
   instance,
@@ -22,8 +23,9 @@ export const CountCircleRenderer: React.FC<BlockRenderProps> = ({
   const count = Math.min(10, Math.max(1, Number(instance.settings.count) || 4));
   const shape: ShapeType = instance.settings.shape || 'apples';
 
-  const paddingX = size === 'quarter' ? 20 : 32;
-  const paddingY = size === 'quarter' ? 22 : 30;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
 
   // Three numbers to choose from: the answer plus its neighbours, in a shuffled order
   // (seeded, so the preview and the print match). Never always in the middle.
@@ -35,7 +37,7 @@ export const CountCircleRenderer: React.FC<BlockRenderProps> = ({
 
   // Object display area
   const bottomChoicesHeight = size === 'quarter' ? 56 : 72;
-  const objectsAreaHeight = height - paddingY * 2 - bottomChoicesHeight;
+  const objectsAreaHeight = sp.contentBottom - sp.contentTop - bottomChoicesHeight - HALF_SPACE;
   const usableWidth = width - paddingX * 2;
 
   // Grid layout for objects:
@@ -49,18 +51,18 @@ export const CountCircleRenderer: React.FC<BlockRenderProps> = ({
     const col = i % cols;
     const row = Math.floor(i / cols);
     const cx = paddingX + (col + 0.5) * cellW;
-    const cy = paddingY + 22 + (row + 0.5) * cellH;
+    const cy = sp.contentTop + (row + 0.5) * cellH;
     return { id: i, cx, cy };
   });
 
   // Choices row at bottom
-  const choicesY = height - paddingY - bottomChoicesHeight * 0.45;
+  const choicesY = sp.contentBottom - bottomChoicesHeight / 2;
   const choiceRadius = size === 'quarter' ? 18 : 24;
   const choiceSpacing = usableWidth / (choices.length + 1);
 
   return (
     <g className="count-circle-block">
-      <Instruction x={paddingX} y={paddingY - 6} cue="finger" size={size} text={size === 'quarter' ? 'Count. Circle the number.' : 'Count them with your finger. Circle the number.'} />
+      <Instruction x={paddingX} y={sp.instructionY} cue="finger" size={size} text={size === 'quarter' ? 'Count. Circle the number.' : 'Count them with your finger. Circle the number.'} />
 
       {/* Objects to count */}
       <g className="objects-grid">
@@ -72,9 +74,9 @@ export const CountCircleRenderer: React.FC<BlockRenderProps> = ({
       {/* Divider line before choices */}
       <line
         x1={paddingX + 10}
-        y1={height - bottomChoicesHeight - 8}
+        y1={sp.contentBottom - bottomChoicesHeight}
         x2={width - paddingX - 10}
-        y2={height - bottomChoicesHeight - 8}
+        y2={sp.contentBottom - bottomChoicesHeight}
         stroke="#B6B2A6"
         strokeWidth="1.5"
         strokeDasharray="4,4"

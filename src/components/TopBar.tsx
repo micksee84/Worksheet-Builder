@@ -37,8 +37,6 @@ export interface TopBarAccount {
 }
 
 interface TopBarProps {
-  title: string;
-  onUpdateTitle: (newTitle: string) => void;
   pageSize: PageSizeId;
   onTogglePageSize: (size: PageSizeId) => void;
   canUndo: boolean;
@@ -56,8 +54,6 @@ interface TopBarProps {
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
-  title,
-  onUpdateTitle,
   pageSize,
   onTogglePageSize,
   canUndo,
@@ -83,7 +79,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   return (
     <header className="h-16 bg-white border-b border-[#E2DEC9] px-4 md:px-6 flex items-center justify-between gap-4 shrink-0 relative z-30 select-none">
-      {/* Brand & Worksheet Title */}
+      {/* Brand */}
       <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onToggleMobileSidebar}
@@ -101,30 +97,16 @@ export const TopBar: React.FC<TopBarProps> = ({
               src={`${import.meta.env.BASE_URL}sb-logo-icon.svg`}
               alt="Sunshine Brigade"
               draggable={false}
-              className="h-8 sm:h-7 w-auto select-none"
+              className="h-8 sm:h-[31px] w-auto select-none"
               loading="eager"
             />
           </picture>
           <span className="hidden lg:block w-[1.5px] h-6 bg-[#2D2200]/20" aria-hidden="true" />
-          {/* App name: Super Joyful ink die-cut (screen header, never under 24px) */}
-          <span className="hidden lg:block ink-die-cut text-[24px] whitespace-nowrap select-none">
+          {/* App name: plain Super Joyful in ink, no sticker outline or shadow (never under 24px) */}
+          <span className="hidden lg:block font-joyful font-normal text-[24px] leading-none text-[#2D2200] whitespace-nowrap select-none">
             Worksheet builder
           </span>
         </h1>
-
-        <div className="hidden lg:block w-px h-6 bg-[#E2DEC9] mx-1" />
-
-        {/* Editable Worksheet Title */}
-        <div className="relative flex-1 min-w-[120px] max-w-xs">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => onUpdateTitle(e.target.value)}
-            placeholder="My Worksheet"
-            className="w-full px-2.5 py-1 text-sm font-extrabold text-[#2D2200] hover:bg-[#FAF8F0] focus:bg-white rounded-lg border border-transparent focus:border-[#009BD9] focus:outline-none transition-all truncate"
-            title="Click to rename worksheet"
-          />
-        </div>
       </div>
 
       {/* Middle & Right Actions */}

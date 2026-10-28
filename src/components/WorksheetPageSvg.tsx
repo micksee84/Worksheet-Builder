@@ -10,9 +10,14 @@ import { Page, PageSizeId, BlockInstance, Slot } from '../types';
 import { PAGE_SPECS } from '../config/appConfig';
 import { calculateSlotGeometries, SlotGeometry } from '../utils/layoutPresets';
 import { getBlockById } from '../registry/blockRegistry';
-
-// Ink sticker title size in pt. Super Joyful is never set below 24.
-const TITLE_FONT_SIZE = 26;
+import {
+  pageLayout,
+  TITLE_FONT_SIZE,
+  NAME_FONT_SIZE,
+  FOOTER_FONT_SIZE,
+  RULE_STROKE,
+  FRAME_STROKE,
+} from '../utils/spacing';
 
 interface WorksheetPageSvgProps {
   page: Page;
@@ -34,8 +39,11 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
   isInteractive = true,
 }) => {
   const spec = PAGE_SPECS[pageSize as keyof typeof PAGE_SPECS] || PAGE_SPECS.letter;
-  const { width: pageWidth, height: pageHeight, margin, headerHeight } = spec;
-  const geometries = calculateSlotGeometries(pageSize, page.layout);
+  const { width: pageWidth, height: pageHeight } = spec;
+  const layout = pageLayout(pageSize, page.showDateName);
+  const margin = layout.left;
+  const innerWidth = layout.right - layout.left;
+  const geometries = calculateSlotGeometries(pageSize, page.layout, page.showDateName);
 
   return (
     <svg
@@ -66,7 +74,9 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
       {/* HEADER STRIP                                         */}
       {/* "Name: ______ Date: ______" and Editable Title        */}
       {/* ==================================================== */}
-      <g className="worksheet-header" transform={`translate(${margin}, ${margin})`}>
+      {/* All positions come from pageLayout (utils/spacing): every gap is 0.25 in. Lines use
+          round caps, so they start and end half a stroke in from the margins. */}
+      <g className="worksheet-header" transform={`translate(${margin}, 0)`}>
         {/* Page Title: Ink Style sticker. Built from three layers so it survives PDF export:
             a flat ink shadow (6% down-right), an ink outline (3.2% all round), then white letters. */}
         {(() => {
@@ -74,8 +84,9 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
           const size = TITLE_FONT_SIZE;
           const outline = size * 0.032 * 2; // stroke is centred, so double it to sit 3.2% outside
           const shadow = size * 0.06;
+          const x = outline / 2; // the outline's left edge sits on the margin
           const common = {
-            y: 24,
+            y: layout.titleBaseline,
             fontSize: size,
             fontFamily: 'Super Joyful, Nunito, sans-serif',
             fontWeight: 'normal',
@@ -83,28 +94,27 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
           };
           return (
             <g className="ink-sticker-title">
-              <text {...common} x={shadow} dy={shadow} fill="#2D2200" stroke="#2D2200" strokeWidth={outline} strokeLinejoin="round">
+              <text {...common} x={x + shadow} dy={shadow} fill="#2D2200" stroke="#2D2200" strokeWidth={outline} strokeLinejoin="round">
                 {titleText}
               </text>
-              <text {...common} x={0} fill="#2D2200" stroke="#2D2200" strokeWidth={outline} strokeLinejoin="round">
+              <text {...common} x={x} fill="#2D2200" stroke="#2D2200" strokeWidth={outline} strokeLinejoin="round">
                 {titleText}
               </text>
-              <text {...common} x={0} fill="#FFFFFF">
+              <text {...common} x={x} fill="#FFFFFF">
                 {titleText}
               </text>
             </g>
           );
         })()}
 
-        {/* Name and Date Line */}
-        {page.showDateName && (
-          <g transform="translate(0, 36)">
-            {/* Name label & line */}
+        {/* Name and Date, each with a write-on line on the label's baseline */}
+        {layout.nameBaseline !== null && (
+          <g>
             <text
               x="0"
-              y="16"
+              y={layout.nameBaseline}
               fill="#2D2200"
-              fontSize="13"
+              fontSize={NAME_FONT_SIZE}
               fontWeight="700"
               fontFamily="Nunito, sans-serif"
             >
@@ -112,45 +122,44 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
             </text>
             <line
               x1="46"
-              y1="16"
+              y1={layout.nameBaseline}
               x2="280"
-              y2="16"
+              y2={layout.nameBaseline}
               stroke="#2D2200"
-              strokeWidth="1.5"
+              strokeWidth={RULE_STROKE}
               strokeLinecap="round"
             />
 
-            {/* Date label & line */}
             <text
-              x={pageWidth - margin * 2 - 180}
-              y="16"
+              x={innerWidth - 180}
+              y={layout.nameBaseline}
               fill="#2D2200"
-              fontSize="13"
+              fontSize={NAME_FONT_SIZE}
               fontWeight="700"
               fontFamily="Nunito, sans-serif"
             >
               Date:
             </text>
             <line
-              x1={pageWidth - margin * 2 - 140}
-              y1="16"
-              x2={pageWidth - margin * 2}
-              y2="16"
+              x1={innerWidth - 140}
+              y1={layout.nameBaseline}
+              x2={innerWidth - RULE_STROKE / 2}
+              y2={layout.nameBaseline}
               stroke="#2D2200"
-              strokeWidth="1.5"
+              strokeWidth={RULE_STROKE}
               strokeLinecap="round"
             />
           </g>
         )}
 
-        {/* Header bottom separator line */}
+        {/* Header rule: 0.25 in under the header, 0.25 in above the activities */}
         <line
-          x1="0"
-          y1={headerHeight - margin * 0.75}
-          x2={pageWidth - margin * 2}
-          y2={headerHeight - margin * 0.75}
+          x1={RULE_STROKE / 2}
+          y1={layout.headerRuleY}
+          x2={innerWidth - RULE_STROKE / 2}
+          y2={layout.headerRuleY}
           stroke="#2D2200"
-          strokeWidth="1.5"
+          strokeWidth={RULE_STROKE}
           strokeLinecap="round"
         />
       </g>
@@ -192,7 +201,7 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
                 ry="12"
                 fill="#FFFFFF"
                 stroke={isSelected ? '#009BD9' : hasBlock ? '#2D2200' : '#B6B2A6'}
-                strokeWidth={isSelected ? '3' : hasBlock ? '2.25' : '1.5'}
+                strokeWidth={isSelected ? 3 : hasBlock ? FRAME_STROKE : 1.5}
                 strokeDasharray={hasBlock ? 'none' : '6,6'}
               />
 
@@ -283,22 +292,24 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
         })}
       </g>
 
-      {/* Page footer: Ink Style. Rule above, tagline left, site and page number right. */}
-      <g transform={`translate(${margin}, ${pageHeight - margin + 6})`}>
+      {/* Page footer: Ink Style. Rule 0.25 in under the activities (matching the header rule
+          above them), then the tagline left and the page number right, 0.25 in from the
+          bottom edge. */}
+      <g transform={`translate(${margin}, 0)`}>
         <line
-          x1="0"
-          y1="0"
-          x2={pageWidth - margin * 2}
-          y2="0"
+          x1={RULE_STROKE / 2}
+          y1={layout.footerRuleY}
+          x2={innerWidth - RULE_STROKE / 2}
+          y2={layout.footerRuleY}
           stroke="#2D2200"
-          strokeWidth="1.5"
+          strokeWidth={RULE_STROKE}
           strokeLinecap="round"
         />
         <text
           x="0"
-          y="14"
+          y={layout.footerBaseline}
           fill="#2D2200"
-          fontSize="9"
+          fontSize={FOOTER_FONT_SIZE}
           fontWeight="700"
           letterSpacing="0.18"
           fontFamily="Nunito, sans-serif"
@@ -306,16 +317,16 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
           Learn. Wonder. Shine.
         </text>
         <text
-          x={pageWidth - margin * 2}
-          y="14"
+          x={innerWidth}
+          y={layout.footerBaseline}
           textAnchor="end"
           fill="#2D2200"
-          fontSize="9"
+          fontSize={FOOTER_FONT_SIZE}
           fontWeight="700"
           letterSpacing="0.18"
           fontFamily="Nunito, sans-serif"
         >
-          sunshinebrigade.ca · Free for home and classroom use · Page {pageIndex + 1}
+          Page {pageIndex + 1}
         </text>
       </g>
     </svg>

@@ -10,6 +10,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 import { createRandom, blockSeed } from '../utils/seededRandom';
 
 type HuntShape = 'circle' | 'triangle' | 'square' | 'star' | 'heart';
@@ -62,11 +63,12 @@ export const ShapeHuntRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
   const total = Math.max(5, Math.round(baseCount * areaScale));
   const rand = createRandom(blockSeed(instance.instanceId, s));
 
-  const paddingX = size === 'quarter' ? 16 : 30;
-  const paddingY = size === 'quarter' ? 26 : 32;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
   const countRowH = size === 'quarter' ? 34 : 44;
-  const areaTop = paddingY + 8;
-  const areaBottom = height - paddingY + 10 - countRowH;
+  const areaTop = sp.contentTop;
+  const areaBottom = sp.contentBottom - countRowH;
   const areaLeft = paddingX;
   const areaRight = width - paddingX;
   const r = size === 'quarter' ? 15 : 20;
@@ -97,9 +99,9 @@ export const ShapeHuntRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
 
   return (
     <g className="shape-hunt-block">
-      <Instruction x={paddingX} y={paddingY - 6} cue="crayon" size={size} text={instruction} />
+      <Instruction x={paddingX} y={sp.instructionY} cue="crayon" size={size} text={instruction} />
       {/* The key: what to look for */}
-      {shapePath(target, keyX, paddingY - 6 - fontSize * 0.35, fontSize * 0.7, 0)}
+      {shapePath(target, keyX, sp.instructionY - fontSize * 0.35, fontSize * 0.7, 0)}
 
       {placed.map((p, i) => (
         <g key={i}>{shapePath(p.shape, p.cx, p.cy, p.r, p.rot)}</g>

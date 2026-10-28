@@ -67,7 +67,14 @@ export async function exportWorksheetToPdf(
       });
     }
 
-    const cleanTitle = worksheet.title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+    // Name the file after the first page's title (what's printed on the sheet), e.g.
+    // "Lines and letters" -> lines_and_letters.pdf.
+    const firstTitle = worksheet.pages.find((p) => p.title?.trim())?.title ?? '';
+    const cleanTitle = firstTitle
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
     const fileName = options.fileName || `${cleanTitle || 'sunshine_worksheet'}.pdf`;
 
     pdf.save(fileName);

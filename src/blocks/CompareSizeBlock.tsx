@@ -11,6 +11,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
 import { createRandom, blockSeed } from '../utils/seededRandom';
 
@@ -69,10 +70,11 @@ export const CompareSizeRenderer: React.FC<BlockRenderProps> = ({ instance, size
   // Sizes as a share of the biggest. Two items: a clear difference. Three: closer together.
   const scales = itemCount === 2 ? [1, 0.5] : [1, 0.72, 0.46];
 
-  const paddingX = size === 'quarter' ? 16 : 34;
-  const paddingY = size === 'quarter' ? 26 : 32;
-  const top = paddingY + 6;
-  const rowH = (height - top - paddingY + 14) / rowCount;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
+  const top = sp.contentTop;
+  const rowH = (sp.contentBottom - top) / rowCount;
   const usableW = width - paddingX * 2;
   const colW = usableW / itemCount;
   const maxItem = Math.min(colW * 0.86, rowH * 0.84);
@@ -83,7 +85,7 @@ export const CompareSizeRenderer: React.FC<BlockRenderProps> = ({ instance, size
     <g className="compare-size-block">
       <Instruction
         x={paddingX}
-        y={paddingY - 6}
+        y={sp.instructionY}
         cue="circle"
         size={size}
         text={size === 'quarter' ? QUESTIONS[question].short : QUESTIONS[question].text}

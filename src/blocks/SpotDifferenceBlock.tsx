@@ -12,6 +12,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
 import { KidShape } from './svgShapes';
 import { createRandom, blockSeed } from '../utils/seededRandom';
@@ -64,11 +65,12 @@ export const SpotDifferenceRenderer: React.FC<BlockRenderProps> = ({ instance, s
     if (kind === 'swapped') swaps.set(idx, swapFor(items[idx].name));
   });
 
-  const paddingX = size === 'quarter' ? 14 : 28;
-  const paddingY = size === 'quarter' ? 26 : 32;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
   const tallyH = size === 'quarter' ? 30 : 40;
-  const areaTop = paddingY + 8;
-  const areaH = height - areaTop - paddingY + 12 - tallyH;
+  const areaTop = sp.contentTop;
+  const areaH = sp.contentBottom - areaTop - tallyH;
   const areaW = width - paddingX * 2;
   // Side by side when there is room, otherwise one above the other
   const sideBySide = areaW / 2 >= areaH * 0.8;
@@ -102,7 +104,7 @@ export const SpotDifferenceRenderer: React.FC<BlockRenderProps> = ({ instance, s
     <g className="spot-difference-block">
       <Instruction
         x={paddingX}
-        y={paddingY - 6}
+        y={sp.instructionY}
         cue="eye"
         size={size}
         text={size === 'quarter' ? `Find ${differences} changes.` : `Find ${differences} things that are different. Circle them.`}
@@ -111,7 +113,7 @@ export const SpotDifferenceRenderer: React.FC<BlockRenderProps> = ({ instance, s
       {drawPanel(1)}
       {/* Colour a star for each difference found */}
       {Array.from({ length: differences }).map((_, i) => (
-        <KidShape key={i} type="stars" cx={paddingX + starSize / 2 + i * (starSize + 8)} cy={height - paddingY + 12 - tallyH / 2} size={starSize} />
+        <KidShape key={i} type="stars" cx={paddingX + starSize / 2 + i * (starSize + 8)} cy={sp.contentBottom - tallyH / 2} size={starSize} />
       ))}
       <CharacterCorner config={instance.character} blockWidth={width} blockHeight={height} />
     </g>

@@ -12,6 +12,7 @@ import { BlockDefinition, BlockRenderProps } from '../types';
 import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 
 export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
   instance,
@@ -23,15 +24,16 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
   const lowerLetter = letter.toLowerCase();
   const caseMode: 'both' | 'upper' | 'lower' = instance.settings.caseMode || 'both';
 
-  const paddingX = size === 'quarter' ? 24 : 36;
-  const paddingY = size === 'quarter' ? 28 : 36;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
 
   // Decide row count based on block size
   const defaultRows = size === 'full' ? 4 : 2;
   const rows = defaultRows;
 
-  const usableHeight = height - paddingY * 2;
-  const rowSpacing = usableHeight / (rows + 0.2);
+  const usableHeight = sp.contentBottom - sp.contentTop;
+  const rowSpacing = usableHeight / rows;
   const guideLineHeight = Math.min(54, Math.max(34, rowSpacing * 0.7));
 
   // Determine what each row displays
@@ -48,7 +50,8 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
     }
     return {
       id: idx,
-      y: paddingY + idx * rowSpacing + 12,
+      // Centre each row's guide lines (and descender line, if any) in its share of the space
+      y: sp.contentTop + idx * rowSpacing + (rowSpacing - guideLineHeight * (['g', 'j', 'p', 'q', 'y'].includes(lowerLetter) ? 1.35 : 1)) / 2,
       text: textToDisplay,
     };
   });
@@ -67,7 +70,7 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
 
   return (
     <g className="letter-tracing-block">
-      <Instruction x={paddingX} y={paddingY - 8} cue="pencil" size={size} text={size === 'quarter' ? `Trace the letter ${letter}.` : `Trace the letter ${letter}. Start at the dot.`} />
+      <Instruction x={paddingX} y={sp.instructionY} cue="pencil" size={size} text={size === 'quarter' ? `Trace the letter ${letter}.` : `Trace the letter ${letter}. Start at the dot.`} />
 
       {rowConfigs.map((row) => (
         <g key={row.id}>

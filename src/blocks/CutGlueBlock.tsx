@@ -10,6 +10,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
 import { createRandom, blockSeed } from '../utils/seededRandom';
 
@@ -58,12 +59,13 @@ export const CutGlueRenderer: React.FC<BlockRenderProps> = ({ instance, size, wi
   // Make sure the shadows are not in the same order as the pieces
   if (glueOrder.every((p, i) => p === chosen[i])) glueOrder.push(glueOrder.shift() as string);
 
-  const paddingX = size === 'quarter' ? 16 : 28;
-  const paddingY = size === 'quarter' ? 26 : 32;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
   const usableW = width - paddingX * 2;
   const gap = size === 'quarter' ? 10 : 16;
-  const areaTop = paddingY + 8;
-  const areaH = height - areaTop - paddingY + 12;
+  const areaTop = sp.contentTop;
+  const areaH = sp.contentBottom - areaTop;
   const box = Math.min((usableW - gap * (pieces - 1)) / pieces, (areaH - 28) / 2);
   const rowW = box * pieces + gap * (pieces - 1);
   const startX = paddingX + (usableW - rowW) / 2;
@@ -74,7 +76,7 @@ export const CutGlueRenderer: React.FC<BlockRenderProps> = ({ instance, size, wi
     <g className="cut-glue-block">
       <Instruction
         x={paddingX}
-        y={paddingY - 6}
+        y={sp.instructionY}
         cue="scissors"
         size={size}
         text={size === 'quarter' ? 'Cut and glue on the shadow.' : 'Cut out each picture. Glue it on its shadow.'}

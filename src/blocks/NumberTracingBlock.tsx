@@ -12,6 +12,7 @@ import { BlockDefinition, BlockRenderProps } from '../types';
 import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing, HALF_SPACE } from '../utils/spacing';
 import { KidShape, ShapeType } from './svgShapes';
 
 export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
@@ -23,16 +24,19 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
   const num = Math.min(10, Math.max(0, Number.isFinite(Number(instance.settings.number)) ? Number(instance.settings.number) : 5));
   const shape: ShapeType = instance.settings.shape || 'stars';
 
-  const paddingX = size === 'quarter' ? 22 : 36;
-  const paddingY = size === 'quarter' ? 24 : 32;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
 
   // Split block vertically:
   // Top section: Left = large numeral (solid & dashed) | Right = objects to count and colour
   // Bottom section: handwriting line with repeated dashed numbers
+  // The practice line sits at the bottom; numerals and shapes fill the space above it.
   const isQuarter = size === 'quarter';
-  const topSectionHeight = height * (isQuarter ? 0.6 : 0.65);
-  const bottomSectionY = topSectionHeight + paddingY * 0.4;
-  const bottomSectionHeight = height - bottomSectionY - paddingY;
+  const practiceLineHeight = Math.min(42, (sp.contentBottom - sp.contentTop) * 0.3);
+  const bottomSectionY = sp.contentBottom - practiceLineHeight;
+  const bottomSectionHeight = practiceLineHeight / 0.7;
+  const topSectionHeight = bottomSectionY - HALF_SPACE - sp.contentTop; // height of the band above
 
   // Big numerals: size and spacing scale with the number of digits, so "10"
   // never overlaps its traced copy or the shapes beside it.
@@ -48,7 +52,7 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
   const itemsAreaX = Math.max(isQuarter ? width * 0.44 : width * 0.38, numeralsRight + 14);
   const itemsAreaWidth = width - itemsAreaX - paddingX;
   // Shapes stay inside the top section, clear of the practice line below
-  const itemsAreaHeight = topSectionHeight - paddingY - 28 - 8;
+  const itemsAreaHeight = topSectionHeight;
 
   const cols = Math.min(5, Math.max(2, Math.ceil(num / 2)));
   const rows = Math.max(1, Math.ceil(num / cols));
@@ -58,7 +62,7 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
     const colIdx = i % cols;
     const rowIdx = Math.floor(i / cols);
     const cx = itemsAreaX + (colIdx + 0.5) * (itemsAreaWidth / cols);
-    const cy = paddingY + 28 + (rowIdx + 0.5) * (itemsAreaHeight / rows);
+    const cy = sp.contentTop + (rowIdx + 0.5) * (itemsAreaHeight / rows);
     return { id: i, cx, cy };
   });
 
@@ -69,14 +73,14 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
 
   return (
     <g className="number-tracing-block">
-      <Instruction x={paddingX} y={paddingY - 6} cue="crayon" size={size} text={`Count, colour and trace ${num}.`} />
+      <Instruction x={paddingX} y={sp.instructionY} cue="crayon" size={size} text={`Count, colour and trace ${num}.`} />
 
       {/* Left side: Large Numeral model + large dashed trace */}
       <g className="large-numerals">
         {/* Solid reference numeral */}
         <text
           x={solidNumeralX}
-          y={topSectionHeight * 0.72}
+          y={sp.contentTop + (topSectionHeight + bigFontSize * 0.71) / 2}
           textAnchor="middle"
           fill="#2D2200"
           fontFamily="Nunito, sans-serif"
@@ -90,7 +94,7 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
         <g>
           <text
             x={tracedNumeralX}
-            y={topSectionHeight * 0.72}
+            y={sp.contentTop + (topSectionHeight + bigFontSize * 0.71) / 2}
             textAnchor="middle"
             fill="#B6B2A6"
             fontFamily="Nunito, sans-serif"
@@ -107,7 +111,7 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
         {num === 0 ? (
           <text
             x={itemsAreaX + itemsAreaWidth * 0.5}
-            y={paddingY + itemsAreaHeight * 0.5}
+            y={sp.contentTop + itemsAreaHeight * 0.5}
             textAnchor="middle"
             fill="#2D2200"
             fontSize="14"
