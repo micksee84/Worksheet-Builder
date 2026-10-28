@@ -499,14 +499,6 @@ export default function App() {
     [updateWorksheet]
   );
 
-  // Change worksheet title
-  const handleUpdateTitle = useCallback(
-    (title: string) => {
-      updateWorksheet((prev) => ({ ...prev, title }));
-    },
-    [updateWorksheet]
-  );
-
   // Change page size (Letter / A4)
   const handleTogglePageSize = useCallback(
     (newSize: PageSizeId) => {
@@ -589,8 +581,6 @@ export default function App() {
         <div id="app-interactive-shell" className="flex flex-col h-full w-full">
           {/* Top Bar */}
           <TopBar
-            title={worksheet.title}
-            onUpdateTitle={handleUpdateTitle}
             pageSize={worksheet.pageSize}
             onTogglePageSize={handleTogglePageSize}
             canUndo={history.length > 0}

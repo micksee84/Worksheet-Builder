@@ -24,8 +24,6 @@ import {
 } from 'lucide-react';
 
 interface TopBarProps {
-  title: string;
-  onUpdateTitle: (newTitle: string) => void;
   pageSize: PageSizeId;
   onTogglePageSize: (size: PageSizeId) => void;
   canUndo: boolean;
@@ -41,8 +39,6 @@ interface TopBarProps {
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
-  title,
-  onUpdateTitle,
   pageSize,
   onTogglePageSize,
   canUndo,
@@ -67,7 +63,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   return (
     <header className="h-16 bg-white border-b border-[#E2DEC9] px-4 md:px-6 flex items-center justify-between gap-4 shrink-0 relative z-30 select-none">
-      {/* Brand & Worksheet Title */}
+      {/* Brand */}
       <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onToggleMobileSidebar}
@@ -95,20 +91,6 @@ export const TopBar: React.FC<TopBarProps> = ({
             Worksheet builder
           </span>
         </h1>
-
-        <div className="hidden lg:block w-px h-6 bg-[#E2DEC9] mx-1" />
-
-        {/* Editable Worksheet Title */}
-        <div className="relative flex-1 min-w-[120px] max-w-xs">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => onUpdateTitle(e.target.value)}
-            placeholder="My Worksheet"
-            className="w-full px-2.5 py-1 text-sm font-extrabold text-[#2D2200] hover:bg-[#FAF8F0] focus:bg-white rounded-lg border border-transparent focus:border-[#009BD9] focus:outline-none transition-all truncate"
-            title="Click to rename worksheet"
-          />
-        </div>
       </div>
 
       {/* Middle & Right Actions */}
