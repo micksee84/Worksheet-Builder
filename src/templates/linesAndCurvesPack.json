@@ -1,0 +1,328 @@
+{
+  "id": "template-lines-and-curves-pack",
+  "title": "Lines and curves",
+  "pageSize": "letter",
+  "createdAt": 1730100000000,
+  "updatedAt": 1730100000000,
+  "pages": [
+    {
+      "id": "page-1",
+      "title": "Straight lines",
+      "layout": "2-half",
+      "showDateName": true,
+      "slots": [
+        {
+          "id": "slot-1",
+          "size": "half",
+          "label": "Top Half",
+          "block": {
+            "instanceId": "inst-lc-1-1",
+            "blockId": "trace-path",
+            "settings": {
+              "pathStyle": "straight",
+              "pathCount": 2,
+              "pair": "bee-flower"
+            },
+            "character": {
+              "id": "finn",
+              "corner": "top-right"
+            }
+          }
+        },
+        {
+          "id": "slot-2",
+          "size": "half",
+          "label": "Bottom Half",
+          "block": {
+            "instanceId": "inst-lc-1-2",
+            "blockId": "line-tracing",
+            "settings": {
+              "lineStyle": "straight",
+              "lineCount": 3
+            },
+            "character": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "page-2",
+      "title": "Gentle waves",
+      "layout": "2-half",
+      "showDateName": true,
+      "slots": [
+        {
+          "id": "slot-1",
+          "size": "half",
+          "label": "Top Half",
+          "block": {
+            "instanceId": "inst-lc-2-1",
+            "blockId": "trace-path",
+            "settings": {
+              "pathStyle": "wave",
+              "pathCount": 2,
+              "pair": "bird-nest"
+            },
+            "character": {
+              "id": "finn",
+              "corner": "top-right"
+            }
+          }
+        },
+        {
+          "id": "slot-2",
+          "size": "half",
+          "label": "Bottom Half",
+          "block": {
+            "instanceId": "inst-lc-2-2",
+            "blockId": "line-tracing",
+            "settings": {
+              "lineStyle": "wave",
+              "lineCount": 3
+            },
+            "character": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "page-3",
+      "title": "Zigzag mountains",
+      "layout": "2-half",
+      "showDateName": true,
+      "slots": [
+        {
+          "id": "slot-1",
+          "size": "half",
+          "label": "Top Half",
+          "block": {
+            "instanceId": "inst-lc-3-1",
+            "blockId": "line-tracing",
+            "settings": {
+              "lineStyle": "zigzag",
+              "lineCount": 4
+            },
+            "character": null
+          }
+        },
+        {
+          "id": "slot-2",
+          "size": "half",
+          "label": "Bottom Half",
+          "block": {
+            "instanceId": "inst-lc-3-2",
+            "blockId": "trace-path",
+            "settings": {
+              "pathStyle": "zigzag",
+              "pathCount": 3,
+              "pair": "dog-bone"
+            },
+            "character": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "page-4",
+      "title": "Up and down steps",
+      "layout": "2-half",
+      "showDateName": true,
+      "slots": [
+        {
+          "id": "slot-1",
+          "size": "half",
+          "label": "Top Half",
+          "block": {
+            "instanceId": "inst-lc-4-1",
+            "blockId": "line-tracing",
+            "settings": {
+              "lineStyle": "castle",
+              "lineCount": 4
+            },
+            "character": null
+          }
+        },
+        {
+          "id": "slot-2",
+          "size": "half",
+          "label": "Bottom Half",
+          "block": {
+            "instanceId": "inst-lc-4-2",
+            "blockId": "trace-path",
+            "settings": {
+              "pathStyle": "wave",
+              "pathCount": 3,
+              "pair": "cat-house"
+            },
+            "character": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "page-5",
+      "title": "Waves and zigzags",
+      "layout": "4-quarter",
+      "showDateName": true,
+      "slots": [
+        {
+          "id": "slot-1",
+          "size": "quarter",
+          "label": "Top Left",
+          "block": {
+            "instanceId": "inst-lc-5-1",
+            "blockId": "line-tracing",
+            "settings": {
+              "lineStyle": "wave",
+              "lineCount": 3
+            },
+            "character": null
+          }
+        },
+        {
+          "id": "slot-2",
+          "size": "quarter",
+          "label": "Top Right",
+          "block": {
+            "instanceId": "inst-lc-5-2",
+            "blockId": "line-tracing",
+            "settings": {
+              "lineStyle": "zigzag",
+              "lineCount": 3
+            },
+            "character": null
+          }
+        },
+        {
+          "id": "slot-3",
+          "size": "quarter",
+          "label": "Bottom Left",
+          "block": {
+            "instanceId": "inst-lc-5-3",
+            "blockId": "trace-path",
+            "settings": {
+              "pathStyle": "straight",
+              "pathCount": 2,
+              "pair": "boat-fish"
+            },
+            "character": null
+          }
+        },
+        {
+          "id": "slot-4",
+          "size": "quarter",
+          "label": "Bottom Right",
+          "block": {
+            "instanceId": "inst-lc-5-4",
+            "blockId": "trace-path",
+            "settings": {
+              "pathStyle": "zigzag",
+              "pathCount": 2,
+              "pair": "bee-flower"
+            },
+            "character": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "page-6",
+      "title": "Loop the loops",
+      "layout": "2-half",
+      "showDateName": true,
+      "slots": [
+        {
+          "id": "slot-1",
+          "size": "half",
+          "label": "Top Half",
+          "block": {
+            "instanceId": "inst-lc-6-1",
+            "blockId": "line-tracing",
+            "settings": {
+              "lineStyle": "loops",
+              "lineCount": 4
+            },
+            "character": null
+          }
+        },
+        {
+          "id": "slot-2",
+          "size": "half",
+          "label": "Bottom Half",
+          "block": {
+            "instanceId": "inst-lc-6-2",
+            "blockId": "trace-path",
+            "settings": {
+              "pathStyle": "loops",
+              "pathCount": 2,
+              "pair": "bird-nest"
+            },
+            "character": {
+              "id": "finn",
+              "corner": "top-right"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "page-7",
+      "title": "All the lines",
+      "layout": "2-half",
+      "showDateName": true,
+      "slots": [
+        {
+          "id": "slot-1",
+          "size": "half",
+          "label": "Top Half",
+          "block": {
+            "instanceId": "inst-lc-7-1",
+            "blockId": "line-tracing",
+            "settings": {
+              "lineStyle": "mixed",
+              "lineCount": 5
+            },
+            "character": null
+          }
+        },
+        {
+          "id": "slot-2",
+          "size": "half",
+          "label": "Bottom Half",
+          "block": {
+            "instanceId": "inst-lc-7-2",
+            "blockId": "trace-path",
+            "settings": {
+              "pathStyle": "mixed",
+              "pathCount": 3,
+              "pair": "mixed"
+            },
+            "character": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "page-8",
+      "title": "I did it!",
+      "layout": "1-full",
+      "showDateName": true,
+      "slots": [
+        {
+          "id": "slot-1",
+          "size": "full",
+          "label": "Full Page",
+          "block": {
+            "instanceId": "inst-lc-8-1",
+            "blockId": "draw-and-write",
+            "settings": {
+              "prompt": "You traced every line. Draw your favourite one, big and bold. Then write your name.",
+              "writingLinesCount": 1
+            },
+            "character": null
+          }
+        }
+      ]
+    }
+  ]
+}

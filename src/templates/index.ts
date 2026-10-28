@@ -7,6 +7,7 @@ import { Worksheet } from '../types';
 import tracingLinesJson from './tracingLinesWarmUp.json';
 import letterAPracticeJson from './letterAPractice.json';
 import countingTo5Json from './countingTo5.json';
+import linesAndCurvesPackJson from './linesAndCurvesPack.json';
 
 export interface TemplateItem {
   id: string;
@@ -18,6 +19,14 @@ export interface TemplateItem {
 }
 
 export const PREMADE_TEMPLATES: TemplateItem[] = [
+  {
+    id: 'lines-and-curves-pack',
+    title: 'Lines and curves',
+    description: 'Eight pages of pre-writing practice with Finn the fox, from straight lines to loops, plus an "I did it!" page.',
+    category: 'Pre-writing',
+    tags: ['pre-writing', 'fine motor', 'free pack', 'ages 3-5'],
+    worksheet: linesAndCurvesPackJson as unknown as Worksheet,
+  },
   {
     id: 'tracing-lines-warm-up',
     title: 'Tracing Lines Warm-Up',
