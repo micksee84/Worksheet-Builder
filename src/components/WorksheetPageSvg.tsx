@@ -293,7 +293,7 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
       </g>
 
       {/* Page footer: Ink Style. Rule 0.25 in under the activities (matching the header rule
-          above them), then the tagline left and site and page number right, 0.25 in from the
+          above them), then the tagline left and the page number right, 0.25 in from the
           bottom edge. */}
       <g transform={`translate(${margin}, 0)`}>
         <line
@@ -326,7 +326,7 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
           letterSpacing="0.18"
           fontFamily="Nunito, sans-serif"
         >
-          sunshinebrigade.ca · Free for home and classroom use · Page {pageIndex + 1}
+          Page {pageIndex + 1}
         </text>
       </g>
     </svg>
