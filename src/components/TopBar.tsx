@@ -90,8 +90,8 @@ export const TopBar: React.FC<TopBarProps> = ({
             />
           </picture>
           <span className="hidden lg:block w-[1.5px] h-6 bg-[#2D2200]/20" aria-hidden="true" />
-          {/* App name: Super Joyful ink die-cut (screen header, never under 24px) */}
-          <span className="hidden lg:block ink-die-cut text-[24px] whitespace-nowrap select-none">
+          {/* App name: plain Super Joyful in ink, no sticker outline or shadow (never under 24px) */}
+          <span className="hidden lg:block font-joyful font-normal text-[24px] leading-none text-[#2D2200] whitespace-nowrap select-none">
             Worksheet builder
           </span>
         </h1>
