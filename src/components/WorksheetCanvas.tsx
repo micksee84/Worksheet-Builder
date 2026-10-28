@@ -125,6 +125,9 @@ const DroppableSlotOverlay: React.FC<{
     <div
       ref={setNodeRef}
       onClick={onSelect}
+      // Clicking a placed block opens (or switches) its settings, so it doesn't count as
+      // clicking away from the settings panel.
+      data-opens-settings={slot.block ? '' : undefined}
       style={{
         position: 'absolute',
         left: `${x}px`,
