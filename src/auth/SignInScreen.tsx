@@ -32,6 +32,45 @@ export const SignInScreen: React.FC = () => {
     if (step === 'code') codeInputRef.current?.focus();
   }, [step]);
 
+  // Arriving from the sign-up page on sunshinebrigade.ca: the address ends in
+  // #signup=<email>. Fill the email in, clear it from the address bar, and send the code
+  // straight away so the grown-up only has to type the code. The email rides in the #hash,
+  // which browsers never send to a server.
+  const handoffDone = useRef(false);
+  useEffect(() => {
+    if (handoffDone.current) return;
+    handoffDone.current = true;
+    const match = window.location.hash.match(/(?:^#|&)signup=([^&]+)/);
+    if (!match) return;
+    let handedEmail = '';
+    try {
+      handedEmail = decodeURIComponent(match[1]).trim();
+    } catch {
+      return;
+    }
+    try {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    } catch {
+      /* address bar stays as it was; nothing else depends on it */
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(handedEmail)) {
+      setEmail(handedEmail);
+      return;
+    }
+    setEmail(handedEmail);
+    setBusy(true);
+    sendSignInEmail(handedEmail).then(({ error: err }) => {
+      setBusy(false);
+      if (err) {
+        setError(err);
+        return;
+      }
+      setStep('code');
+      setCode('');
+      setCooldown(RESEND_SECONDS);
+    });
+  }, [sendSignInEmail]);
+
   const handleSendEmail = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (busy) return;
@@ -81,8 +120,8 @@ export const SignInScreen: React.FC = () => {
           {step === 'email' ? (
             <>
               <p className="text-[17px] leading-relaxed font-medium mb-8 max-w-[44ch]">
-                Sign in to build worksheets and find them again on any device. It is free for
-                every family, always.
+                Sign in to build worksheets and find them again on any device. Your first 8
+                pages each month are free.
               </p>
 
               <form onSubmit={handleSendEmail} noValidate className="space-y-5">
