@@ -168,14 +168,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Top Header */}
         <div className="p-4 border-b border-[#E2DEC9] bg-white">
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-[#F2B800] flex items-center justify-center font-bold text-xs text-[#2D2200]">
-                SB
-              </span>
-              <h2 className="text-base font-extrabold text-[#2D2200] font-sans">
-                Activity Blocks
-              </h2>
-            </div>
+            <h2 className="text-base font-extrabold text-[#2D2200] font-sans">
+              Activity Blocks
+            </h2>
             <button
               onClick={onCloseMobile}
               title="Close the activity list"
