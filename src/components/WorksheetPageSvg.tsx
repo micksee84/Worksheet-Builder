@@ -143,12 +143,14 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
           </g>
         )}
 
-        {/* Header bottom separator line */}
+        {/* Header bottom separator line. Activities start at headerHeight + 10 (see
+            layoutPresets); the rule sits 14px above that, so it clears the activity frame's
+            3px border and the Name/Date line by about 12px each. */}
         <line
           x1="0"
-          y1={headerHeight - margin * 0.75}
+          y1={headerHeight + 10 - margin - 14}
           x2={pageWidth - margin * 2}
-          y2={headerHeight - margin * 0.75}
+          y2={headerHeight + 10 - margin - 14}
           stroke="#2D2200"
           strokeWidth="1.5"
           strokeLinecap="round"
