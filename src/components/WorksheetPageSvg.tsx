@@ -152,16 +152,8 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
           </g>
         )}
 
-        {/* Header rule: 0.25 in under the header, 0.25 in above the activities */}
-        <line
-          x1={RULE_STROKE / 2}
-          y1={layout.headerRuleY}
-          x2={innerWidth - RULE_STROKE / 2}
-          y2={layout.headerRuleY}
-          stroke="#2D2200"
-          strokeWidth={RULE_STROKE}
-          strokeLinecap="round"
-        />
+        {/* No rule under the header: it sat too close to the Name and Date line. The space it
+            used (layout.headerRuleY) is kept, so activities stay where they were. */}
       </g>
 
       {/* ==================================================== */}
