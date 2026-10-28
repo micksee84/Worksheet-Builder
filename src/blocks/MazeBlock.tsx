@@ -11,6 +11,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
 import { createRandom, blockSeed, SeededRandom } from '../utils/seededRandom';
 
@@ -68,10 +69,11 @@ export const MazeRenderer: React.FC<BlockRenderProps> = ({ instance, size, width
   const pair = PAIRS[s.pair] || PAIRS['bee-flower'];
   const rand = createRandom(blockSeed(instance.instanceId, s));
 
-  const paddingX = size === 'quarter' ? 12 : 24;
-  const paddingY = size === 'quarter' ? 26 : 32;
-  const areaTop = paddingY + 10;
-  const areaH = height - areaTop - paddingY + 10;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
+  const areaTop = sp.contentTop;
+  const areaH = sp.contentBottom - areaTop;
   const picSize = size === 'quarter' ? 34 : 50;
   const areaW = width - paddingX * 2 - picSize * 2 - 12;
 
@@ -104,7 +106,7 @@ export const MazeRenderer: React.FC<BlockRenderProps> = ({ instance, size, width
     <g className="maze-block">
       <Instruction
         x={paddingX}
-        y={paddingY - 6}
+        y={sp.instructionY}
         cue="pencil"
         size={size}
         text={size === 'quarter' ? 'Find the way through.' : `Help the ${pair[0]} find the way to the ${pair[1]}.`}

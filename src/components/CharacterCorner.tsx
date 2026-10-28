@@ -10,6 +10,7 @@
 import React, { useState } from 'react';
 import { BlockCharacterConfig } from '../types';
 import { CHARACTERS, assetUrl } from '../config/appConfig';
+import { SPACE, FRAME_STROKE } from '../utils/spacing';
 
 interface CharacterCornerProps {
   config?: BlockCharacterConfig | null;
@@ -34,7 +35,8 @@ export const CharacterCorner: React.FC<CharacterCornerProps> = ({
   };
 
   const badgeSize = Math.min(52, Math.max(38, Math.min(blockWidth, blockHeight) * 0.18));
-  const padding = 10;
+  // Same inset as everything else inside an activity box (0.25 in from the frame)
+  const padding = SPACE + FRAME_STROKE / 2;
 
   let x = padding;
   let y = padding;

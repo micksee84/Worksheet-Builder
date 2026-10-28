@@ -11,6 +11,7 @@ import { BlockDefinition, BlockRenderProps } from '../types';
 import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing, SPACE } from '../utils/spacing';
 
 export const DrawWriteRenderer: React.FC<BlockRenderProps> = ({
   instance,
@@ -22,23 +23,26 @@ export const DrawWriteRenderer: React.FC<BlockRenderProps> = ({
   const requestedLines = Number(instance.settings.writingLinesCount) || (size === 'quarter' ? 1 : 2);
   const writingLinesCount = Math.min(size === 'quarter' ? 2 : 3, Math.max(1, requestedLines));
 
-  const paddingX = size === 'quarter' ? 20 : 32;
-  const paddingY = size === 'quarter' ? 22 : 30;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
 
   const usableWidth = width - paddingX * 2;
-  const usableHeight = height - paddingY * 2;
 
-  // Split space: prompt header -> drawing area -> writing lines area
-  const promptHeight = 22;
-  const writingAreaHeight = writingLinesCount * (size === 'quarter' ? 36 : 46);
-  const drawingBoxHeight = Math.max(50, usableHeight - promptHeight - writingAreaHeight - 16);
-  const drawingBoxY = paddingY + promptHeight + 4;
-  const writingStartY = drawingBoxY + drawingBoxHeight + 16;
+  // Prompt, then the drawing box, then the writing lines (0.25 in apart), filling the frame.
   const lineHeight = size === 'quarter' ? 26 : 32;
+  const lineStep = size === 'quarter' ? 34 : 44;
+  const writingAreaHeight = writingLinesCount > 0 ? (writingLinesCount - 1) * lineStep + lineHeight : 0;
+  const drawingBoxY = sp.contentTop;
+  const drawingBoxHeight = Math.max(
+    50,
+    sp.contentBottom - sp.contentTop - (writingLinesCount > 0 ? writingAreaHeight + SPACE : 0),
+  );
+  const writingStartY = drawingBoxY + drawingBoxHeight + SPACE;
 
   return (
     <g className="draw-and-write-block">
-      <Instruction x={paddingX} y={paddingY + 12} cue="crayon" size={size} text={prompt} maxWidth={usableWidth} />
+      <Instruction x={paddingX} y={sp.instructionY} cue="crayon" size={size} text={prompt} maxWidth={usableWidth} />
 
       {/* Empty Bordered Drawing Box */}
       <rect
@@ -70,7 +74,7 @@ export const DrawWriteRenderer: React.FC<BlockRenderProps> = ({
       {/* Writing lines below */}
       <g className="writing-lines-container">
         {Array.from({ length: writingLinesCount }).map((_, idx) => {
-          const y = writingStartY + idx * (size === 'quarter' ? 34 : 44);
+          const y = writingStartY + idx * lineStep;
           return (
             <HandwritingGuideLines
               key={idx}

@@ -11,6 +11,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
 import { createRandom, blockSeed } from '../utils/seededRandom';
 
@@ -56,11 +57,12 @@ export const SortItRenderer: React.FC<BlockRenderProps> = ({ instance, size, wid
   }
   const items = rand.shuffle(picked);
 
-  const paddingX = size === 'quarter' ? 14 : 30;
-  const paddingY = size === 'quarter' ? 26 : 32;
-  const top = paddingY + 6;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
+  const top = sp.contentTop;
   const usableW = width - paddingX * 2;
-  const usableH = height - top - paddingY + 12;
+  const usableH = sp.contentBottom - top;
   const perRow = items.length > 4 && size !== 'full' ? Math.ceil(items.length / 2) : items.length;
   const itemRows = Math.ceil(items.length / perRow);
   const itemsH = usableH * 0.5;
@@ -77,7 +79,7 @@ export const SortItRenderer: React.FC<BlockRenderProps> = ({ instance, size, wid
     <g className="sort-it-block">
       <Instruction
         x={paddingX}
-        y={paddingY - 6}
+        y={sp.instructionY}
         cue="line"
         size={size}
         text={size === 'quarter' ? 'Where does it go?' : 'Draw a line from each picture to where it belongs.'}

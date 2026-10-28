@@ -11,6 +11,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 import { Picture, PICTURES } from './pictures';
 import { createRandom, blockSeed } from '../utils/seededRandom';
 
@@ -63,10 +64,11 @@ export const BeginningSoundsRenderer: React.FC<BlockRenderProps> = ({ instance, 
     return { target, sound, choices: rand.shuffle([match, ...others]) };
   });
 
-  const paddingX = size === 'quarter' ? 16 : 30;
-  const paddingY = size === 'quarter' ? 26 : 32;
-  const top = paddingY + 6;
-  const rowH = (height - top - paddingY + 14) / rowCount;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
+  const top = sp.contentTop;
+  const rowH = (sp.contentBottom - top) / rowCount;
   const picSize = Math.min(rowH * 0.72, size === 'quarter' ? 52 : 70);
   const choiceR = Math.min(rowH * 0.32, size === 'quarter' ? 20 : 26);
   const choicesLeft = paddingX + picSize + (size === 'quarter' ? 18 : 40);
@@ -77,7 +79,7 @@ export const BeginningSoundsRenderer: React.FC<BlockRenderProps> = ({ instance, 
     <g className="beginning-sounds-block">
       <Instruction
         x={paddingX}
-        y={paddingY - 6}
+        y={sp.instructionY}
         cue="talk"
         size={size}
         text={

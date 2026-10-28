@@ -10,6 +10,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
 import { createRandom, blockSeed } from '../utils/seededRandom';
 
@@ -37,10 +38,11 @@ export const RhymeMatchRenderer: React.FC<BlockRenderProps> = ({ instance, size,
     right = rand.shuffle(right);
   }
 
-  const paddingX = size === 'quarter' ? 18 : 40;
-  const paddingY = size === 'quarter' ? 26 : 32;
-  const top = paddingY + 6;
-  const rowH = (height - top - paddingY + 14) / pairCount;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
+  const top = sp.contentTop;
+  const rowH = (sp.contentBottom - top) / pairCount;
   const picSize = Math.min(rowH * 0.72, size === 'quarter' ? 54 : 74);
   const leftX = paddingX + picSize / 2;
   const rightX = width - paddingX - picSize / 2;
@@ -49,7 +51,7 @@ export const RhymeMatchRenderer: React.FC<BlockRenderProps> = ({ instance, size,
     <g className="rhyme-match-block">
       <Instruction
         x={paddingX}
-        y={paddingY - 6}
+        y={sp.instructionY}
         cue="line"
         size={size}
         text={size === 'quarter' ? 'Match the rhymes.' : 'Say the names. Draw a line between the ones that rhyme.'}

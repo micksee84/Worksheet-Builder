@@ -14,6 +14,7 @@ import { BlockDefinition, BlockRenderProps } from '../types';
 import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 
 export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
   instance,
@@ -27,11 +28,12 @@ export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
     Math.max(1, Number(instance.settings.repeatCount) || (size === 'quarter' ? 2 : 3))
   );
 
-  const paddingX = size === 'quarter' ? 24 : 36;
-  const paddingY = size === 'quarter' ? 28 : 36;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
 
   const usableWidth = width - paddingX * 2;
-  const usableHeight = height - paddingY * 2;
+  const usableHeight = sp.contentBottom - sp.contentTop;
   const rowHeight = usableHeight / repeatCount;
   const guideLineHeight = Math.min(50, Math.max(30, rowHeight * 0.65));
 
@@ -60,13 +62,15 @@ export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
 
   const rows = Array.from({ length: repeatCount }, (_, idx) => {
     const isModel = idx === 0 && showModel;
-    const y = paddingY + idx * rowHeight + 10;
+    // Centre each row's guide lines (and descender line, if any) in its share of the space
+    const rowExtent = guideLineHeight * (/[gjpqy]/.test(rawText.toLowerCase()) ? 1.35 : 1);
+    const y = sp.contentTop + idx * rowHeight + (rowHeight - rowExtent) / 2;
     return { idx, y, isModel };
   });
 
   return (
     <g className="word-tracing-block">
-      <Instruction x={paddingX} y={paddingY - 8} cue="pencil" size={size} text={instruction} />
+      <Instruction x={paddingX} y={sp.instructionY} cue="pencil" size={size} text={instruction} />
 
       {rows.map(({ idx, y, isModel }) => {
         const textY = y + guideLineHeight - 4;

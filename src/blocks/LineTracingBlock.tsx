@@ -11,6 +11,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 
 export type LineStyle = 'straight' | 'wave' | 'zigzag' | 'loops' | 'castle';
 
@@ -97,17 +98,18 @@ export const LineTracingRenderer: React.FC<BlockRenderProps> = ({
   const requestedLines = Number(instance.settings.lineCount) || (size === 'quarter' ? 3 : 4);
   const lineCount = Math.min(6, Math.max(2, requestedLines));
 
-  const paddingX = size === 'quarter' ? 24 : 36;
-  const paddingY = size === 'quarter' ? 24 : 32;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
 
   const startX = paddingX + 16;
   const endX = width - paddingX - 16;
-  const usableHeight = height - paddingY * 2;
-  const lineSpacing = usableHeight / (lineCount + 1);
+  const usableHeight = sp.contentBottom - sp.contentTop;
+  const lineSpacing = usableHeight / lineCount;
   const amplitude = Math.min(18, Math.max(10, lineSpacing * 0.35));
 
   const lines = Array.from({ length: lineCount }, (_, idx) => {
-    const y = paddingY + lineSpacing * (idx + 1);
+    const y = sp.contentTop + lineSpacing * (idx + 0.5);
     // If 'mixed' is selected or based on index, we can also alternate styles!
     const effectiveStyle =
       instance.settings.lineStyle === 'mixed'
@@ -123,7 +125,7 @@ export const LineTracingRenderer: React.FC<BlockRenderProps> = ({
 
   return (
     <g className="line-tracing-block">
-      <Instruction x={paddingX} y={paddingY - 6} cue="pencil" size={size} text={size === 'quarter' ? 'Follow the dashes to the star.' : 'Start at the big dot. Follow the dashes to the star.'} />
+      <Instruction x={paddingX} y={sp.instructionY} cue="pencil" size={size} text={size === 'quarter' ? 'Follow the dashes to the star.' : 'Start at the big dot. Follow the dashes to the star.'} />
 
       {/* Render each tracing line */}
       {lines.map((line) => (

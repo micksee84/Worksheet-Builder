@@ -10,6 +10,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
 import { generateLinePath, LineStyle } from './LineTracingBlock';
 
@@ -30,10 +31,11 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
   const pathStyle: string = s.pathStyle || 'wave';
   const pairKey: string = s.pair || 'bee-flower';
 
-  const paddingX = size === 'quarter' ? 18 : 30;
-  const paddingY = size === 'quarter' ? 26 : 32;
-  const top = paddingY + 10;
-  const rowH = (height - top - paddingY + 10) / pathCount;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
+  const top = sp.contentTop;
+  const rowH = (sp.contentBottom - top) / pathCount;
   const picSize = Math.min(rowH * 0.62, size === 'quarter' ? 44 : 64);
 
   const rows = Array.from({ length: pathCount }, (_, i) => {
@@ -50,7 +52,7 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
     <g className="trace-path-block">
       <Instruction
         x={paddingX}
-        y={paddingY - 6}
+        y={sp.instructionY}
         cue="pencil"
         size={size}
         text={size === 'quarter' ? 'Help them get home.' : 'Start at the dot. Follow the dashes to help them get home.'}

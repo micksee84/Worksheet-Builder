@@ -11,6 +11,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 import { KidShape, ShapeType } from './svgShapes';
 import { Picture } from './pictures';
 import { createRandom, blockSeed } from '../utils/seededRandom';
@@ -43,10 +44,11 @@ export const PatternNextRenderer: React.FC<BlockRenderProps> = ({ instance, size
     return { key, sequence: Array.from({ length: shown }, (_, j) => items[unit[j % unit.length]]) };
   });
 
-  const paddingX = size === 'quarter' ? 14 : 30;
-  const paddingY = size === 'quarter' ? 26 : 32;
-  const top = paddingY + 6;
-  const rowH = (height - top - paddingY + 14) / rowCount;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
+  const top = sp.contentTop;
+  const rowH = (sp.contentBottom - top) / rowCount;
   const cellW = (width - paddingX * 2) / cells;
   const itemSize = Math.min(cellW * 0.78, rowH * 0.6, 54);
 
@@ -54,7 +56,7 @@ export const PatternNextRenderer: React.FC<BlockRenderProps> = ({ instance, size
     <g className="pattern-next-block">
       <Instruction
         x={paddingX}
-        y={paddingY - 6}
+        y={sp.instructionY}
         cue="pencil"
         size={size}
         text={size === 'quarter' ? 'What comes next? Draw it.' : 'Say the pattern out loud. Draw what comes next.'}

@@ -51,7 +51,8 @@ export const DONATION_CONFIG = {
 
 // ==========================================
 // WORKSHEET PAGE DIMENSIONS (SVG / PDF UNITS)
-// Standard 72 DPI points: US Letter = 612x792, A4 = 595x842
+// Standard 72 DPI points: US Letter = 612x792, A4 = 595x842.
+// Margins and every other gap on the page come from utils/spacing.ts (0.25 in).
 // ==========================================
 
 export const PAGE_SPECS = {
@@ -60,16 +61,12 @@ export const PAGE_SPECS = {
     displayName: 'US Letter (8.5 × 11 in)',
     width: 612,
     height: 792,
-    headerHeight: 100,
-    margin: 32,
   },
   a4: {
     id: 'a4',
     displayName: 'A4 (210 × 297 mm)',
     width: 595,
     height: 842,
-    headerHeight: 100,
-    margin: 32,
   },
 } as const;
 

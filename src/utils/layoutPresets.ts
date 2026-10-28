@@ -5,7 +5,7 @@
  */
 
 import { PageLayoutPreset, Slot, PageSizeId } from '../types';
-import { PAGE_SPECS } from '../config/appConfig';
+import { pageLayout, SPACE, FRAME_STROKE } from './spacing';
 
 export interface SlotGeometry {
   slotId: string;
@@ -76,16 +76,19 @@ export function createSlotsForPreset(preset: PageLayoutPreset): Slot[] {
  */
 export function calculateSlotGeometries(
   pageSizeId: PageSizeId,
-  preset: PageLayoutPreset
+  preset: PageLayoutPreset,
+  showDateName = true
 ): Record<string, SlotGeometry> {
-  const spec = PAGE_SPECS[pageSizeId as keyof typeof PAGE_SPECS] || PAGE_SPECS.letter;
-  const { width: pageWidth, height: pageHeight, headerHeight, margin } = spec;
-
-  const contentX = margin;
-  const contentY = headerHeight + 10;
-  const contentWidth = pageWidth - margin * 2;
-  const contentHeight = pageHeight - contentY - margin;
-  const gap = 14;
+  // Box rectangles are positioned by their stroke centre, so each one is pulled in by half
+  // the border. That puts the outside of every border exactly on the page's spacing lines:
+  // SPACE from the page edges and rules, and SPACE between neighbouring boxes.
+  const layout = pageLayout(pageSizeId, showDateName);
+  const halfFrame = FRAME_STROKE / 2;
+  const contentX = layout.left + halfFrame;
+  const contentY = layout.contentTop;
+  const contentWidth = layout.right - layout.left - FRAME_STROKE;
+  const contentHeight = layout.contentBottom - layout.contentTop;
+  const gap = SPACE + FRAME_STROKE;
 
   const geometries: Record<string, SlotGeometry> = {};
 

@@ -14,6 +14,7 @@ import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
+import { blockSpacing } from '../utils/spacing';
 
 type Feeling = 'happy' | 'sad' | 'angry' | 'scared' | 'surprised' | 'calm';
 
@@ -124,11 +125,12 @@ export const FeelingsRenderer: React.FC<BlockRenderProps> = ({ instance, size, w
   const showDraw = s.showDraw !== false;
   const showWords = s.showWords !== false;
 
-  const paddingX = size === 'quarter' ? 14 : 30;
-  const paddingY = size === 'quarter' ? 26 : 32;
-  const top = paddingY + 8;
+  // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
+  const sp = blockSpacing(size, height);
+  const paddingX = sp.padX;
+  const top = sp.contentTop;
   const usableW = width - paddingX * 2;
-  const usableH = height - top - paddingY + 12;
+  const usableH = sp.contentBottom - top;
   const perRow = size === 'quarter' && count === 4 ? 2 : count;
   const faceRows = Math.ceil(count / perRow);
   const facesH = showDraw ? usableH * (faceRows > 1 ? 0.62 : 0.42) : usableH;
@@ -143,7 +145,7 @@ export const FeelingsRenderer: React.FC<BlockRenderProps> = ({ instance, size, w
     <g className="feelings-block">
       <Instruction
         x={paddingX}
-        y={paddingY - 6}
+        y={sp.instructionY}
         cue="circle"
         size={size}
         text={size === 'quarter' ? 'How do you feel today?' : 'How do you feel today? Circle a face.'}
