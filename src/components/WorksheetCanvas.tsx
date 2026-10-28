@@ -4,7 +4,7 @@
  * Features:
  * - Live to-scale preview of current page
  * - Layout selector for active page (1-full, 2-half, 4-quarter, etc.)
- * - Page tabs (add, delete, reorder, switch)
+ * - Phone-only page stepper (the pages panel does this on larger screens)
  * - @dnd-kit useDroppable drop zones over slots
  * - Quick action overlay over active slot
  */
@@ -416,32 +416,47 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
     <div className="flex-1 flex flex-col min-w-0 bg-[#EAE6D6] overflow-hidden relative">
       {/* Canvas Top Bar Controls: Page Tabs, Layout Selector, Title Edit */}
       <div className="px-6 py-2.5 bg-white border-b border-[#E2DEC9] flex flex-wrap items-center justify-between gap-3 shrink-0">
-        {/* Left: Page navigation tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto">
-          {pages.map((p, idx) => (
-            <button
-              key={p.id}
-              onClick={() => onSelectPageIndex(idx)}
-              title={`Go to page ${idx + 1}${p.title ? `: ${p.title}` : ''}`}
-              className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
-                idx === activePageIndex
-                  ? 'bg-[#2D2200] text-white shadow-xs'
-                  : 'bg-[#FAF8F0] text-[#6B5838] hover:text-[#2D2200] hover:bg-[#F2F2E2]'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              Page {idx + 1}
-            </button>
-          ))}
-
+        {/* Left: on phones, where the pages panel is hidden, step through pages here */}
+        <div className="flex md:hidden items-center gap-1">
+          <button
+            onClick={() => onSelectPageIndex(activePageIndex - 1)}
+            disabled={activePageIndex === 0}
+            className="p-1.5 text-[#6B5838] hover:text-[#2D2200] disabled:opacity-30 rounded"
+            title="Previous page"
+            aria-label="Previous page"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-xs font-bold tabular-nums text-[#2D2200] whitespace-nowrap">
+            Page {activePageIndex + 1} of {pages.length}
+          </span>
+          <button
+            onClick={() => onSelectPageIndex(activePageIndex + 1)}
+            disabled={activePageIndex === pages.length - 1}
+            className="p-1.5 text-[#6B5838] hover:text-[#2D2200] disabled:opacity-30 rounded"
+            title="Next page"
+            aria-label="Next page"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
           <button
             onClick={onAddPage}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-[#2D2200] hover:bg-[#FAF8F0] rounded-lg border border-dashed border-[#009BD9] transition-colors"
-            title="Add a new blank page"
+            className="ml-1 p-1.5 text-[#009BD9] border border-dashed border-[#009BD9] rounded-lg"
+            title="Add a new page"
+            aria-label="Add a new page"
           >
             <Plus className="w-3.5 h-3.5" />
-            Add Page
           </button>
+          {pages.length > 1 && (
+            <button
+              onClick={() => onDeletePage(activePageIndex)}
+              className="p-1.5 text-[#E52311] hover:bg-red-50 rounded"
+              title="Delete this page"
+              aria-label="Delete this page"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         {/* Center: Page Layout Grid Picker */}
@@ -478,34 +493,6 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
 
         {/* Right: Zoom controls & Page Actions */}
         <div className="flex items-center gap-2">
-          {pages.length > 1 && (
-            <div className="flex items-center gap-1 mr-2 border-r border-[#E2DEC9] pr-2">
-              <button
-                onClick={() => onMovePage(activePageIndex, activePageIndex - 1)}
-                disabled={activePageIndex === 0}
-                className="p-1.5 text-[#6B5838] hover:text-[#2D2200] disabled:opacity-30 rounded"
-                title="Move this page earlier"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => onMovePage(activePageIndex, activePageIndex + 1)}
-                disabled={activePageIndex === pages.length - 1}
-                className="p-1.5 text-[#6B5838] hover:text-[#2D2200] disabled:opacity-30 rounded"
-                title="Move this page later"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => onDeletePage(activePageIndex)}
-                className="p-1.5 text-[#E52311] hover:bg-red-50 rounded"
-                title="Delete this page"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-
           {/* View toggle: one page at a time, or every page side by side */}
           <div
             role="group"

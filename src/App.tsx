@@ -52,6 +52,7 @@ import { TemplateItem, getTemplateById } from './templates';
 import { TopBar } from './components/TopBar';
 import { Sidebar } from './components/Sidebar';
 import { WorksheetCanvas } from './components/WorksheetCanvas';
+import { PagesPanel } from './components/PagesPanel';
 import { BlockSettingsDrawer } from './components/BlockSettingsDrawer';
 import { TemplateGalleryModal } from './components/TemplateGalleryModal';
 import { DonationToast } from './components/DonationToast';
@@ -256,12 +257,13 @@ export default function App() {
   const selectedSlot = activePage.slots.find((s) => s.id === selectedSlotRef?.slotId) || null;
   const selectedBlockDef = selectedSlot?.block ? getBlockById(selectedSlot.block.blockId) || null : null;
 
-  // Add block to first empty slot on the active page.
+  // Add a block to the first empty slot on a page.
   // If the page is full, never overwrite an activity: start a new page right after it.
-  const handleAddBlockToActivePage = useCallback(
-    (blockId: string) => {
+  // Either way the page that receives the block is the one shown.
+  const addBlockToPage = useCallback(
+    (targetIdx: number, blockId: string) => {
       const current = worksheetRef.current;
-      const pageIdx = Math.min(activePageIndex, current.pages.length - 1);
+      const pageIdx = Math.max(0, Math.min(targetIdx, current.pages.length - 1));
       const page = current.pages[pageIdx];
       const emptySlot = page.slots.find((s) => s.block === null);
 
@@ -279,6 +281,7 @@ export default function App() {
                 }
           ),
         }));
+        setActivePageIndex(pageIdx);
         trackEvent('block_added', { blockId, pageIndex: pageIdx });
       } else {
         const slots = createSlotsForPreset(page.layout);
@@ -299,11 +302,18 @@ export default function App() {
         trackEvent('page_added', { pageCount: current.pages.length + 1 });
         trackEvent('block_added', { blockId, pageIndex: pageIdx + 1 });
       }
+    },
+    [updateWorksheet]
+  );
 
+  // Tap + in the library: add to the page that is open.
+  const handleAddBlockToActivePage = useCallback(
+    (blockId: string) => {
+      addBlockToPage(activePageIndex, blockId);
       // Close mobile drawer if open
       setIsMobileSidebarOpen(false);
     },
-    [activePageIndex, updateWorksheet]
+    [activePageIndex, addBlockToPage]
   );
 
   // DnD Handlers
@@ -325,6 +335,13 @@ export default function App() {
 
     const overData = over.data.current;
     const activeData = active.data.current;
+
+    // Dropped on a page in the pages panel: goes in that page's next empty space.
+    if (overData && overData.type === 'page-thumb' && activeData && activeData.type === 'library-block') {
+      const idx = worksheetRef.current.pages.findIndex((p) => p.id === overData.pageId);
+      if (idx !== -1) addBlockToPage(idx, activeData.blockId);
+      return;
+    }
 
     if (overData && overData.type === 'slot-target' && activeData && activeData.type === 'library-block') {
       const { pageId, slotId } = overData;
@@ -493,6 +510,39 @@ export default function App() {
       setActivePageIndex(toIndex);
     },
     [updateWorksheet, worksheet.pages.length]
+  );
+
+  // Duplicate a page and put the copy right after it. Every activity gets its own new id,
+  // so changing the copy never changes the original.
+  const handleDuplicatePage = useCallback(
+    (pageIdx: number) => {
+      const source = worksheetRef.current.pages[pageIdx];
+      if (!source) return;
+      const stamp = Date.now();
+      const copy: Page = {
+        ...(JSON.parse(JSON.stringify(source)) as Page),
+        id: `page_${stamp}`,
+      };
+      copy.slots = copy.slots.map((s, i) =>
+        s.block
+          ? {
+              ...s,
+              block: {
+                ...s.block,
+                instanceId: `inst_${stamp}_${i}_${Math.random().toString(36).slice(2, 7)}`,
+              },
+            }
+          : s
+      );
+      updateWorksheet((prev) => {
+        const pages = [...prev.pages];
+        pages.splice(pageIdx + 1, 0, copy);
+        return { ...prev, pages };
+      });
+      setActivePageIndex(pageIdx + 1);
+      trackEvent('page_added', { pageCount: worksheetRef.current.pages.length + 1 });
+    },
+    [updateWorksheet]
   );
 
   // Change page layout preset.
@@ -670,6 +720,18 @@ export default function App() {
               onAddBlock={handleAddBlockToActivePage}
               isOpenOnMobile={isMobileSidebarOpen}
               onCloseMobile={() => setIsMobileSidebarOpen(false)}
+            />
+
+            {/* Pages panel: every page, top to bottom */}
+            <PagesPanel
+              pages={worksheet.pages}
+              activePageIndex={activePageIndex}
+              pageSize={worksheet.pageSize}
+              onSelectPageIndex={setActivePageIndex}
+              onAddPage={handleAddPage}
+              onDuplicatePage={handleDuplicatePage}
+              onDeletePage={handleDeletePage}
+              onMovePage={handleMovePage}
             />
 
             {/* Central Canvas Preview */}
