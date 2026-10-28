@@ -7,6 +7,93 @@
   --font-joyful: 'Super Joyful', 'Nunito', sans-serif;
 }
 
+/* Ink die-cut: Super Joyful screen headers (24-36px). Ink letters, a white ring at
+   3.2% and a flat ink shadow at about 7%, per the Ink Style guide. */
+.ink-die-cut {
+  font-family: var(--font-joyful);
+  font-weight: 400;
+  line-height: 1.1;
+  padding-right: 0.1em;
+  color: #2D2200;
+  text-shadow:
+    0.032em 0 0 #FFFFFF, -0.032em 0 0 #FFFFFF, 0 0.032em 0 #FFFFFF, 0 -0.032em 0 #FFFFFF,
+    0.023em 0.023em 0 #FFFFFF, -0.023em 0.023em 0 #FFFFFF, 0.023em -0.023em 0 #FFFFFF, -0.023em -0.023em 0 #FFFFFF,
+    0.07em 0.07em 0 #2D2200, 0.09em 0.07em 0 #2D2200, 0.07em 0.09em 0 #2D2200, 0.09em 0.09em 0 #2D2200;
+}
+
+/* Ink sticker: one page or screen title (56px and up). Paper-white letters, ink outline
+   at 3.2% and a flat ink shadow at 6%, per the Ink Style guide. */
+.ink-sticker {
+  font-family: var(--font-joyful);
+  font-weight: 400;
+  line-height: 1.1;
+  padding-right: 0.1em;
+  color: #FFFFFF;
+  text-shadow:
+    0.032em 0 0 #2D2200, -0.032em 0 0 #2D2200, 0 0.032em 0 #2D2200, 0 -0.032em 0 #2D2200,
+    0.023em 0.023em 0 #2D2200, -0.023em 0.023em 0 #2D2200, 0.023em -0.023em 0 #2D2200, -0.023em -0.023em 0 #2D2200,
+    0.06em 0.06em 0 #2D2200, 0.092em 0.06em 0 #2D2200, 0.06em 0.092em 0 #2D2200, 0.085em 0.085em 0 #2D2200;
+}
+
+/* ===== Sign-in and account UI (Ink Style). Tweak sizes and spacing here. ===== */
+.sb-input {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 18px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2D2200;
+  background: #FFFFFF;
+  border: 3px solid #2D2200;
+  border-radius: 20px;
+  outline: none;
+}
+.sb-input::placeholder { color: #B6B2A6; }
+.sb-input:focus-visible { outline: 3px solid #2D2200; outline-offset: 4px; }
+.sb-input-code { font-size: 26px; letter-spacing: 0.3em; max-width: 280px; }
+
+.sb-btn-primary,
+.sb-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 9999px;
+  font-weight: 800;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  cursor: pointer;
+}
+.sb-btn-primary {
+  min-height: 56px;
+  padding: 0 28px;
+  font-size: 17px;
+  color: #FFFFFF;
+  background: #2D2200;
+  border: 3px solid #2D2200;
+}
+.sb-btn-secondary {
+  min-height: 44px;
+  padding: 0 18px;
+  font-size: 15px;
+  color: #2D2200;
+  background: #FFFFFF;
+  border: 1.5px solid #2D2200;
+  box-shadow: 3px 3px 0 #2D2200;
+}
+.sb-btn-primary:hover:not(:disabled),
+.sb-btn-secondary:hover:not(:disabled) { transform: translate(-1px, -1px); }
+.sb-btn-secondary:hover:not(:disabled) { box-shadow: 4px 4px 0 #2D2200; }
+.sb-btn-primary:active:not(:disabled),
+.sb-btn-secondary:active:not(:disabled) { transform: translate(1px, 1px); box-shadow: 2px 2px 0 #2D2200; }
+.sb-btn-primary:focus-visible,
+.sb-btn-secondary:focus-visible { outline: 3px solid #2D2200; outline-offset: 4px; }
+.sb-btn-primary:disabled,
+.sb-btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-btn-primary, .sb-btn-secondary { transition: none; }
+}
+
 @layer base {
   body {
     font-family: 'Nunito', system-ui, -apple-system, sans-serif;

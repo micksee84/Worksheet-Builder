@@ -21,7 +21,20 @@ import {
   BookOpen,
   Menu,
   Check,
+  FolderOpen,
+  Cloud,
+  CloudOff,
+  LogOut,
+  UserRound,
 } from 'lucide-react';
+import type { SyncStatus } from '../auth/useAccountSync';
+
+export interface TopBarAccount {
+  email: string;
+  syncStatus: SyncStatus;
+  onOpenMyWorksheets: () => void;
+  onSignOut: () => void;
+}
 
 interface TopBarProps {
   pageSize: PageSizeId;
@@ -36,6 +49,8 @@ interface TopBarProps {
   onPrintNative: () => void;
   onToggleMobileSidebar: () => void;
   isExportingPdf: boolean;
+  /** Present when a grown-up is signed in. */
+  account?: TopBarAccount | null;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -51,6 +66,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onPrintNative,
   onToggleMobileSidebar,
   isExportingPdf,
+  account,
 }) => {
   const [copied, setCopied] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -143,6 +159,9 @@ export const TopBar: React.FC<TopBarProps> = ({
           </button>
         </div>
 
+        {/* Account: save status, my worksheets, sign out */}
+        {account && <AccountMenu account={account} />}
+
         {/* Templates Gallery Button */}
         <button
           onClick={onOpenTemplates}
@@ -226,5 +245,76 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
       </div>
     </header>
+  );
+};
+
+const SYNC_LABEL: Record<SyncStatus, string> = {
+  off: '',
+  idle: 'Saved to your account',
+  saving: 'Saving...',
+  saved: 'Saved to your account',
+  error: 'Not saved yet. It will try again on your next change.',
+};
+
+const AccountMenu: React.FC<{ account: TopBarAccount }> = ({ account }) => {
+  const [open, setOpen] = useState(false);
+  const { syncStatus } = account;
+  const SyncIcon = syncStatus === 'error' ? CloudOff : Cloud;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title={SYNC_LABEL[syncStatus] || 'Your account'}
+        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#2D2200] bg-[#FAF8F0] hover:bg-[#F2F2E2] border border-[#E2DEC9] rounded-lg transition-colors whitespace-nowrap"
+      >
+        <SyncIcon
+          className={`w-3.5 h-3.5 ${syncStatus === 'saving' ? 'motion-safe:animate-pulse' : ''}`}
+          aria-hidden="true"
+        />
+        <span className="hidden md:inline">My worksheets</span>
+        <span className="sr-only">{SYNC_LABEL[syncStatus]}</span>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-[#E2DEC9] p-2 z-50 space-y-1"
+          onMouseLeave={() => setOpen(false)}
+        >
+          <div className="px-3 py-2 flex items-center gap-2 text-xs text-[#6B5838]">
+            <UserRound className="w-4 h-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">{account.email}</span>
+          </div>
+          <p className="px-3 pb-2 text-[11px] text-[#6B5838] border-b border-[#E2DEC9]">
+            {SYNC_LABEL[syncStatus]}
+          </p>
+          <button
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              account.onOpenMyWorksheets();
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-[#2D2200] hover:bg-[#FAF8F0] rounded-lg text-left transition-colors"
+          >
+            <FolderOpen className="w-4 h-4" aria-hidden="true" />
+            Open my worksheets
+          </button>
+          <button
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              account.onSignOut();
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-[#2D2200] hover:bg-[#FAF8F0] rounded-lg text-left transition-colors"
+          >
+            <LogOut className="w-4 h-4" aria-hidden="true" />
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
   );
 };

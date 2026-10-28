@@ -35,7 +35,11 @@ import { createSlotsForPreset } from './utils/layoutPresets';
 import {
   saveWorksheetToStorage,
   loadWorksheetFromStorage,
+  clearWorksheetStorage,
 } from './utils/storage';
+import { loadAccountWorksheet } from './utils/cloudWorksheets';
+import { useAuth } from './auth/AuthProvider';
+import { useAccountSync } from './auth/useAccountSync';
 import {
   buildShareUrl,
   clearShareHash,
@@ -53,6 +57,7 @@ import { TemplateGalleryModal } from './components/TemplateGalleryModal';
 import { DonationToast } from './components/DonationToast';
 import { PrintContainer } from './components/PrintContainer';
 import { TooltipLayer } from './components/TooltipLayer';
+import { MyWorksheetsModal } from './components/MyWorksheetsModal';
 
 // Initial default blank/starter worksheet
 function createInitialWorksheet(): Worksheet {
@@ -94,6 +99,12 @@ function createInitialWorksheet(): Worksheet {
 }
 
 export default function App() {
+  const { user, signOut } = useAuth();
+
+  // True when nothing was saved in this browser and no share link was opened,
+  // so a signed-in grown-up gets their latest worksheet from their account instead.
+  const startedFreshRef = useRef(false);
+
   // Main worksheet state
   const [worksheet, setWorksheet] = useState<Worksheet>(() => {
     // 1. Try URL hash first
@@ -103,6 +114,7 @@ export default function App() {
     const fromStorage = loadWorksheetFromStorage();
     if (fromStorage) return fromStorage;
     // 3. Fallback to initial
+    startedFreshRef.current = true;
     return createInitialWorksheet();
   });
 
@@ -123,6 +135,7 @@ export default function App() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [showDonationToast, setShowDonationToast] = useState(false);
+  const [isMyWorksheetsOpen, setIsMyWorksheetsOpen] = useState(false);
 
   // Drag and drop state
   const [activeDragItem, setActiveDragItem] = useState<{
@@ -158,6 +171,51 @@ export default function App() {
   useEffect(() => {
     saveWorksheetToStorage(worksheet);
   }, [worksheet]);
+
+  // Open a whole worksheet (from the account, or a new one) with a clean undo history.
+  const openWorksheet = useCallback(
+    (next: Worksheet) => {
+      setWorksheetNow(next);
+      setHistory([]);
+      setFuture([]);
+      setActivePageIndex(0);
+      setSelectedSlotRef(null);
+      setIsInspectorOpen(false);
+    },
+    [setWorksheetNow]
+  );
+
+  // Save to the signed-in account a moment after each change.
+  const accountSync = useAccountSync({
+    worksheet,
+    startedFresh: startedFreshRef.current,
+    onOpenWorksheet: openWorksheet,
+  });
+
+  const handleOpenFromAccount = useCallback(
+    async (id: string) => {
+      await accountSync.saveNow();
+      const loaded = await loadAccountWorksheet(id);
+      if (!loaded) return;
+      openWorksheet(loaded);
+      accountSync.markSaved(loaded);
+      setIsMyWorksheetsOpen(false);
+    },
+    [accountSync, openWorksheet]
+  );
+
+  const handleNewWorksheet = useCallback(async () => {
+    await accountSync.saveNow();
+    openWorksheet(createInitialWorksheet());
+    setIsMyWorksheetsOpen(false);
+  }, [accountSync, openWorksheet]);
+
+  const handleSignOut = useCallback(async () => {
+    await accountSync.saveNow();
+    await signOut();
+    // This browser's copy belongs to the account that just signed out.
+    clearWorksheetStorage();
+  }, [accountSync, signOut]);
 
   // Helper to push state changes with history
   const updateWorksheet = useCallback(
@@ -593,6 +651,16 @@ export default function App() {
             onPrintNative={handlePrintNative}
             onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
             isExportingPdf={isExportingPdf}
+            account={
+              accountSync.active && user
+                ? {
+                    email: user.email ?? '',
+                    syncStatus: accountSync.status,
+                    onOpenMyWorksheets: () => setIsMyWorksheetsOpen(true),
+                    onSignOut: handleSignOut,
+                  }
+                : null
+            }
           />
 
           {/* Main App Workspace: Sidebar + Canvas */}
@@ -669,6 +737,15 @@ export default function App() {
           isOpen={isTemplateModalOpen}
           onClose={() => setIsTemplateModalOpen(false)}
           onSelectTemplate={handleSelectTemplate}
+        />
+
+        {/* Worksheets saved to the account */}
+        <MyWorksheetsModal
+          isOpen={isMyWorksheetsOpen}
+          currentId={worksheet.id}
+          onClose={() => setIsMyWorksheetsOpen(false)}
+          onOpen={handleOpenFromAccount}
+          onNew={handleNewWorksheet}
         />
 
         {/* Post-Download / Print Donation Prompt */}
