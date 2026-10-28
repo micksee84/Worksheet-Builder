@@ -81,7 +81,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               src={`${import.meta.env.BASE_URL}sb-logo-icon.svg`}
               alt="Sunshine Brigade"
               draggable={false}
-              className="h-8 sm:h-7 w-auto select-none"
+              className="h-8 sm:h-[31px] w-auto select-none"
               loading="eager"
             />
           </picture>
