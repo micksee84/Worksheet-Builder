@@ -5,9 +5,8 @@
  * One spacing unit runs the whole printed page: SPACE = 0.25 in. Pages are laid out
  * in points (72 per inch), so that is 18pt. It sets:
  *   - the margin on every edge of the page
- *   - the gap between the title, the Name/Date line and the header rule
- *   - the gap from the header rule to the activities, and from the activities to the
- *     footer rule (so the two rules sit the same distance from the content)
+ *   - the header area: the Name/Date line sits centred between the title and the first box
+ *   - the gap from the activities to the footer rule
  *   - the gap between activity boxes
  *   - the inset inside every activity box, on all four sides
  * Tightly paired items (an instruction and the activity under it, the footer rule and
@@ -62,20 +61,28 @@ export function pageLayout(pageSizeId: PageSizeId, showDateName = true): PageLay
   const halfRule = RULE_STROKE / 2;
   const halfFrame = FRAME_STROKE / 2;
 
-  // Header: title, then (optionally) Name/Date, then the rule, each SPACE apart.
+  // Header: the title, then the activities. The header area keeps the height it had when a
+  // rule ran under Name/Date (title, SPACE, Name/Date, SPACE, rule, SPACE), so activities
+  // never move. The rule is no longer drawn.
   const titleTop = TITLE_FONT_SIZE * (CAP_HEIGHT + STICKER_OUTLINE);
   const titleBottom = TITLE_FONT_SIZE * (STICKER_SHADOW + STICKER_OUTLINE);
   const titleBaseline = SPACE + titleTop;
-  let rowBottom = titleBaseline + titleBottom;
+  const titleRowBottom = titleBaseline + titleBottom;
 
+  const nameCap = NAME_FONT_SIZE * CAP_HEIGHT;
+  const nameRowHeight = nameCap + halfRule; // capitals down to the bottom of the write-on line
+  const headerBottom = showDateName
+    ? titleRowBottom + SPACE + nameRowHeight + SPACE + RULE_STROKE + SPACE
+    : titleRowBottom + SPACE + RULE_STROKE + SPACE;
+  const headerRuleY = headerBottom - SPACE - halfRule;
+  const contentTop = headerBottom + halfFrame;
+
+  // Name/Date sits in the middle of the gap between the title and the top of the first box.
   let nameBaseline: number | null = null;
   if (showDateName) {
-    nameBaseline = rowBottom + SPACE + NAME_FONT_SIZE * CAP_HEIGHT;
-    rowBottom = nameBaseline + halfRule; // the write-on line sits on the baseline
+    const gap = (headerBottom - titleRowBottom - nameRowHeight) / 2;
+    nameBaseline = titleRowBottom + gap + nameCap;
   }
-
-  const headerRuleY = rowBottom + SPACE + halfRule;
-  const contentTop = headerRuleY + halfRule + SPACE + halfFrame;
 
   // Footer: text SPACE from the bottom edge, its rule HALF_SPACE above it, and the
   // activities SPACE above the rule, matching the gap under the header rule.
