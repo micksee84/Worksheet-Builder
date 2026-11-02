@@ -55,7 +55,7 @@ import { WorksheetCanvas } from './components/WorksheetCanvas';
 import { PagesPanel } from './components/PagesPanel';
 import { BlockSettingsDrawer } from './components/BlockSettingsDrawer';
 import { TemplateGalleryModal } from './components/TemplateGalleryModal';
-import { DonationToast } from './components/DonationToast';
+import { PrintDoneToast, PrintDoneKind } from './components/PrintDoneToast';
 import { PrintContainer } from './components/PrintContainer';
 import { TooltipLayer } from './components/TooltipLayer';
 import { MyWorksheetsModal } from './components/MyWorksheetsModal';
@@ -135,7 +135,8 @@ export default function App() {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
-  const [showDonationToast, setShowDonationToast] = useState(false);
+  const [printDone, setPrintDone] = useState<PrintDoneKind | null>(null);
+  const dismissPrintDone = useCallback(() => setPrintDone(null), []);
   const [isMyWorksheetsOpen, setIsMyWorksheetsOpen] = useState(false);
 
   // Drag and drop state
@@ -654,13 +655,13 @@ export default function App() {
       await exportWorksheetToPdf(worksheet, {
         onSuccess: () => {
           setIsExportingPdf(false);
-          setShowDonationToast(true);
+          setPrintDone('pdf');
         },
         onError: () => {
           setIsExportingPdf(false);
           // Fallback to print dialog
           printWorksheetNative(worksheet, () => {
-            setShowDonationToast(true);
+            setPrintDone('print');
           });
         },
       });
@@ -672,7 +673,7 @@ export default function App() {
   // Native Print
   const handlePrintNative = useCallback(() => {
     printWorksheetNative(worksheet, () => {
-      setShowDonationToast(true);
+      setPrintDone('print');
     });
   }, [worksheet]);
 
@@ -810,10 +811,11 @@ export default function App() {
           onNew={handleNewWorksheet}
         />
 
-        {/* Post-Download / Print Donation Prompt */}
-        <DonationToast
-          isVisible={showDonationToast}
-          onDismiss={() => setShowDonationToast(false)}
+        {/* Quiet confirmation after a PDF download or print */}
+        <PrintDoneToast
+          kind={printDone}
+          onDismiss={dismissPrintDone}
+          onOpenTemplates={() => setIsTemplateModalOpen(true)}
         />
 
         {/* Branded tooltips for every control that has a title */}

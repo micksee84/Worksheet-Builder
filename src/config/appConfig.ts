@@ -2,7 +2,7 @@
  * @license
  * Sunshine Brigade Worksheet Builder
  * Configuration file for designers & developers.
- * Edit brand colors, typography, donation link, and default dimensions here.
+ * Edit brand colors, typography and default dimensions here.
  */
 
 // ==========================================
@@ -39,15 +39,6 @@ export const APP_FONTS = {
   body: '"Nunito", system-ui, sans-serif',
   handwriting: '"Nunito", "Comic Sans MS", system-ui, sans-serif',
 } as const;
-
-// Configurable link shown in the post-download donation card
-export const DONATION_CONFIG = {
-  url: 'https://www.paypal.com/ncp/payment/GMKWH2TAR3EG4',
-  title: 'Help keep it free',
-  message:
-    'Sunshine Brigade is made by a small family team. If this worksheet brought a little sunshine to your home or classroom, a donation helps us make the next one.',
-  buttonText: 'Donate to keep it free',
-};
 
 // ==========================================
 // WORKSHEET PAGE DIMENSIONS (SVG / PDF UNITS)

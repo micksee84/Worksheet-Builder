@@ -113,7 +113,6 @@ That's all! The block is automatically:
 ## Designer Customization Guide
 
 - **Brand Colors & Fonts**: Edit `/src/config/appConfig.ts` (`BRAND_COLORS`, `APP_FONTS`).
-- **Donation Link & Copy**: Edit `DONATION_CONFIG` in `/src/config/appConfig.ts`.
 - **Character Artwork**: Drop SVG mascot illustrations directly into `/public/characters/<id>.svg` (`buddy.svg`, `finn.svg`, `ollie.svg`, `faye.svg`, `rusty.svg`, `hana.svg`).
 - **Custom Font**: Place your `SuperJoyful.woff2` in `/public/fonts/SuperJoyful.woff2`.
 
