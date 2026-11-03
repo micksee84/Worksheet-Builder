@@ -54,7 +54,7 @@ const bowlBack = (cx = 0.25): StrokeSeg => A(cx, 0.75, R, R, 45, 405);
 /** Arch over from the stick at x0 to x0 + 2r, then pull down to the baseline. */
 const archDown = (x0: number, r = ARCH): StrokeSeg[] => [A(x0 + r, 0.5 + r, r, r, 180, 0), L(x0 + 2 * r, 0.5 + r, x0 + 2 * r, 1)];
 /** e: the bar sits just above the middle of the bowl, so the eye is small and the mouth open. */
-const E_BAR = 0.72;
+const E_BAR = 0.69;
 const E_BAR_DX = Math.sqrt(R * R - (0.75 - E_BAR) ** 2);
 const E_BAR_ANGLE = (Math.asin((0.75 - E_BAR) / R) * 180) / Math.PI;
 
@@ -102,7 +102,7 @@ export const LETTER_STROKES: Record<string, LetterGlyph> = {
   b: { width: 0.5, strokes: [[L(0, 0, 0, 1)], [A(R, 0.75, R, R, 180, -180)]] },
   c: { width: 0.5, strokes: [[A(R, 0.75, R, R, 40, 320)]] },
   d: { width: 0.5, strokes: [[bowlBack()], [L(0.5, 0, 0.5, 1)]] },
-  e: { width: 0.5, strokes: [[L(R - E_BAR_DX, E_BAR, R + E_BAR_DX, E_BAR), A(R, 0.75, R, R, E_BAR_ANGLE, 322)]] },
+  e: { width: 0.5, strokes: [[L(R - E_BAR_DX, E_BAR, R + E_BAR_DX, E_BAR), A(R, 0.75, R, R, E_BAR_ANGLE, 300)]] },
   f: { width: 0.44, strokes: [[A(0.36, 0.18, 0.16, 0.18, 25, 180), L(0.2, 0.18, 0.2, 1)], [L(0.04, 0.5, 0.38, 0.5)]] },
   g: { width: 0.5, strokes: [[bowlBack()], [L(0.5, 0.5, 0.5, 1.12), A(R, 1.12, R, 0.23, 0, -170)]] },
   h: { width: 2 * ARCH, strokes: [[L(0, 0, 0, 1)], archDown(0)] },
