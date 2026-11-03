@@ -3,7 +3,9 @@
  * Sunshine Brigade Worksheet Builder - Starter Block 2: Letter Tracing
  * Features:
  * - A chosen letter in uppercase, lowercase, or both (e.g. "Aa")
- * - Shown solid once as a clear reference model, then dashed outlines to trace
+ * - Shown solid once as a clear reference model, then grey dots to trace
+ * - Letters are drawn from handwriting strokes (letterStrokes.ts), so the black start
+ *   dot sits where a child begins that letter
  * - Complete 3-line preschool handwriting guidelines (top, dashed midline, baseline)
  */
 
@@ -13,6 +15,8 @@ import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
+import { DESCENDER_LETTERS, lettersWidth, placeLetter } from './letterStrokes';
+import { INK_STYLE } from '../config/appConfig';
 
 export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
   instance,
@@ -20,7 +24,7 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
   width,
   height,
 }) => {
-  const letter = (instance.settings.letter || 'A').toUpperCase().charAt(0) || 'A';
+  const letter: string = (instance.settings.letter || 'A').toUpperCase().charAt(0) || 'A';
   const lowerLetter = letter.toLowerCase();
   const caseMode: 'both' | 'upper' | 'lower' = instance.settings.caseMode || 'both';
 
@@ -34,39 +38,32 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
 
   const usableHeight = sp.contentBottom - sp.contentTop;
   const rowSpacing = usableHeight / rows;
-  const guideLineHeight = Math.min(54, Math.max(34, rowSpacing * 0.7));
+  const hasDescender = caseMode !== 'upper' && DESCENDER_LETTERS.has(lowerLetter);
+  const rowText: string = caseMode === 'upper' ? letter : caseMode === 'lower' ? lowerLetter : `${letter}${lowerLetter}`;
 
-  // Determine what each row displays
-  // If 'both': Row 1 can be uppercase, Row 2 lowercase, etc.
-  const rowConfigs = Array.from({ length: rows }, (_, idx) => {
-    let textToDisplay = '';
-    if (caseMode === 'upper') {
-      textToDisplay = letter;
-    } else if (caseMode === 'lower') {
-      textToDisplay = lowerLetter;
-    } else {
-      // Both: Alternate or display "A a"
-      textToDisplay = idx % 2 === 0 ? `${letter} ${lowerLetter}` : `${letter} ${lowerLetter}`;
-    }
-    return {
-      id: idx,
-      // Centre each row's guide lines (and descender line, if any) in its share of the space
-      y: sp.contentTop + idx * rowSpacing + (rowSpacing - guideLineHeight * (['g', 'j', 'p', 'q', 'y'].includes(lowerLetter) ? 1.35 : 1)) / 2,
-      text: textToDisplay,
-    };
-  });
-
-  // Calculate items per row (repeats to trace across the line)
+  // Repeats across the line: one solid model, then copies to trace.
   const repeats = size === 'quarter' ? 3 : 5;
   const usableWidth = width - paddingX * 2;
   const colSpacing = usableWidth / repeats;
 
-  // Fit the letters to their column so "G g" never runs into the next copy.
-  // Nunito ExtraBold letters are roughly 0.68em wide, a space roughly 0.3em.
-  const sampleText = caseMode === 'both' ? `${letter} ${lowerLetter}` : letter;
-  const textWidthEm =
-    sampleText.replace(/ /g, '').length * 0.68 + (sampleText.split(' ').length - 1) * 0.3;
-  const letterFontSize = Math.min(guideLineHeight * 0.85, (colSpacing * 0.82) / textWidthEm);
+  // Letter height (top line to baseline). Fits the row height and the column width,
+  // so "W w" never runs into the next copy.
+  const LETTER_GAP = 0.3;
+  const textUnits = lettersWidth(rowText, LETTER_GAP);
+  const fitHeight = rowSpacing / (hasDescender ? 1.55 : 1.25);
+  const h = Math.min(54, fitHeight, (colSpacing * 0.7) / Math.max(textUnits, 0.5));
+
+  // Dot and stroke sizes scale with the letter.
+  const dotGap = Math.max(4.5, h * 0.12);
+  const dotR = Math.max(1.5, h * 0.045);
+  const modelStroke = Math.max(2.5, h * 0.09);
+  const startR = Math.max(3, h * 0.075);
+
+  const rowConfigs = Array.from({ length: rows }, (_, idx) => ({
+    id: idx,
+    // Centre each row's guide lines (and descender line, if any) in its share of the space
+    y: sp.contentTop + idx * rowSpacing + (rowSpacing - h * (hasDescender ? 1.35 : 1)) / 2,
+  }));
 
   return (
     <g className="letter-tracing-block">
@@ -79,54 +76,45 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
             x={paddingX}
             y={row.y}
             width={usableWidth}
-            lineHeight={guideLineHeight}
-            showDescender={['g', 'j', 'p', 'q', 'y'].includes(lowerLetter)}
+            lineHeight={h}
+            showDescender={hasDescender}
           />
 
           {/* Repeat items along the line */}
           {Array.from({ length: repeats }).map((_, colIdx) => {
             const isModel = colIdx === 0;
-            const itemX = paddingX + colIdx * colSpacing + colSpacing * 0.5;
-            const textY = row.y + guideLineHeight - 4; // Aligned with baseline
+            const centreX = paddingX + colIdx * colSpacing + colSpacing * 0.5;
+            let x = centreX - (textUnits * h) / 2;
+            const placed = rowText.split('').map((ch) => {
+              const p = placeLetter(ch, x, row.y, h, dotGap);
+              x += (lettersWidthOne(ch) + LETTER_GAP) * h;
+              return p;
+            });
 
             return (
               <g key={colIdx}>
-                {isModel ? (
-                  // Solid reference letter
-                  <text
-                    x={itemX}
-                    y={textY}
-                    textAnchor="middle"
-                    fill="#2D2200"
-                    fontFamily="Nunito, sans-serif"
-                    fontSize={letterFontSize}
-                    fontWeight="800"
-                  >
-                    {row.text}
-                  </text>
-                ) : (
-                  // Letter to trace: solid Trace colour, the child draws over it
-                  <g>
-                    {/* Trace letter */}
-                    <text
-                      x={itemX}
-                      y={textY}
-                      textAnchor="middle"
-                      fill="#B6B2A6"
-                      fontFamily="Nunito, sans-serif"
-                      fontSize={letterFontSize}
-                      fontWeight="800"
-                    >
-                      {row.text}
-                    </text>
-                    {/* Small start helper dot for children */}
-                    <circle
-                      cx={itemX - guideLineHeight * 0.28}
-                      cy={row.y + 10}
-                      r="3"
-                      fill="#2D2200"
-                    />
-                  </g>
+                {placed.map((p, i) =>
+                  !p ? null : isModel ? (
+                    // Solid reference letter, drawn from the same strokes
+                    <g key={i} fill="none" stroke={INK_STYLE.ink} strokeWidth={modelStroke} strokeLinecap="round" strokeLinejoin="round">
+                      {p.paths.map((d, k) => (
+                        <path key={k} d={d} />
+                      ))}
+                      {p.dots.map(([dx, dy], k) => (
+                        <circle key={`d${k}`} cx={dx} cy={dy} r={modelStroke * 0.6} fill={INK_STYLE.ink} stroke="none" />
+                      ))}
+                    </g>
+                  ) : (
+                    // Letter to trace: grey dots, black dot where the pencil starts
+                    <g key={i}>
+                      <g fill={INK_STYLE.trace}>
+                        {p.traceDots.map((d, k) => (
+                          <circle key={k} cx={d.x.toFixed(2)} cy={d.y.toFixed(2)} r={dotR} />
+                        ))}
+                      </g>
+                      <circle cx={p.start[0]} cy={p.start[1]} r={startR} fill={INK_STYLE.ink} />
+                    </g>
+                  )
                 )}
               </g>
             );
@@ -140,10 +128,12 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
   );
 };
 
+const lettersWidthOne = (ch: string) => lettersWidth(ch, 0);
+
 export const LetterTracingBlockDefinition: BlockDefinition = {
   id: 'letter-tracing',
   displayName: 'Letter tracing',
-  description: 'A solid letter to copy, then grey letters to trace on handwriting lines.',
+  description: 'A solid letter to copy, then dotted letters to trace on handwriting lines.',
   category: 'letters',
   skillTags: ['alphabet', 'letter formation', 'phonics'],
   ageRange: '3–5',

@@ -66,17 +66,25 @@ export interface TraceShape {
 // Pieces
 // ---------------------------------------------------------------------------
 
-type Pt = [number, number];
+export type Pt = [number, number];
 
-interface Piece {
+export interface Piece {
   at: (t: number) => Pt;
   /** Force an even number of gaps, so a dot also lands on the piece's midpoint (a peak). */
   even?: boolean;
 }
 
-const line = (a: Pt, b: Pt, even = false): Piece => ({
+export const line = (a: Pt, b: Pt, even = false): Piece => ({
   at: (t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t],
   even,
+});
+
+/** Elliptical arc, angles in degrees (0 = right, 90 = top, counter-clockwise as seen on the page). */
+export const arc = (cx: number, cy: number, rx: number, ry: number, a0: number, a1: number): Piece => ({
+  at: (t) => {
+    const a = ((a0 + (a1 - a0) * t) * Math.PI) / 180;
+    return [cx + rx * Math.cos(a), cy - ry * Math.sin(a)];
+  },
 });
 
 /** Half a sine wave from (x0, y) to (x1, y), bulging up (dir -1) or down (dir 1). */
@@ -108,7 +116,7 @@ const loop = (x0: number, y: number, c: number, b: number): Piece => ({
   },
 });
 
-function placeDots(pieces: Piece[], target: number): TraceDot[] {
+export function placeDots(pieces: Piece[], target: number): TraceDot[] {
   const dots: TraceDot[] = [];
   const SAMPLES = 96;
   for (const piece of pieces) {
