@@ -16,9 +16,11 @@
  *             Crossbars and dots come last.
  *   Circles   Pull back (counter-clockwise) from about one o'clock: C G O Q a c d g o q.
  *   Bowls     Lowercase bowls are the same circle as o (half the line height).
- *             Arches in h m n r share one radius and spring from the stick.
- *   Widths    Narrow: E F L I; regular: most capitals; wide: M W. Round capitals are
- *             gentle ovals, not full circles, so they sit with the others.
+ *             Arches in h m n share one radius and spring from the stick.
+ *             e has its bar just above the middle, a small eye and an open mouth.
+ *   Widths    Capitals are slim (about half as wide as they are tall); round capitals
+ *             are tall ovals. Lowercase bowls are full circles, so small letters read
+ *             big and friendly next to the capitals.
  *   Starts    The first point of the first stroke is the black start dot.
  *
  * Stroke order follows the common North American verbal paths, e.g.
@@ -45,102 +47,106 @@ const D = (x: number, y: number): StrokeSeg => ['D', x, y];
 
 // Shared shapes
 const R = 0.25; // lowercase bowl radius (o)
-const ARCH = 0.24; // arch radius for h m n r
-const CAP_RX = 0.42; // round capitals: oval half-width
+const ARCH = 0.23; // arch radius for h m n
+const CAP_RX = 0.29; // round capitals: tall, slim ovals
 /** Lowercase "circle back" from about one o'clock, all the way round. */
 const bowlBack = (cx = 0.25): StrokeSeg => A(cx, 0.75, R, R, 45, 405);
 /** Arch over from the stick at x0 to x0 + 2r, then pull down to the baseline. */
 const archDown = (x0: number, r = ARCH): StrokeSeg[] => [A(x0 + r, 0.5 + r, r, r, 180, 0), L(x0 + 2 * r, 0.5 + r, x0 + 2 * r, 1)];
+/** e: the bar sits just above the middle of the bowl, so the eye is small and the mouth open. */
+const E_BAR = 0.72;
+const E_BAR_DX = Math.sqrt(R * R - (0.75 - E_BAR) ** 2);
+const E_BAR_ANGLE = (Math.asin((0.75 - E_BAR) / R) * 180) / Math.PI;
 
 export const LETTER_STROKES: Record<string, LetterGlyph> = {
   // ---------------------------------------------------------------- Capitals
-  A: { width: 0.8, strokes: [[L(0.4, 0, 0, 1)], [L(0.4, 0, 0.8, 1)], [L(0.16, 0.64, 0.64, 0.64)]] },
+  A: { width: 0.64, strokes: [[L(0.32, 0, 0, 1)], [L(0.32, 0, 0.64, 1)], [L(0.12, 0.62, 0.52, 0.62)]] },
   B: {
-    width: 0.6,
+    width: 0.52,
     strokes: [
       [L(0, 0, 0, 1)],
-      [L(0, 0, 0.3, 0), A(0.3, 0.25, 0.24, 0.25, 90, -90), L(0.3, 0.5, 0, 0.5)],
-      [L(0, 0.5, 0.33, 0.5), A(0.33, 0.75, 0.27, 0.25, 90, -90), L(0.33, 1, 0, 1)],
+      [L(0, 0, 0.23, 0), A(0.23, 0.23, 0.22, 0.23, 90, -90), L(0.23, 0.46, 0, 0.46)],
+      [L(0, 0.46, 0.25, 0.46), A(0.25, 0.73, 0.27, 0.27, 90, -90), L(0.25, 1, 0, 1)],
     ],
   },
-  C: { width: 0.84, strokes: [[A(CAP_RX, 0.5, CAP_RX, 0.5, 45, 315)]] },
-  D: { width: 0.72, strokes: [[L(0, 0, 0, 1)], [L(0, 0, 0.22, 0), A(0.22, 0.5, 0.5, 0.5, 90, -90), L(0.22, 1, 0, 1)]] },
-  E: { width: 0.58, strokes: [[L(0, 0, 0, 1)], [L(0, 0, 0.58, 0)], [L(0, 0.5, 0.48, 0.5)], [L(0, 1, 0.58, 1)]] },
-  F: { width: 0.58, strokes: [[L(0, 0, 0, 1)], [L(0, 0, 0.58, 0)], [L(0, 0.5, 0.48, 0.5)]] },
-  G: { width: 0.84, strokes: [[A(CAP_RX, 0.5, CAP_RX, 0.5, 45, 360), L(0.84, 0.5, 0.5, 0.5)]] },
-  H: { width: 0.7, strokes: [[L(0, 0, 0, 1)], [L(0.7, 0, 0.7, 1)], [L(0, 0.5, 0.7, 0.5)]] },
-  I: { width: 0.5, strokes: [[L(0.25, 0, 0.25, 1)], [L(0, 0, 0.5, 0)], [L(0, 1, 0.5, 1)]] },
-  J: { width: 0.8, strokes: [[L(0.55, 0, 0.55, 0.72), A(0.3, 0.72, 0.25, 0.28, 0, -180)], [L(0.3, 0, 0.8, 0)]] },
-  K: { width: 0.66, strokes: [[L(0, 0, 0, 1)], [L(0.62, 0, 0, 0.55), L(0, 0.55, 0.66, 1)]] },
-  L: { width: 0.56, strokes: [[L(0, 0, 0, 1)], [L(0, 1, 0.56, 1)]] },
-  M: { width: 0.9, strokes: [[L(0, 0, 0, 1)], [L(0, 0, 0.45, 1), L(0.45, 1, 0.9, 0), L(0.9, 0, 0.9, 1)]] },
-  N: { width: 0.72, strokes: [[L(0, 0, 0, 1)], [L(0, 0, 0.72, 1), L(0.72, 1, 0.72, 0)]] },
-  O: { width: 0.84, strokes: [[A(CAP_RX, 0.5, CAP_RX, 0.5, 60, 420)]] },
-  P: { width: 0.6, strokes: [[L(0, 0, 0, 1)], [L(0, 0, 0.3, 0), A(0.3, 0.25, 0.3, 0.25, 90, -90), L(0.3, 0.5, 0, 0.5)]] },
-  Q: { width: 0.9, strokes: [[A(CAP_RX, 0.5, CAP_RX, 0.5, 60, 420)], [L(0.52, 0.68, 0.9, 1.04)]] },
+  C: { width: 2 * CAP_RX, strokes: [[A(CAP_RX, 0.5, CAP_RX, 0.5, 40, 320)]] },
+  D: { width: 0.56, strokes: [[L(0, 0, 0, 1)], [L(0, 0, 0.16, 0), A(0.16, 0.5, 0.4, 0.5, 90, -90), L(0.16, 1, 0, 1)]] },
+  E: { width: 0.46, strokes: [[L(0, 0, 0, 1)], [L(0, 0, 0.46, 0)], [L(0, 0.5, 0.4, 0.5)], [L(0, 1, 0.46, 1)]] },
+  F: { width: 0.46, strokes: [[L(0, 0, 0, 1)], [L(0, 0, 0.46, 0)], [L(0, 0.5, 0.4, 0.5)]] },
+  G: { width: 2 * CAP_RX, strokes: [[A(CAP_RX, 0.5, CAP_RX, 0.5, 40, 360), L(2 * CAP_RX, 0.5, 0.32, 0.5)]] },
+  H: { width: 0.52, strokes: [[L(0, 0, 0, 1)], [L(0.52, 0, 0.52, 1)], [L(0, 0.5, 0.52, 0.5)]] },
+  I: { width: 0.3, strokes: [[L(0.15, 0, 0.15, 1)], [L(0, 0, 0.3, 0)], [L(0, 1, 0.3, 1)]] },
+  J: { width: 0.56, strokes: [[L(0.42, 0, 0.42, 0.72), A(0.21, 0.72, 0.21, 0.28, 0, -180)], [L(0.28, 0, 0.56, 0)]] },
+  K: { width: 0.56, strokes: [[L(0, 0, 0, 1)], [L(0.54, 0, 0, 0.56), L(0, 0.56, 0.56, 1)]] },
+  L: { width: 0.48, strokes: [[L(0, 0, 0, 1)], [L(0, 1, 0.48, 1)]] },
+  M: { width: 0.74, strokes: [[L(0, 0, 0, 1)], [L(0, 0, 0.37, 1), L(0.37, 1, 0.74, 0), L(0.74, 0, 0.74, 1)]] },
+  N: { width: 0.54, strokes: [[L(0, 0, 0, 1)], [L(0, 0, 0.54, 1), L(0.54, 1, 0.54, 0)]] },
+  O: { width: 2 * CAP_RX, strokes: [[A(CAP_RX, 0.5, CAP_RX, 0.5, 60, 420)]] },
+  P: { width: 0.5, strokes: [[L(0, 0, 0, 1)], [L(0, 0, 0.25, 0), A(0.25, 0.25, 0.25, 0.25, 90, -90), L(0.25, 0.5, 0, 0.5)]] },
+  Q: { width: 0.66, strokes: [[A(CAP_RX, 0.5, CAP_RX, 0.5, 60, 420)], [L(0.4, 0.72, 0.66, 1.02)]] },
   R: {
-    width: 0.66,
-    strokes: [[L(0, 0, 0, 1)], [L(0, 0, 0.3, 0), A(0.3, 0.25, 0.3, 0.25, 90, -90), L(0.3, 0.5, 0.12, 0.5), L(0.12, 0.5, 0.66, 1)]],
+    width: 0.54,
+    strokes: [[L(0, 0, 0, 1)], [L(0, 0, 0.25, 0), A(0.25, 0.25, 0.25, 0.25, 90, -90), L(0.25, 0.5, 0.12, 0.5), L(0.12, 0.5, 0.54, 1)]],
   },
-  S: { width: 0.62, strokes: [[A(0.31, 0.25, 0.29, 0.25, 30, 270), A(0.31, 0.75, 0.31, 0.25, 90, -150)]] },
-  T: { width: 0.7, strokes: [[L(0.35, 0, 0.35, 1)], [L(0, 0, 0.7, 0)]] },
-  U: { width: 0.72, strokes: [[L(0, 0, 0, 0.64), A(0.36, 0.64, 0.36, 0.36, 180, 360), L(0.72, 0.64, 0.72, 0)]] },
-  V: { width: 0.8, strokes: [[L(0, 0, 0.4, 1), L(0.4, 1, 0.8, 0)]] },
-  W: { width: 1.04, strokes: [[L(0, 0, 0.26, 1), L(0.26, 1, 0.52, 0), L(0.52, 0, 0.78, 1), L(0.78, 1, 1.04, 0)]] },
-  X: { width: 0.72, strokes: [[L(0, 0, 0.72, 1)], [L(0.72, 0, 0, 1)]] },
-  Y: { width: 0.76, strokes: [[L(0, 0, 0.38, 0.5)], [L(0.76, 0, 0.38, 0.5), L(0.38, 0.5, 0.38, 1)]] },
-  Z: { width: 0.68, strokes: [[L(0, 0, 0.68, 0), L(0.68, 0, 0, 1), L(0, 1, 0.68, 1)]] },
+  S: { width: 0.52, strokes: [[A(0.26, 0.25, 0.24, 0.25, 30, 270), A(0.26, 0.75, 0.26, 0.25, 90, -150)]] },
+  T: { width: 0.56, strokes: [[L(0.28, 0, 0.28, 1)], [L(0, 0, 0.56, 0)]] },
+  U: { width: 0.56, strokes: [[L(0, 0, 0, 0.72), A(0.28, 0.72, 0.28, 0.28, 180, 360), L(0.56, 0.72, 0.56, 0)]] },
+  V: { width: 0.62, strokes: [[L(0, 0, 0.31, 1), L(0.31, 1, 0.62, 0)]] },
+  W: { width: 1.0, strokes: [[L(0, 0, 0.25, 1), L(0.25, 1, 0.5, 0), L(0.5, 0, 0.75, 1), L(0.75, 1, 1.0, 0)]] },
+  X: { width: 0.56, strokes: [[L(0, 0, 0.56, 1)], [L(0.56, 0, 0, 1)]] },
+  Y: { width: 0.6, strokes: [[L(0, 0, 0.3, 0.5)], [L(0.6, 0, 0.3, 0.5), L(0.3, 0.5, 0.3, 1)]] },
+  Z: { width: 0.56, strokes: [[L(0, 0, 0.56, 0), L(0.56, 0, 0, 1), L(0, 1, 0.56, 1)]] },
 
   // ---------------------------------------------------------------- Lowercase
   a: { width: 0.5, strokes: [[bowlBack()], [L(0.5, 0.5, 0.5, 1)]] },
   b: { width: 0.5, strokes: [[L(0, 0, 0, 1)], [A(R, 0.75, R, R, 180, -180)]] },
-  c: { width: 0.5, strokes: [[A(R, 0.75, R, R, 45, 315)]] },
+  c: { width: 0.5, strokes: [[A(R, 0.75, R, R, 40, 320)]] },
   d: { width: 0.5, strokes: [[bowlBack()], [L(0.5, 0, 0.5, 1)]] },
-  e: { width: 0.5, strokes: [[L(0, 0.75, 0.5, 0.75), A(R, 0.75, R, R, 0, 315)]] },
-  f: { width: 0.44, strokes: [[A(0.4, 0.2, 0.2, 0.2, 30, 180), L(0.2, 0.2, 0.2, 1)], [L(0, 0.5, 0.42, 0.5)]] },
-  g: { width: 0.5, strokes: [[bowlBack()], [L(0.5, 0.5, 0.5, 1.15), A(R, 1.15, R, 0.2, 0, -180)]] },
+  e: { width: 0.5, strokes: [[L(R - E_BAR_DX, E_BAR, R + E_BAR_DX, E_BAR), A(R, 0.75, R, R, E_BAR_ANGLE, 322)]] },
+  f: { width: 0.44, strokes: [[A(0.36, 0.18, 0.16, 0.18, 25, 180), L(0.2, 0.18, 0.2, 1)], [L(0.04, 0.5, 0.38, 0.5)]] },
+  g: { width: 0.5, strokes: [[bowlBack()], [L(0.5, 0.5, 0.5, 1.12), A(R, 1.12, R, 0.23, 0, -170)]] },
   h: { width: 2 * ARCH, strokes: [[L(0, 0, 0, 1)], archDown(0)] },
-  i: { width: 0.08, strokes: [[L(0.04, 0.5, 0.04, 1)], [D(0.04, 0.25)]] },
-  j: { width: 0.42, strokes: [[L(0.42, 0.5, 0.42, 1.15), A(0.22, 1.15, 0.2, 0.2, 0, -180)], [D(0.42, 0.25)]] },
-  k: { width: 0.46, strokes: [[L(0, 0, 0, 1)], [L(0.44, 0.5, 0, 0.78), L(0, 0.78, 0.46, 1)]] },
+  i: { width: 0.08, strokes: [[L(0.04, 0.5, 0.04, 1)], [D(0.04, 0.3)]] },
+  j: { width: 0.44, strokes: [[L(0.44, 0.5, 0.44, 1.12), A(0.22, 1.12, 0.22, 0.23, 0, -170)], [D(0.44, 0.3)]] },
+  k: { width: 0.42, strokes: [[L(0, 0, 0, 1)], [L(0.4, 0.5, 0, 0.76), L(0, 0.76, 0.42, 1)]] },
   l: { width: 0.08, strokes: [[L(0.04, 0, 0.04, 1)]] },
-  m: { width: 0.84, strokes: [[L(0, 0.5, 0, 1)], archDown(0, 0.21), archDown(0.42, 0.21)] },
+  m: { width: 0.8, strokes: [[L(0, 0.5, 0, 1)], archDown(0, 0.2), archDown(0.4, 0.2)] },
   n: { width: 2 * ARCH, strokes: [[L(0, 0.5, 0, 1)], archDown(0)] },
   o: { width: 0.5, strokes: [[A(R, 0.75, R, R, 60, 420)]] },
   p: { width: 0.5, strokes: [[L(0, 0.5, 0, 1.35)], [A(R, 0.75, R, R, 180, -180)]] },
   q: { width: 0.5, strokes: [[bowlBack()], [L(0.5, 0.5, 0.5, 1.35)]] },
-  r: { width: 0.44, strokes: [[L(0, 0.5, 0, 1)], [A(ARCH, 0.5 + ARCH, ARCH, ARCH, 180, 30)]] },
-  s: { width: 0.42, strokes: [[A(0.21, 0.625, 0.19, 0.125, 30, 270), A(0.21, 0.875, 0.21, 0.125, 90, -150)]] },
-  t: { width: 0.44, strokes: [[L(0.22, 0.18, 0.22, 1)], [L(0, 0.5, 0.44, 0.5)]] },
-  u: { width: 2 * ARCH, strokes: [[L(0, 0.5, 0, 0.76), A(ARCH, 0.76, ARCH, ARCH, 180, 360)], [L(2 * ARCH, 0.5, 2 * ARCH, 1)]] },
-  v: { width: 0.5, strokes: [[L(0, 0.5, 0.25, 1), L(0.25, 1, 0.5, 0.5)]] },
-  w: { width: 0.76, strokes: [[L(0, 0.5, 0.19, 1), L(0.19, 1, 0.38, 0.5), L(0.38, 0.5, 0.57, 1), L(0.57, 1, 0.76, 0.5)]] },
-  x: { width: 0.5, strokes: [[L(0, 0.5, 0.5, 1)], [L(0.5, 0.5, 0, 1)]] },
-  y: { width: 0.54, strokes: [[L(0, 0.5, 0.27, 1)], [L(0.54, 0.5, 0.07, 1.35)]] },
-  z: { width: 0.5, strokes: [[L(0, 0.5, 0.5, 0.5), L(0.5, 0.5, 0, 1), L(0, 1, 0.5, 1)]] },
+  r: { width: 0.36, strokes: [[L(0, 0.5, 0, 1)], [A(0.2, 0.7, 0.2, 0.2, 180, 40)]] },
+  s: { width: 0.4, strokes: [[A(0.2, 0.62, 0.18, 0.12, 30, 270), A(0.2, 0.88, 0.2, 0.12, 90, -150)]] },
+  t: { width: 0.4, strokes: [[L(0.2, 0.28, 0.2, 1)], [L(0.02, 0.5, 0.38, 0.5)]] },
+  u: { width: 2 * ARCH, strokes: [[L(0, 0.5, 0, 0.77), A(ARCH, 0.77, ARCH, ARCH, 180, 360)], [L(2 * ARCH, 0.5, 2 * ARCH, 1)]] },
+  v: { width: 0.44, strokes: [[L(0, 0.5, 0.22, 1), L(0.22, 1, 0.44, 0.5)]] },
+  w: { width: 0.7, strokes: [[L(0, 0.5, 0.175, 1), L(0.175, 1, 0.35, 0.5), L(0.35, 0.5, 0.525, 1), L(0.525, 1, 0.7, 0.5)]] },
+  x: { width: 0.42, strokes: [[L(0, 0.5, 0.42, 1)], [L(0.42, 0.5, 0, 1)]] },
+  y: { width: 0.48, strokes: [[L(0, 0.5, 0.24, 1)], [L(0.48, 0.5, 0.07, 1.35)]] },
+  z: { width: 0.42, strokes: [[L(0, 0.5, 0.42, 0.5), L(0.42, 0.5, 0, 1), L(0, 1, 0.42, 1)]] },
 
   // ---------------------------------------------------------------- Numbers
-  '0': { width: 0.6, strokes: [[A(0.3, 0.5, 0.3, 0.5, 60, 420)]] },
+  '0': { width: 0.54, strokes: [[A(0.27, 0.5, 0.27, 0.5, 60, 420)]] },
   '1': { width: 0.08, strokes: [[L(0.04, 0, 0.04, 1)]] },
-  '2': { width: 0.6, strokes: [[A(0.3, 0.28, 0.28, 0.28, 160, -35), L(0.53, 0.44, 0, 1), L(0, 1, 0.6, 1)]] },
-  '3': { width: 0.56, strokes: [[A(0.26, 0.25, 0.27, 0.25, 150, -90), A(0.26, 0.75, 0.3, 0.25, 90, -150)]] },
-  '4': { width: 0.62, strokes: [[L(0, 0, 0, 0.62), L(0, 0.62, 0.62, 0.62)], [L(0.46, 0, 0.46, 1)]] },
-  '5': { width: 0.6, strokes: [[L(0.04, 0, 0.04, 0.5), A(0.3, 0.7, 0.3, 0.3, 140, -150)], [L(0.04, 0, 0.58, 0)]] },
-  '6': { width: 0.58, strokes: [[A(0.3, 0.72, 0.28, 0.72, 75, 180), A(0.3, 0.72, 0.28, 0.28, 180, 540)]] },
-  '7': { width: 0.6, strokes: [[L(0, 0, 0.6, 0), L(0.6, 0, 0.18, 1)]] },
+  '2': { width: 0.54, strokes: [[A(0.26, 0.27, 0.25, 0.27, 165, -30), L(0.48, 0.405, 0, 1), L(0, 1, 0.54, 1)]] },
+  '3': { width: 0.5, strokes: [[A(0.24, 0.25, 0.24, 0.25, 150, -90), A(0.24, 0.75, 0.26, 0.25, 90, -150)]] },
+  '4': { width: 0.56, strokes: [[L(0, 0, 0, 0.62), L(0, 0.62, 0.56, 0.62)], [L(0.42, 0, 0.42, 1)]] },
+  '5': { width: 0.54, strokes: [[L(0.03, 0, 0.03, 0.47), A(0.27, 0.7, 0.27, 0.3, 140, -150)], [L(0.03, 0, 0.5, 0)]] },
+  '6': { width: 0.52, strokes: [[A(0.27, 0.73, 0.25, 0.73, 75, 180), A(0.27, 0.73, 0.25, 0.27, 180, 540)]] },
+  '7': { width: 0.54, strokes: [[L(0, 0, 0.54, 0), L(0.54, 0, 0.14, 1)]] },
   '8': {
-    width: 0.6,
-    strokes: [[A(0.3, 0.25, 0.24, 0.25, 30, 270), A(0.3, 0.75, 0.3, 0.25, 90, -270), A(0.3, 0.25, 0.24, 0.25, 270, 390)]],
+    width: 0.54,
+    strokes: [[A(0.27, 0.24, 0.21, 0.24, 30, 270), A(0.27, 0.74, 0.27, 0.26, 90, -270), A(0.27, 0.24, 0.21, 0.24, 270, 390)]],
   },
-  '9': { width: 0.58, strokes: [[A(0.29, 0.29, 0.29, 0.29, 30, 390)], [L(0.58, 0.29, 0.58, 1)]] },
+  '9': { width: 0.52, strokes: [[A(0.26, 0.27, 0.26, 0.27, 30, 390)], [L(0.52, 0.27, 0.52, 1)]] },
 
   // ---------------------------------------------------------------- Punctuation
   '.': { width: 0.06, strokes: [[D(0.03, 1)]] },
   ',': { width: 0.1, strokes: [[L(0.08, 0.94, 0.02, 1.12)]] },
   '!': { width: 0.06, strokes: [[L(0.03, 0, 0.03, 0.68)], [D(0.03, 1)]] },
-  '?': { width: 0.5, strokes: [[A(0.25, 0.22, 0.24, 0.22, 160, -90), L(0.25, 0.44, 0.25, 0.68)], [D(0.25, 1)]] },
+  '?': { width: 0.46, strokes: [[A(0.23, 0.22, 0.22, 0.22, 160, -90), L(0.23, 0.44, 0.23, 0.68)], [D(0.23, 1)]] },
   "'": { width: 0.06, strokes: [[L(0.03, 0, 0.03, 0.2)]] },
-  '-': { width: 0.36, strokes: [[L(0, 0.68, 0.36, 0.68)]] },
+  '-': { width: 0.34, strokes: [[L(0, 0.68, 0.34, 0.68)]] },
 };
 
 /** Width of a word space, in line units. */
