@@ -15,8 +15,8 @@ import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
-import { DESCENDER_LETTERS, lettersWidth, placeLetter } from './letterStrokes';
-import { INK_STYLE } from '../config/appConfig';
+import { DESCENDER_LETTERS, lettersWidth } from './letterStrokes';
+import { HandwrittenText } from '../components/HandwrittenText';
 
 export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
   instance,
@@ -50,17 +50,10 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
   // for this case mode, not the chosen letter, so every letter comes out the same size:
   // M is as tall as N, and "Ww" still never runs into the next copy.
   const LETTER_GAP = 0.3;
-  const textUnits = lettersWidth(rowText, LETTER_GAP);
   const widestUnits = widestRowUnits(caseMode, LETTER_GAP);
   // Leave room for a descender line on every letter, so g is the same size as a.
   const fitHeight = rowSpacing / (caseMode === 'upper' ? 1.25 : 1.55);
   const h = Math.min(54, fitHeight, (colSpacing * 0.8) / widestUnits);
-
-  // Dot and stroke sizes scale with the letter.
-  const dotGap = Math.max(4.5, h * 0.12);
-  const dotR = Math.max(1.5, h * 0.045);
-  const modelStroke = Math.max(2.5, h * 0.09);
-  const startR = Math.max(3, h * 0.075);
 
   const rowConfigs = Array.from({ length: rows }, (_, idx) => ({
     id: idx,
@@ -83,45 +76,19 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
             showDescender={hasDescender}
           />
 
-          {/* Repeat items along the line */}
-          {Array.from({ length: repeats }).map((_, colIdx) => {
-            const isModel = colIdx === 0;
-            const centreX = paddingX + colIdx * colSpacing + colSpacing * 0.5;
-            let x = centreX - (textUnits * h) / 2;
-            const placed = rowText.split('').map((ch) => {
-              const p = placeLetter(ch, x, row.y, h, dotGap);
-              x += (lettersWidthOne(ch) + LETTER_GAP) * h;
-              return p;
-            });
-
-            return (
-              <g key={colIdx}>
-                {placed.map((p, i) =>
-                  !p ? null : isModel ? (
-                    // Solid reference letter, drawn from the same strokes
-                    <g key={i} fill="none" stroke={INK_STYLE.ink} strokeWidth={modelStroke} strokeLinecap="round" strokeLinejoin="round">
-                      {p.paths.map((d, k) => (
-                        <path key={k} d={d} />
-                      ))}
-                      {p.dots.map(([dx, dy], k) => (
-                        <circle key={`d${k}`} cx={dx} cy={dy} r={modelStroke * 0.6} fill={INK_STYLE.ink} stroke="none" />
-                      ))}
-                    </g>
-                  ) : (
-                    // Letter to trace: grey dots, black dot where the pencil starts
-                    <g key={i}>
-                      <g fill={INK_STYLE.traceDot}>
-                        {p.traceDots.map((d, k) => (
-                          <circle key={k} cx={d.x.toFixed(2)} cy={d.y.toFixed(2)} r={dotR} />
-                        ))}
-                      </g>
-                      <circle cx={p.start[0]} cy={p.start[1]} r={startR} fill={INK_STYLE.ink} />
-                    </g>
-                  )
-                )}
-              </g>
-            );
-          })}
+          {/* Repeat items along the line: one solid model, then copies to trace */}
+          {Array.from({ length: repeats }).map((_, colIdx) => (
+            <HandwrittenText
+              key={colIdx}
+              text={rowText}
+              x={paddingX + colIdx * colSpacing + colSpacing * 0.5}
+              y={row.y}
+              h={h}
+              gap={LETTER_GAP}
+              align="middle"
+              variant={colIdx === 0 ? 'solid' : 'trace'}
+            />
+          ))}
         </g>
       ))}
 
@@ -130,8 +97,6 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
     </g>
   );
 };
-
-const lettersWidthOne = (ch: string) => lettersWidth(ch, 0);
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 /** Width of the widest row text (e.g. "Ww") for a case mode, in line units. */

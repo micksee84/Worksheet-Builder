@@ -3,7 +3,7 @@
  * Sunshine Brigade Worksheet Builder - My Name and Words
  * Skill: writing their own name, the first word most children learn to write.
  * A grown-up types the name (or a word) once. It appears on handwriting lines in three modes:
- * - Trace (easier): grey letters on every line to draw over.
+ * - Trace (easier): dotted Sunshine Print letters on every line to draw over.
  * - Half trace (core): the start of the word to trace, the rest to finish alone.
  * - Write alone (stretch): a solid word to copy, then empty lines.
  * The name is only stored on this device. It is never sent anywhere.
@@ -15,6 +15,7 @@ import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
+import { handwrittenWidth, HandwrittenText } from '../components/HandwrittenText';
 
 export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
   instance,
@@ -35,13 +36,11 @@ export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
   const usableWidth = width - paddingX * 2;
   const usableHeight = sp.contentBottom - sp.contentTop;
   const rowHeight = usableHeight / repeatCount;
-  const guideLineHeight = Math.min(50, Math.max(30, rowHeight * 0.65));
-
-  // Auto-size font based on word length to fit nicely across the guideline
-  const charCount = Math.max(rawText.length, 3);
-  const maxFontSize = guideLineHeight * 0.85;
-  const calculatedFontSize = Math.min(maxFontSize, (usableWidth * 0.85) / charCount);
-  const fontSize = Math.max(22, calculatedFontSize);
+  const hasDescender = /[gjpqy,]/.test(rawText);
+  // Sunshine Print size: as big as the row allows, shrunk only if the word is too long.
+  const fitHeight = rowHeight / (hasDescender ? 1.6 : 1.3);
+  const wordUnits = handwrittenWidth(rawText, 1);
+  const guideLineHeight = Math.max(18, Math.min(50, fitHeight, (usableWidth - 24) / Math.max(wordUnits, 1)));
 
   const mode: 'trace' | 'half' | 'alone' =
     instance.settings.mode === 'half' || instance.settings.mode === 'alone' ? instance.settings.mode : 'trace';
@@ -63,7 +62,7 @@ export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
   const rows = Array.from({ length: repeatCount }, (_, idx) => {
     const isModel = idx === 0 && showModel;
     // Centre each row's guide lines (and descender line, if any) in its share of the space
-    const rowExtent = guideLineHeight * (/[gjpqy]/.test(rawText.toLowerCase()) ? 1.35 : 1);
+    const rowExtent = guideLineHeight * (hasDescender ? 1.35 : 1);
     const y = sp.contentTop + idx * rowHeight + (rowHeight - rowExtent) / 2;
     return { idx, y, isModel };
   });
@@ -73,9 +72,7 @@ export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
       <Instruction x={paddingX} y={sp.instructionY} cue="pencil" size={size} text={instruction} />
 
       {rows.map(({ idx, y, isModel }) => {
-        const textY = y + guideLineHeight - 4;
-        const textX = paddingX + 16;
-
+        const textX = paddingX + 12;
         return (
           <g key={idx}>
             <HandwritingGuideLines
@@ -83,37 +80,14 @@ export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
               y={y}
               width={usableWidth}
               lineHeight={guideLineHeight}
-              showDescender={/[gjpqy]/.test(rawText.toLowerCase())}
+              showDescender={hasDescender}
             />
-
             {isModel ? (
-              // First line is solid reference model
-              <text
-                x={textX}
-                y={textY}
-                fill="#2D2200"
-                fontFamily="Nunito, sans-serif"
-                fontSize={fontSize}
-                fontWeight="800"
-                letterSpacing="4"
-              >
-                {rawText}
-              </text>
+              // First line is the solid word to copy
+              <HandwrittenText text={rawText} x={textX} y={y} h={guideLineHeight} variant="solid" />
             ) : (
-              // Word to trace: solid Trace colour, the child draws over it
-              <g>
-                <text
-                  x={textX}
-                  y={textY}
-                  fill="#B6B2A6"
-                  fontFamily="Nunito, sans-serif"
-                  fontSize={fontSize}
-                  fontWeight="800"
-                  letterSpacing="4"
-                >
-                  {traceText}
-                </text>
-              </g>
+              // Word to trace: grey dots, a black start dot on each letter
+              <HandwrittenText text={traceText} x={textX} y={y} h={guideLineHeight} variant="trace" />
             )}
           </g>
         );

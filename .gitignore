@@ -7,3 +7,5 @@ coverage/
 .env*
 !.env.example
 !.env.production
+scripts/build-fonts/.export.cjs
+scripts/build-fonts/.glyphs.json

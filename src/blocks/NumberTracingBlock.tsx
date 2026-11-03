@@ -14,6 +14,7 @@ import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing, HALF_SPACE } from '../utils/spacing';
 import { KidShape, ShapeType } from './svgShapes';
+import { handwrittenWidth, HandwrittenText } from '../components/HandwrittenText';
 
 export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
   instance,
@@ -38,14 +39,16 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
   const bottomSectionHeight = practiceLineHeight / 0.7;
   const topSectionHeight = bottomSectionY - HALF_SPACE - sp.contentTop; // height of the band above
 
-  // Big numerals: size and spacing scale with the number of digits, so "10"
-  // never overlaps its traced copy or the shapes beside it.
-  const digits = String(num).length;
-  const bigFontSize = (isQuarter ? 58 : 78) * (digits > 1 ? 0.75 : 1);
-  const numeralWidth = bigFontSize * 0.62 * digits; // Nunito Black digit width ~0.62em
-  const solidNumeralX = paddingX + numeralWidth / 2;
-  const tracedNumeralX = solidNumeralX + numeralWidth + 10;
-  const numeralsRight = tracedNumeralX + numeralWidth / 2;
+  // Big numerals in Sunshine Print: a solid one to copy and a dotted one to trace.
+  // Height fills the band above the practice line; "10" gets a little smaller.
+  const numText = String(num);
+  const bigH = Math.min(topSectionHeight * 0.82, isQuarter ? 60 : 84) * (numText.length > 1 ? 0.85 : 1);
+  const numeralWidth = handwrittenWidth(numText, bigH);
+  const numeralGap = Math.max(18, bigH * 0.35);
+  const bigTop = sp.contentTop + (topSectionHeight - bigH) / 2;
+  const solidNumeralX = paddingX + 4;
+  const tracedNumeralX = solidNumeralX + numeralWidth + numeralGap;
+  const numeralsRight = tracedNumeralX + numeralWidth;
 
   // Layout for objects to count and colour:
   // Arrange in up to 2 rows of items
@@ -70,40 +73,16 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
   const practiceRepeats = isQuarter ? 4 : 7;
   const usableWidth = width - paddingX * 2;
   const colSpacing = usableWidth / practiceRepeats;
+  const practiceH = Math.min(42, bottomSectionHeight * 0.7, (colSpacing * 0.7) / Math.max(0.1, handwrittenWidth(numText, 1)));
 
   return (
     <g className="number-tracing-block">
       <Instruction x={paddingX} y={sp.instructionY} cue="crayon" size={size} text={`Count, colour and trace ${num}.`} />
 
-      {/* Left side: Large Numeral model + large dashed trace */}
+      {/* Left side: big numeral to copy + big numeral to trace */}
       <g className="large-numerals">
-        {/* Solid reference numeral */}
-        <text
-          x={solidNumeralX}
-          y={sp.contentTop + (topSectionHeight + bigFontSize * 0.71) / 2}
-          textAnchor="middle"
-          fill="#2D2200"
-          fontFamily="Nunito, sans-serif"
-          fontSize={bigFontSize}
-          fontWeight="900"
-        >
-          {num}
-        </text>
-
-        {/* Big numeral to trace, in Trace colour */}
-        <g>
-          <text
-            x={tracedNumeralX}
-            y={sp.contentTop + (topSectionHeight + bigFontSize * 0.71) / 2}
-            textAnchor="middle"
-            fill="#B6B2A6"
-            fontFamily="Nunito, sans-serif"
-            fontSize={bigFontSize}
-            fontWeight="900"
-          >
-            {num}
-          </text>
-        </g>
+        <HandwrittenText text={numText} x={solidNumeralX} y={bigTop} h={bigH} variant="solid" />
+        <HandwrittenText text={numText} x={tracedNumeralX} y={bigTop} h={bigH} variant="trace" />
       </g>
 
       {/* Right side: Shapes to count and colour */}
@@ -126,53 +105,26 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
         )}
       </g>
 
-      {/* Bottom practice handwriting line */}
+      {/* Bottom practice handwriting line: one to copy, then dotted copies */}
       <g className="bottom-practice-row">
         <HandwritingGuideLines
           x={paddingX}
           y={bottomSectionY}
           width={usableWidth}
-          lineHeight={Math.min(42, bottomSectionHeight * 0.7)}
+          lineHeight={practiceH}
           showDescender={false}
         />
-
-        {Array.from({ length: practiceRepeats }).map((_, idx) => {
-          const itemX = paddingX + idx * colSpacing + colSpacing * 0.5;
-          const textY = bottomSectionY + Math.min(42, bottomSectionHeight * 0.7) - 3;
-          const isModel = idx === 0;
-
-          return (
-            <g key={idx}>
-              {isModel ? (
-                <text
-                  x={itemX}
-                  y={textY}
-                  textAnchor="middle"
-                  fill="#2D2200"
-                  fontFamily="Nunito, sans-serif"
-                  fontSize="28"
-                  fontWeight="800"
-                >
-                  {num}
-                </text>
-              ) : (
-                <g>
-                  <text
-                    x={itemX}
-                    y={textY}
-                    textAnchor="middle"
-                    fill="#B6B2A6"
-                    fontFamily="Nunito, sans-serif"
-                    fontSize="28"
-                    fontWeight="800"
-                  >
-                    {num}
-                  </text>
-                </g>
-              )}
-            </g>
-          );
-        })}
+        {Array.from({ length: practiceRepeats }).map((_, idx) => (
+          <HandwrittenText
+            key={idx}
+            text={numText}
+            x={paddingX + idx * colSpacing + colSpacing * 0.5}
+            y={bottomSectionY}
+            h={practiceH}
+            align="middle"
+            variant={idx === 0 ? 'solid' : 'trace'}
+          />
+        ))}
       </g>
 
       {/* Optional Character Corner */}
