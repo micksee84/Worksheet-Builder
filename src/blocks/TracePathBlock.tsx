@@ -66,7 +66,7 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
             fill="none"
             stroke="#B6B2A6"
             strokeWidth="5"
-            strokeDasharray="0.1,11"
+            strokeDasharray="0.1,16"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
