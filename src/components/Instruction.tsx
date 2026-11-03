@@ -14,7 +14,7 @@ const PAPER = '#FFFFFF';
 
 export type CueName = 'pencil' | 'crayon' | 'scissors' | 'glue' | 'eye' | 'finger' | 'talk' | 'circle' | 'line';
 
-const CUE_ART: Record<CueName, (w: number) => React.ReactNode> = {
+export const CUE_ART: Record<CueName, (w: number) => React.ReactNode> = {
   // Trace or write
   pencil: (w) => (
     <g transform="rotate(-45 50 50)">

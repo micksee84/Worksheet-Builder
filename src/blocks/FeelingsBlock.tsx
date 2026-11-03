@@ -16,7 +16,7 @@ import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
 
-type Feeling = 'happy' | 'sad' | 'angry' | 'scared' | 'surprised' | 'calm';
+export type Feeling = 'happy' | 'sad' | 'angry' | 'scared' | 'surprised' | 'calm';
 
 const SETS: Record<number, Feeling[]> = {
   3: ['happy', 'sad', 'angry'],
@@ -34,7 +34,7 @@ const LABELS: Record<Feeling, string> = {
 };
 
 /** One feeling face, drawn in a 100 x 100 box. */
-function Face({ feeling, cx, cy, size }: { feeling: Feeling; cx: number; cy: number; size: number }) {
+export function Face({ feeling, cx, cy, size }: { feeling: Feeling; cx: number; cy: number; size: number }) {
   const k = size / 100;
   const w = Math.max(1.5, Math.min(3, size * 0.035)) / k;
   const ink = '#2D2200';

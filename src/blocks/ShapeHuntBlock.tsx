@@ -13,7 +13,7 @@ import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
 import { createRandom, blockSeed } from '../utils/seededRandom';
 
-type HuntShape = 'circle' | 'triangle' | 'square' | 'star' | 'heart';
+export type HuntShape = 'circle' | 'triangle' | 'square' | 'star' | 'heart';
 
 const SHAPE_NAMES: Record<HuntShape, string> = {
   circle: 'circle',
@@ -23,7 +23,7 @@ const SHAPE_NAMES: Record<HuntShape, string> = {
   heart: 'heart',
 };
 
-function shapePath(shape: HuntShape, cx: number, cy: number, r: number, rot: number): React.ReactNode {
+export function shapePath(shape: HuntShape, cx: number, cy: number, r: number, rot: number): React.ReactNode {
   const common = { fill: '#FFFFFF', stroke: '#2D2200', strokeWidth: 2.5, strokeLinejoin: 'round' as const };
   const t = `rotate(${rot} ${cx} ${cy})`;
   switch (shape) {
