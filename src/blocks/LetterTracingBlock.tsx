@@ -46,12 +46,15 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
   const usableWidth = width - paddingX * 2;
   const colSpacing = usableWidth / repeats;
 
-  // Letter height (top line to baseline). Fits the row height and the column width,
-  // so "W w" never runs into the next copy.
+  // Letter height (top line to baseline). Sized from the widest letter in the alphabet
+  // for this case mode, not the chosen letter, so every letter comes out the same size:
+  // M is as tall as N, and "Ww" still never runs into the next copy.
   const LETTER_GAP = 0.3;
   const textUnits = lettersWidth(rowText, LETTER_GAP);
-  const fitHeight = rowSpacing / (hasDescender ? 1.55 : 1.25);
-  const h = Math.min(54, fitHeight, (colSpacing * 0.7) / Math.max(textUnits, 0.5));
+  const widestUnits = widestRowUnits(caseMode, LETTER_GAP);
+  // Leave room for a descender line on every letter, so g is the same size as a.
+  const fitHeight = rowSpacing / (caseMode === 'upper' ? 1.25 : 1.55);
+  const h = Math.min(54, fitHeight, (colSpacing * 0.8) / widestUnits);
 
   // Dot and stroke sizes scale with the letter.
   const dotGap = Math.max(4.5, h * 0.12);
@@ -129,6 +132,16 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
 };
 
 const lettersWidthOne = (ch: string) => lettersWidth(ch, 0);
+
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+/** Width of the widest row text (e.g. "Ww") for a case mode, in line units. */
+function widestRowUnits(caseMode: 'both' | 'upper' | 'lower', gap: number): number {
+  return Math.max(
+    ...ALPHABET.map((c) =>
+      lettersWidth(caseMode === 'upper' ? c : caseMode === 'lower' ? c.toLowerCase() : c + c.toLowerCase(), gap)
+    )
+  );
+}
 
 export const LetterTracingBlockDefinition: BlockDefinition = {
   id: 'letter-tracing',
