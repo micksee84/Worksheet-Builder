@@ -2,7 +2,7 @@
  * @license
  * Sunshine Brigade Worksheet Builder - Starter Block 1: Line Tracing (Pre-Writing)
  * Features:
- * - Left-to-right dashed pre-writing lines
+ * - Left-to-right dotted pre-writing lines
  * - Line styles: straight, wave, zigzag, loops, castle
  * - Crisp SVG path generation with start dot and finish star
  */
@@ -14,6 +14,21 @@ import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
 
 export type LineStyle = 'straight' | 'wave' | 'zigzag' | 'loops' | 'castle';
+
+/** A true sine wave with a set number of peaks, drawn as a fine polyline. */
+export function generateSmoothWave(startX: number, endX: number, y: number, amplitude: number, peaks: number): string {
+  const width = endX - startX;
+  const steps = Math.max(24, Math.round(width / 2));
+  let d = `M ${startX} ${y}`;
+  for (let k = 1; k <= steps; k++) {
+    const t = k / steps;
+    const px = startX + width * t;
+    const py = y - amplitude * Math.sin(t * peaks * Math.PI * 2);
+    d += ` L ${px.toFixed(2)} ${py.toFixed(2)}`;
+  }
+  return d;
+}
+
 
 export function generateLinePath(
   style: LineStyle,
@@ -119,13 +134,17 @@ export const LineTracingRenderer: React.FC<BlockRenderProps> = ({
     return {
       id: idx,
       y,
-      path: generateLinePath(effectiveStyle, startX, endX, y, amplitude),
+      // Waves: three big, smooth humps so they read as waves, not zigzags.
+      path:
+        effectiveStyle === 'wave'
+          ? generateSmoothWave(startX, endX, y, Math.min(lineSpacing * 0.3, 26), 3)
+          : generateLinePath(effectiveStyle, startX, endX, y, amplitude),
     };
   });
 
   return (
     <g className="line-tracing-block">
-      <Instruction x={paddingX} y={sp.instructionY} cue="pencil" size={size} text={size === 'quarter' ? 'Follow the dashes to the star.' : 'Start at the big dot. Follow the dashes to the star.'} />
+      <Instruction x={paddingX} y={sp.instructionY} cue="pencil" size={size} text={size === 'quarter' ? 'Follow the dots to the star.' : 'Start at the big dot. Follow the dots to the star.'} />
 
       {/* Render each tracing line */}
       {lines.map((line) => (
@@ -134,13 +153,13 @@ export const LineTracingRenderer: React.FC<BlockRenderProps> = ({
           <circle cx={startX - 10} cy={line.y} r="5.5" fill="#2D2200" />
           <circle cx={startX - 10} cy={line.y} r="2" fill="#FFFFFF" />
 
-          {/* Trace line (dashed, bold black) */}
+          {/* Trace line (dotted, soft grey) */}
           <path
             d={line.path}
             fill="none"
             stroke="#B6B2A6"
-            strokeWidth="4"
-            strokeDasharray="12,12"
+            strokeWidth="5"
+            strokeDasharray="0.1,16"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -162,7 +181,7 @@ export const LineTracingRenderer: React.FC<BlockRenderProps> = ({
 export const LineTracingBlockDefinition: BlockDefinition = {
   id: 'line-tracing',
   displayName: 'Line tracing',
-  description: 'Dashed straight, zigzag, wave, or loop lines to trace left-to-right.',
+  description: 'Dotted straight, zigzag, wave, or loop lines to trace left-to-right.',
   category: 'pre-writing',
   skillTags: ['pencil control', 'hand-eye coordination', 'fine motor'],
   ageRange: '3–5',

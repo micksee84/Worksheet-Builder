@@ -12,21 +12,7 @@ import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
-import { generateLinePath, LineStyle } from './LineTracingBlock';
-
-/** A true sine wave with a set number of peaks, drawn as a fine polyline. */
-function generateSmoothWave(startX: number, endX: number, y: number, amplitude: number, peaks: number): string {
-  const width = endX - startX;
-  const steps = Math.max(24, Math.round(width / 2));
-  let d = `M ${startX} ${y}`;
-  for (let k = 1; k <= steps; k++) {
-    const t = k / steps;
-    const px = startX + width * t;
-    const py = y - amplitude * Math.sin(t * peaks * Math.PI * 2);
-    d += ` L ${px.toFixed(2)} ${py.toFixed(2)}`;
-  }
-  return d;
-}
+import { generateLinePath, generateSmoothWave, LineStyle } from './LineTracingBlock';
 
 const PAIRS: Record<string, [string, string]> = {
   'bee-flower': ['bee', 'flower'],

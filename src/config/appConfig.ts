@@ -26,9 +26,9 @@ export const BRAND_COLORS = {
 export const INK_STYLE = {
   ink: '#2D2200', // all text, outlines, shadows, start dots
   paper: '#FFFFFF', // every ground and fill
-  trace: '#B6B2A6', // letters and numbers to trace (solid fill), dashed paths and guide lines
+  trace: '#B6B2A6', // letters and numbers to trace (solid fill), dotted paths and guide lines
   traceLineWidth: 4, // pt, paths to trace
-  traceDash: '12,12', // dash / gap for paths to trace
+  traceDash: '0.1,16', // dot / gap for paths to trace (round caps make the dots)
   frameWidth: 2.25, // pt (3px), activity frames
   minLineWidth: 1.5, // nothing thinner than this
   minRadius: 12,
