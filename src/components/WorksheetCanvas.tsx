@@ -417,7 +417,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
       {/* Canvas Top Bar Controls: Page Tabs, Layout Selector, Title Edit */}
       <div className="px-6 py-2.5 bg-white border-b border-[#E2DEC9] flex flex-wrap items-center justify-between gap-3 shrink-0">
         {/* Left: on phones, where the pages panel is hidden, step through pages here */}
-        <div className="flex md:hidden items-center gap-1">
+        <div className="flex lg:hidden items-center gap-1">
           <button
             onClick={() => onSelectPageIndex(activePageIndex - 1)}
             disabled={activePageIndex === 0}

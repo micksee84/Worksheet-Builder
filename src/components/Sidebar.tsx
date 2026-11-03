@@ -155,14 +155,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile Backdrop */}
       {isOpenOnMobile && (
         <div
-          className="fixed inset-0 bg-[#2D2200]/40 z-40 md:hidden"
+          className="fixed inset-0 bg-[#2D2200]/40 z-40 lg:hidden"
           onClick={onCloseMobile}
         />
       )}
 
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-40 w-80 md:w-84 bg-[#FAF8F0] border-r border-[#E2DEC9] flex flex-col transition-transform duration-200 ease-in-out ${
-          isOpenOnMobile ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        className={`fixed lg:static inset-y-0 left-0 z-40 w-80 lg:w-84 bg-[#FAF8F0] border-r border-[#E2DEC9] flex flex-col transition-transform duration-200 ease-in-out ${
+          isOpenOnMobile ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Top Header */}
@@ -174,7 +174,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               onClick={onCloseMobile}
               title="Close the activity list"
-              className="md:hidden p-1.5 text-[#6B5838] hover:text-[#2D2200] rounded-lg"
+              className="lg:hidden p-1.5 text-[#6B5838] hover:text-[#2D2200] rounded-lg"
             >
               <X className="w-5 h-5" />
             </button>

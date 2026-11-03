@@ -83,7 +83,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onToggleMobileSidebar}
-          className="md:hidden p-2 text-[#2D2200] hover:bg-[#FAF8F0] rounded-lg"
+          className="lg:hidden p-2 text-[#2D2200] hover:bg-[#FAF8F0] rounded-lg"
           title="Show or hide the activities"
         >
           <Menu className="w-5 h-5" />

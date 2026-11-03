@@ -325,7 +325,7 @@ export const PagesPanel: React.FC<PagesPanelProps> = ({
     return (
       <aside
         aria-label="Pages"
-        className="hidden md:flex w-14 shrink-0 flex-col items-center bg-[#FAF8F0] border-r border-[#E2DEC9]"
+        className="hidden lg:flex w-14 shrink-0 flex-col items-center bg-[#FAF8F0] border-r border-[#E2DEC9]"
       >
         <button
           type="button"
@@ -378,7 +378,7 @@ export const PagesPanel: React.FC<PagesPanelProps> = ({
   return (
     <aside
       aria-label="Pages"
-      className="hidden md:flex w-[188px] shrink-0 flex-col bg-[#FAF8F0] border-r border-[#E2DEC9]"
+      className="hidden lg:flex w-[188px] shrink-0 flex-col bg-[#FAF8F0] border-r border-[#E2DEC9]"
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-2 px-3 py-3 bg-white border-b border-[#E2DEC9]">
