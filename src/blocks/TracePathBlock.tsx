@@ -12,7 +12,7 @@ import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
-import { generateLinePath, generateSmoothWave, LineStyle, traceDashArray } from './LineTracingBlock';
+import { generateTraceShape, LineStyle, traceBandHalf } from './LineTracingBlock';
 
 const PAIRS: Record<string, [string, string]> = {
   'bee-flower': ['bee', 'flower'],
@@ -44,13 +44,9 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
     const style: LineStyle = pathStyle === 'mixed' ? MIXED_STYLES[i % MIXED_STYLES.length] : (pathStyle as LineStyle);
     const startX = paddingX + picSize + 12;
     const endX = width - paddingX - picSize - 12;
-    const amplitude = Math.min(rowH * 0.24, 22);
-    // Waves: three big, smooth humps so they read as waves, not zigzags.
-    const path =
-      style === 'wave'
-        ? generateSmoothWave(startX, endX, y, Math.min(rowH * 0.26, 26), 3)
-        : generateLinePath(style, startX, endX, y, amplitude);
-    return { i, y, pair, path, startX, dash: traceDashArray(style) };
+    // Same band height for every shape, so mixed rows match and sit evenly apart.
+    const shape = generateTraceShape(style, startX, endX, y, traceBandHalf(rowH));
+    return { i, y, pair, startX, ...shape };
   });
 
   return (
@@ -67,7 +63,7 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
           <Picture name={row.pair[0]} cx={paddingX + picSize / 2} cy={row.y} size={picSize} />
           <Picture name={row.pair[1]} cx={width - paddingX - picSize / 2} cy={row.y} size={picSize} />
           <path
-            d={row.path}
+            d={row.d}
             fill="none"
             stroke="#B6B2A6"
             strokeWidth="5"
@@ -75,7 +71,7 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <circle cx={row.startX} cy={row.y} r="5" fill="#2D2200" />
+          <circle cx={row.startX} cy={row.startY} r="5" fill="#2D2200" />
         </g>
       ))}
       <CharacterCorner config={instance.character} blockWidth={width} blockHeight={height} />
