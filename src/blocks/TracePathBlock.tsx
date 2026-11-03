@@ -12,7 +12,7 @@ import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
-import { generateLinePath, generateSmoothWave, LineStyle } from './LineTracingBlock';
+import { generateLinePath, generateSmoothWave, LineStyle, traceDashArray } from './LineTracingBlock';
 
 const PAIRS: Record<string, [string, string]> = {
   'bee-flower': ['bee', 'flower'],
@@ -50,7 +50,7 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
       style === 'wave'
         ? generateSmoothWave(startX, endX, y, Math.min(rowH * 0.26, 26), 3)
         : generateLinePath(style, startX, endX, y, amplitude);
-    return { i, y, pair, path, startX };
+    return { i, y, pair, path, startX, dash: traceDashArray(style) };
   });
 
   return (
@@ -71,7 +71,7 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
             fill="none"
             stroke="#B6B2A6"
             strokeWidth="5"
-            strokeDasharray="0.1,16"
+            strokeDasharray={row.dash}
             strokeLinecap="round"
             strokeLinejoin="round"
           />

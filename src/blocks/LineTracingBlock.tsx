@@ -15,6 +15,15 @@ import { blockSpacing } from '../utils/spacing';
 
 export type LineStyle = 'straight' | 'wave' | 'zigzag' | 'loops' | 'castle';
 
+/** Distance between dots on dotted trace lines (matches strokeDasharray). */
+export const TRACE_DOT_GAP = 16;
+/** Castle steps use closer dots so each straight side reads as a line, not a dot grid. */
+export const CASTLE_DOT_GAP = 10;
+
+export function traceDashArray(style: LineStyle): string {
+  return `0.1,${style === 'castle' ? CASTLE_DOT_GAP : TRACE_DOT_GAP}`;
+}
+
 /** A true sine wave with a set number of peaks, drawn as a fine polyline. */
 export function generateSmoothWave(startX: number, endX: number, y: number, amplitude: number, peaks: number): string {
   const width = endX - startX;
@@ -72,16 +81,30 @@ export function generateLinePath(
     }
 
     case 'castle': {
-      const step = 48;
-      const count = Math.max(2, Math.floor(totalWidth / step));
-      const segWidth = totalWidth / count;
-      let path = `M ${startX} ${y}`;
+      // Big, square steps built on the castle dot spacing so a dot lands on
+      // every corner. Each straight side is its own subpath: the dot pattern restarts
+      // at each corner instead of skipping past it.
+      const g = CASTLE_DOT_GAP;
+      const rise = g * Math.max(2, Math.round((amplitude * 1.6) / g));
+      const flat = g * 3;
+      const unit = flat * 2;
+      const count = Math.max(2, Math.floor((totalWidth - flat) / unit));
+      const lead = (totalWidth - count * unit - flat) / 2;
+      const segs: string[] = [];
+      let x = startX;
+      const seg = (x1: number, y1: number, x2: number, y2: number) => segs.push(`M ${x1} ${y1} L ${x2} ${y2}`);
+      if (lead > 0.5) { seg(x, y, x + lead, y); x += lead; }
       for (let i = 0; i < count; i++) {
-        const curX = startX + i * segWidth;
-        const halfSeg = segWidth * 0.5;
-        path += ` L ${curX + segWidth * 0.25} ${y} L ${curX + segWidth * 0.25} ${y - amplitude} L ${curX + segWidth * 0.75} ${y - amplitude} L ${curX + segWidth * 0.75} ${y} L ${curX + segWidth} ${y}`;
+        seg(x, y, x + flat, y); x += flat; // ground
+        seg(x, y, x, y - rise); // up
+        seg(x, y - rise, x + flat, y - rise); x += flat; // top
+        seg(x, y - rise, x, y); // down
       }
-      return path;
+      seg(x, y, x + flat, y); x += flat;
+      if (endX - x > 0.5) seg(x, y, endX, y);
+      // Closing dot at the very end of the line.
+      segs.push(`M ${endX} ${y} L ${endX + 0.1} ${y}`);
+      return segs.join(' ');
     }
 
     case 'loops': {
@@ -134,6 +157,7 @@ export const LineTracingRenderer: React.FC<BlockRenderProps> = ({
     return {
       id: idx,
       y,
+      dash: traceDashArray(effectiveStyle),
       // Waves: three big, smooth humps so they read as waves, not zigzags.
       path:
         effectiveStyle === 'wave'
@@ -159,7 +183,7 @@ export const LineTracingRenderer: React.FC<BlockRenderProps> = ({
             fill="none"
             stroke="#B6B2A6"
             strokeWidth="5"
-            strokeDasharray="0.1,16"
+            strokeDasharray={line.dash}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
