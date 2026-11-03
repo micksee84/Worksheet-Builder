@@ -2,7 +2,7 @@
  * @license
  * Sunshine Brigade Worksheet Builder - Trace the Path
  * Skill: pencil control and hand-eye coordination (pre-writing).
- * The child follows a dashed path from a picture to its goal (bee to flower, dog to bone).
+ * The child follows a dotted path from a picture to its goal (bee to flower, dog to bone).
  * Easier: one straight path. Core: waves. Stretch: zigzags and loops.
  */
 
@@ -55,7 +55,7 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
         y={sp.instructionY}
         cue="pencil"
         size={size}
-        text={size === 'quarter' ? 'Help them get home.' : 'Start at the dot. Follow the dashes to help them get home.'}
+        text={size === 'quarter' ? 'Help them get home.' : 'Start at the big dot. Follow the dots to help them get home.'}
       />
       {rows.map((row) => (
         <g key={row.i}>
@@ -65,8 +65,8 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
             d={row.path}
             fill="none"
             stroke="#B6B2A6"
-            strokeWidth="4"
-            strokeDasharray="12,12"
+            strokeWidth="5"
+            strokeDasharray="0.1,11"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -81,7 +81,7 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
 export const TracePathBlockDefinition: BlockDefinition = {
   id: 'trace-path',
   displayName: 'Trace the path',
-  description: 'Follow a dashed path from a picture to its goal, like a bee to its flower.',
+  description: 'Follow a dotted path from a picture to its goal, like a bee to its flower.',
   category: 'pre-writing',
   skillTags: ['pencil control', 'hand-eye coordination', 'fine motor'],
   ageRange: '3–5',
