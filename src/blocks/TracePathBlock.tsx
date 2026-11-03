@@ -12,7 +12,8 @@ import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
-import { generateTraceShape, LineStyle, traceBandHalf } from './LineTracingBlock';
+import { buildTraceShape, COMPLEXITY_OPTIONS, levelForRow, LineStyle, traceBandHalf } from './traceShapes';
+import { TraceDots } from './TraceDots';
 
 const PAIRS: Record<string, [string, string]> = {
   'bee-flower': ['bee', 'flower'],
@@ -45,7 +46,8 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
     const startX = paddingX + picSize + 12;
     const endX = width - paddingX - picSize - 12;
     // Same band height for every shape, so mixed rows match and sit evenly apart.
-    const shape = generateTraceShape(style, startX, endX, y, traceBandHalf(rowH));
+    const level = levelForRow(s.complexity, i, pathCount);
+    const shape = buildTraceShape(style, startX, endX, y, traceBandHalf(rowH), level);
     return { i, y, pair, startX, ...shape };
   });
 
@@ -62,15 +64,7 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
         <g key={row.i}>
           <Picture name={row.pair[0]} cx={paddingX + picSize / 2} cy={row.y} size={picSize} />
           <Picture name={row.pair[1]} cx={width - paddingX - picSize / 2} cy={row.y} size={picSize} />
-          <path
-            d={row.d}
-            fill="none"
-            stroke="#B6B2A6"
-            strokeWidth="5"
-            strokeDasharray={row.dash}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <TraceDots dots={row.dots} r={row.r} />
           <circle cx={row.startX} cy={row.startY} r="5" fill="#2D2200" />
         </g>
       ))}
@@ -122,7 +116,14 @@ export const TracePathBlockDefinition: BlockDefinition = {
         { label: 'A different one each row', value: 'mixed' },
       ],
     },
+    {
+      key: 'complexity',
+      label: 'How tricky',
+      type: 'select',
+      options: COMPLEXITY_OPTIONS,
+      helperText: 'Changes how many waves, points or loops fit across each path.',
+    },
   ],
-  defaultSettings: { pathStyle: 'wave', pathCount: 2, pair: 'bee-flower' },
+  defaultSettings: { pathStyle: 'wave', pathCount: 2, pair: 'bee-flower', complexity: 'medium' },
   render: (props) => <TracePathRenderer {...props} />,
 };

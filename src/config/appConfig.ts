@@ -28,7 +28,7 @@ export const INK_STYLE = {
   paper: '#FFFFFF', // every ground and fill
   trace: '#B6B2A6', // letters and numbers to trace (solid fill), dotted paths and guide lines
   traceLineWidth: 4, // pt, paths to trace
-  traceDash: '0.1,16', // dot / gap for paths to trace (round caps make the dots)
+  traceDotGap: 16, // pt, target gap between trace dots (see blocks/traceShapes.ts)
   frameWidth: 2.25, // pt (3px), activity frames
   minLineWidth: 1.5, // nothing thinner than this
   minRadius: 12,
