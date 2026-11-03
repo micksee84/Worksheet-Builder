@@ -14,6 +14,20 @@ import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
 import { generateLinePath, LineStyle } from './LineTracingBlock';
 
+/** A true sine wave with a set number of peaks, drawn as a fine polyline. */
+function generateSmoothWave(startX: number, endX: number, y: number, amplitude: number, peaks: number): string {
+  const width = endX - startX;
+  const steps = Math.max(24, Math.round(width / 2));
+  let d = `M ${startX} ${y}`;
+  for (let k = 1; k <= steps; k++) {
+    const t = k / steps;
+    const px = startX + width * t;
+    const py = y - amplitude * Math.sin(t * peaks * Math.PI * 2);
+    d += ` L ${px.toFixed(2)} ${py.toFixed(2)}`;
+  }
+  return d;
+}
+
 const PAIRS: Record<string, [string, string]> = {
   'bee-flower': ['bee', 'flower'],
   'bird-nest': ['bird', 'nest'],
@@ -45,7 +59,12 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
     const startX = paddingX + picSize + 12;
     const endX = width - paddingX - picSize - 12;
     const amplitude = Math.min(rowH * 0.24, 22);
-    return { i, y, pair, path: generateLinePath(style, startX, endX, y, amplitude), startX };
+    // Waves: three big, smooth humps so they read as waves, not zigzags.
+    const path =
+      style === 'wave'
+        ? generateSmoothWave(startX, endX, y, Math.min(rowH * 0.26, 26), 3)
+        : generateLinePath(style, startX, endX, y, amplitude);
+    return { i, y, pair, path, startX };
   });
 
   return (
