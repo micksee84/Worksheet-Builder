@@ -87,7 +87,7 @@ export const CutGlueRenderer: React.FC<BlockRenderProps> = ({ instance, size, wi
         const x = startX + i * (box + gap);
         return (
           <g key={`cut-${name}`}>
-            <path d={cutOutline(x, cutY, box, box, wavy)} fill="#FFFFFF" stroke="#B6B2A6" strokeWidth="2" strokeDasharray="7,5" strokeLinecap="round" />
+            <path d={cutOutline(x, cutY, box, box, wavy)} fill="#FFFFFF" stroke="#9A9585" strokeWidth="2" strokeDasharray="7,5" strokeLinecap="round" />
             <Picture name={name} cx={x + box / 2} cy={cutY + box / 2} size={box * 0.72} />
           </g>
         );

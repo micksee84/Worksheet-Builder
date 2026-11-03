@@ -10,7 +10,7 @@ import { INK_STYLE } from '../config/appConfig';
 import { TraceDot } from './traceShapes';
 
 export const TraceDots: React.FC<{ dots: TraceDot[]; r: number }> = ({ dots, r }) => (
-  <g className="trace-dots" fill={INK_STYLE.trace}>
+  <g className="trace-dots" fill={INK_STYLE.traceDot}>
     {dots.map((d, i) => (
       <circle key={i} cx={d.x.toFixed(2)} cy={d.y.toFixed(2)} r={r} />
     ))}

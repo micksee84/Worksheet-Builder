@@ -107,7 +107,7 @@ export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
                   ) : (
                     // Letter to trace: grey dots, black dot where the pencil starts
                     <g key={i}>
-                      <g fill={INK_STYLE.trace}>
+                      <g fill={INK_STYLE.traceDot}>
                         {p.traceDots.map((d, k) => (
                           <circle key={k} cx={d.x.toFixed(2)} cy={d.y.toFixed(2)} r={dotR} />
                         ))}

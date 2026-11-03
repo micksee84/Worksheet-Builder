@@ -26,7 +26,9 @@ export const BRAND_COLORS = {
 export const INK_STYLE = {
   ink: '#2D2200', // all text, outlines, shadows, start dots
   paper: '#FFFFFF', // every ground and fill
-  trace: '#B6B2A6', // letters and numbers to trace (solid fill), dotted paths and guide lines
+  trace: '#B6B2A6', // letters and numbers to trace (solid fill), separators
+  traceDot: '#9A9585', // dotted lines, dotted letters and cut lines: a step darker so they stand out
+  guide: '#DDD9C4', // handwriting top line and midline: light, so the dots stand out
   traceLineWidth: 4, // pt, paths to trace
   traceDotGap: 16, // pt, target gap between trace dots (see blocks/traceShapes.ts)
   frameWidth: 2.25, // pt (3px), activity frames

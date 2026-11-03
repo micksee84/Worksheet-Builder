@@ -27,9 +27,9 @@ export const HandwritingGuideLines: React.FC<HandwritingGuideLinesProps> = ({
   width,
   lineHeight,
   showDescender = false,
-  // Ink Style: guide lines in Trace colour, the baseline in Ink so letters have a clear floor.
-  strokeColor = '#B6B2A6',
-  dashedColor = '#B6B2A6',
+  // Ink Style: light guide lines so the trace dots stand out, the baseline in Ink so letters have a clear floor.
+  strokeColor = '#DDD9C4',
+  dashedColor = '#DDD9C4',
   baselineColor = '#2D2200',
 }) => {
   const topY = y;

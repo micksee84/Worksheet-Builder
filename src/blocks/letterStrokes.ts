@@ -45,7 +45,8 @@ export const LETTER_STROKES: Record<string, LetterGlyph> = {
     width: 0.62,
     strokes: [
       [L(0, 0, 0, 1)],
-      [L(0, 0, 0.3, 0), A(0.3, 0.25, 0.24, 0.25, 90, -90), A(0.3, 0.75, 0.3, 0.25, 90, -90), L(0.3, 1, 0, 1)],
+      [L(0, 0, 0.3, 0), A(0.3, 0.25, 0.24, 0.25, 90, -90), L(0.3, 0.5, 0, 0.5)],
+      [L(0, 0.5, 0.32, 0.5), A(0.32, 0.75, 0.3, 0.25, 90, -90), L(0.32, 1, 0, 1)],
     ],
   },
   C: { width: 0.9, strokes: [[A(0.45, 0.5, 0.45, 0.5, 50, 310)]] },
@@ -180,12 +181,75 @@ export function placeLetter(ch: string, x: number, y: number, h: number, dotGap:
       }
     });
     paths.push(d);
-    traceDots.push(...placeDots(pieces, dotGap));
+    // Join pieces that flow smoothly into each other (a line running into a curve),
+    // so dots only restart at real corners and stay evenly spaced along each run.
+    traceDots.push(...placeDots(mergeSmoothRuns(pieces), dotGap));
   }
+
+  // Where strokes meet or cross (the top of A, the crossbar of H, the stick of a),
+  // two dots can land almost on top of each other. Keep the first one.
+  const minApart = dotGap * 0.6;
+  const kept: TraceDot[] = [];
+  for (const dot of traceDots) {
+    if (!kept.some((k) => Math.hypot(k.x - dot.x, k.y - dot.y) < minApart)) kept.push(dot);
+  }
+  traceDots.length = 0;
+  traceDots.push(...kept);
 
   const first = glyph.strokes[0][0];
   const start = map(segPoint(first, 0));
   return { paths, dots, traceDots, start };
+}
+
+/** Tangent direction at the start (t = 0) or end (t = 1) of a piece. */
+function tangent(piece: Piece, atEnd: boolean): number {
+  const e = 0.002;
+  const [x0, y0] = piece.at(atEnd ? 1 - e : 0);
+  const [x1, y1] = piece.at(atEnd ? 1 : e);
+  return Math.atan2(y1 - y0, x1 - x0);
+}
+
+function pieceLength(piece: Piece): number {
+  let len = 0;
+  let prev = piece.at(0);
+  for (let i = 1; i <= 48; i++) {
+    const p = piece.at(i / 48);
+    len += Math.hypot(p[0] - prev[0], p[1] - prev[1]);
+    prev = p;
+  }
+  return len;
+}
+
+/** Combine pieces into runs, breaking only at corners (direction changes over ~25 degrees). */
+function mergeSmoothRuns(pieces: Piece[]): Piece[] {
+  const runs: Piece[][] = [];
+  for (const piece of pieces) {
+    const run = runs[runs.length - 1];
+    if (run) {
+      let turn = Math.abs(tangent(piece, false) - tangent(run[run.length - 1], true));
+      if (turn > Math.PI) turn = Math.PI * 2 - turn;
+      if (turn < (25 * Math.PI) / 180) {
+        run.push(piece);
+        continue;
+      }
+    }
+    runs.push([piece]);
+  }
+  return runs.map((run) => {
+    if (run.length === 1) return run[0];
+    const lens = run.map(pieceLength);
+    const total = lens.reduce((a, b) => a + b, 0) || 1;
+    return {
+      at: (t: number) => {
+        let want = t * total;
+        for (let i = 0; i < run.length; i++) {
+          if (want <= lens[i] || i === run.length - 1) return run[i].at(Math.min(1, want / (lens[i] || 1)));
+          want -= lens[i];
+        }
+        return run[run.length - 1].at(1);
+      },
+    };
+  });
 }
 
 /** Width of a run of letters in line units, with `gap` between letters. */
