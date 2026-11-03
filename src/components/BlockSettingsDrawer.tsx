@@ -8,7 +8,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { BlockInstance, BlockDefinition, CharacterCorner, Slot } from '../types';
-import { CHARACTERS, CharacterId, assetUrl } from '../config/appConfig';
+import { CHARACTERS, CharacterId, FEATURES, assetUrl } from '../config/appConfig';
 import { X, Trash2, Sparkles, Smile } from 'lucide-react';
 
 interface BlockSettingsDrawerProps {
@@ -216,7 +216,8 @@ export const BlockSettingsDrawer: React.FC<BlockSettingsDrawerProps> = ({
           })}
         </div>
 
-        {/* Character Corner Customizer */}
+        {/* Character Corner Customizer (switched off in FEATURES for now) */}
+        {FEATURES.cornerCharacters && (
         <div className="pt-4 border-t border-[#E2DEC9] space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-[#6B5838] flex items-center gap-1.5">
@@ -296,6 +297,7 @@ export const BlockSettingsDrawer: React.FC<BlockSettingsDrawerProps> = ({
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Footer Actions */}

@@ -73,6 +73,14 @@ export function assetUrl(path: string): string {
   return `${base.endsWith('/') ? base : `${base}/`}${path.replace(/^\//, '')}`;
 }
 
+// Feature switches
+export const FEATURES = {
+  // Corner mascots on activity blocks. Off while we focus on the core builder.
+  // Turning it back on restores the settings panel section and the drawn mascots;
+  // templates and saved worksheets keep their mascot choices in the meantime.
+  cornerCharacters: false,
+} as const;
+
 // Available characters
 export const CHARACTERS = [
   { id: 'buddy', name: 'Buddy', species: 'Bear', color: '#A06535' },

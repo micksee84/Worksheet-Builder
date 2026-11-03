@@ -9,7 +9,7 @@
 
 import React, { useState } from 'react';
 import { BlockCharacterConfig } from '../types';
-import { CHARACTERS, assetUrl } from '../config/appConfig';
+import { CHARACTERS, FEATURES, assetUrl } from '../config/appConfig';
 import { SPACE, FRAME_STROKE } from '../utils/spacing';
 
 interface CharacterCornerProps {
@@ -25,7 +25,7 @@ export const CharacterCorner: React.FC<CharacterCornerProps> = ({
 }) => {
   const [imageError, setImageError] = useState(false);
 
-  if (!config || !config.id) return null;
+  if (!FEATURES.cornerCharacters || !config || !config.id) return null;
 
   const characterInfo = CHARACTERS.find((c) => c.id === config.id) || {
     id: config.id,
