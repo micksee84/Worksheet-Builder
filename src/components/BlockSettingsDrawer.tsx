@@ -2,6 +2,7 @@
  * @license
  * Sunshine Brigade Worksheet Builder - Block Settings Inspector Panel
  * Dynamically generated from the block definition's settingsSchema.
+ * Docked beside the canvas (a bottom sheet on phones) so the page stays in view while editing.
  * Also provides Character badge selection (Buddy, Finn, Ollie, Faye, Rusty, Hana)
  * and corner placement.
  */
@@ -94,7 +95,10 @@ export const BlockSettingsDrawer: React.FC<BlockSettingsDrawerProps> = ({
       ref={panelRef}
       role="dialog"
       aria-label={`${blockDef.displayName} settings`}
-      className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white border-l border-[#E2DEC9] shadow-2xl flex flex-col transition-transform duration-200"
+      // Never covers the page. From tablet width up it is its own column beside the
+      // canvas, so the canvas narrows and the page re-fits next to it; every change shows
+      // straight away. On phones it is a sheet over the bottom half, with the page above.
+      className="fixed inset-x-0 bottom-0 z-50 max-h-[55vh] rounded-t-2xl border-t shadow-2xl md:static md:inset-auto md:z-auto md:max-h-none md:h-full md:w-[340px] lg:w-[360px] md:flex-none md:rounded-none md:border-t-0 md:border-l md:shadow-none bg-white border-[#E2DEC9] flex flex-col"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2DEC9] bg-[#FAF8F0]">
