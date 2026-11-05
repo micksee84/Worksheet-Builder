@@ -11,11 +11,13 @@ import { Save } from 'lucide-react';
 
 interface SaveWorksheetDialogProps {
   initialName: string;
+  /** 'save' on a first Save; 'rename' from the worksheet name in the top bar. */
+  mode?: 'save' | 'rename';
   onSave: (name: string) => void;
   onCancel: () => void;
 }
 
-export const SaveWorksheetDialog: React.FC<SaveWorksheetDialogProps> = ({ initialName, onSave, onCancel }) => {
+export const SaveWorksheetDialog: React.FC<SaveWorksheetDialogProps> = ({ initialName, mode = 'save', onSave, onCancel }) => {
   const [name, setName] = useState(initialName);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -48,7 +50,7 @@ export const SaveWorksheetDialog: React.FC<SaveWorksheetDialogProps> = ({ initia
             <Save className="w-5 h-5" />
           </div>
           <h2 id="save-worksheet-title" className="text-lg font-extrabold text-[#2D2200]">
-            Save your worksheet
+            {mode === 'rename' ? 'Rename your worksheet' : 'Save your worksheet'}
           </h2>
         </div>
         <label htmlFor="save-worksheet-name" className="block mt-5 text-sm font-bold text-[#2D2200]">
@@ -63,7 +65,9 @@ export const SaveWorksheetDialog: React.FC<SaveWorksheetDialogProps> = ({ initia
           placeholder="For example, Letter A week"
           className="mt-1.5 w-full px-3.5 py-2.5 text-sm font-medium text-[#2D2200] bg-white border-[1.5px] border-[#2D2200] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#009BD9]"
         />
-        <p className="mt-2 text-xs text-[#6B5838]">You'll find it under Open. Changes after this save on their own.</p>
+        <p className="mt-2 text-xs text-[#6B5838]">
+          {mode === 'rename' ? 'This is the name you see under Open.' : "You'll find it under Open. Changes after this save on their own."}
+        </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
             type="button"
@@ -77,7 +81,7 @@ export const SaveWorksheetDialog: React.FC<SaveWorksheetDialogProps> = ({ initia
             disabled={!clean}
             className="min-h-11 px-5 rounded-full bg-[#2D2200] text-sm font-extrabold text-white disabled:opacity-40 hover:-translate-x-px hover:-translate-y-px active:translate-x-px active:translate-y-px transition-transform"
           >
-            Save
+            {mode === 'rename' ? 'Rename' : 'Save'}
           </button>
         </div>
       </form>

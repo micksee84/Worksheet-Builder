@@ -269,6 +269,7 @@ export default function App() {
   );
   const [manualSave, setManualSave] = useState<'idle' | 'saving' | 'error'>('idle');
   const [isNamingSave, setIsNamingSave] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
 
   // Browser library: once a worksheet is saved, later changes keep it up to date.
   useEffect(() => {
@@ -883,8 +884,8 @@ export default function App() {
             saveState={saveState}
             onSave={handleSave}
             onOpen={() => setIsMyWorksheetsOpen(true)}
-            pageSize={worksheet.pageSize}
-            onTogglePageSize={handleTogglePageSize}
+            worksheetName={isUnnamed(worksheet) ? null : worksheet.title}
+            onRename={() => setIsRenaming(true)}
             canUndo={history.length > 0}
             canRedo={future.length > 0}
             onUndo={handleUndo}
@@ -934,6 +935,7 @@ export default function App() {
               pages={worksheet.pages}
               activePageIndex={activePageIndex}
               pageSize={worksheet.pageSize}
+              onTogglePageSize={handleTogglePageSize}
               selectedSlot={
                 selectedSlot && selectedSlotRef
                   ? { pageId: selectedSlotRef.pageId, slot: selectedSlot }
@@ -1026,6 +1028,20 @@ export default function App() {
           onNew={handleNewWorksheet}
           source={librarySource}
         />
+
+        {/* Rename from the worksheet name in the top bar. Renaming an unsaved worksheet saves it too. */}
+        {isRenaming && (
+          <SaveWorksheetDialog
+            mode="rename"
+            initialName={isUnnamed(worksheet) ? '' : worksheet.title}
+            onCancel={() => setIsRenaming(false)}
+            onSave={(name) => {
+              setIsRenaming(false);
+              if (saveState === 'unsaved') saveWorksheet(name);
+              else updateWorksheet((prev) => ({ ...prev, title: name }));
+            }}
+          />
+        )}
 
         {/* First Save: name the worksheet */}
         {isNamingSave && (

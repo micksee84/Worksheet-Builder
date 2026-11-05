@@ -1,18 +1,15 @@
 /**
  * @license
  * Sunshine Brigade Worksheet Builder - Top Bar
- * Controls:
- * - Worksheet Title (editable)
- * - Page Size Switch (US Letter / A4)
- * - Save (names the worksheet the first time) and Open (saved worksheets)
- * - Undo / Redo
- * - Templates Gallery button
- * - Share Link copy
- * - Print & Download PDF
+ *
+ * Grouped the way most design tools are:
+ *   Left  (working on the file): logo | Open, Save, Templates · worksheet name | Undo, Redo
+ *   Right (sending it out):      Share, Print / PDF (the one main button), account
+ * Paper size lives with the page, in the canvas toolbar beside the slot layouts.
+ * Below tablet width, Open, Save and Templates fold into one File menu.
  */
 
 import React, { useState } from 'react';
-import { PageSizeId } from '../config/appConfig';
 import {
   Printer,
   Download,
@@ -28,6 +25,8 @@ import {
   LogOut,
   UserRound,
   Save,
+  Pencil,
+  ChevronDown,
 } from 'lucide-react';
 import type { SyncStatus } from '../auth/useAccountSync';
 
@@ -41,8 +40,6 @@ export interface TopBarAccount {
 export type SaveState = 'unsaved' | 'saving' | 'saved' | 'error';
 
 interface TopBarProps {
-  pageSize: PageSizeId;
-  onTogglePageSize: (size: PageSizeId) => void;
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
@@ -58,11 +55,25 @@ interface TopBarProps {
   saveState: SaveState;
   onSave: () => void;
   onOpen: () => void;
+  /** The worksheet's name, or null while it still has a starter name. */
+  worksheetName: string | null;
+  onRename: () => void;
 }
 
+const groupClass = 'flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9]';
+const itemClass =
+  'flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-[#2D2200] hover:bg-white rounded-md transition-colors whitespace-nowrap';
+
+const SaveIcon: React.FC<{ state: SaveState; className?: string }> = ({ state, className = 'w-3.5 h-3.5' }) =>
+  state === 'saved' ? (
+    <Check className={`${className} text-emerald-600`} aria-hidden="true" />
+  ) : state === 'error' ? (
+    <CloudOff className={`${className} text-[#E52311]`} aria-hidden="true" />
+  ) : (
+    <Save className={`${className} ${state === 'saving' ? 'motion-safe:animate-pulse' : ''}`} aria-hidden="true" />
+  );
+
 export const TopBar: React.FC<TopBarProps> = ({
-  pageSize,
-  onTogglePageSize,
   canUndo,
   canRedo,
   onUndo,
@@ -77,9 +88,12 @@ export const TopBar: React.FC<TopBarProps> = ({
   saveState,
   onSave,
   onOpen,
+  worksheetName,
+  onRename,
 }) => {
   const [copied, setCopied] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showFileMenu, setShowFileMenu] = useState(false);
 
   const handleCopy = () => {
     onCopyShareLink();
@@ -88,8 +102,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   };
 
   return (
-    <header className="h-16 bg-white border-b border-[#E2DEC9] px-4 md:px-6 flex items-center justify-between gap-4 shrink-0 relative z-30 select-none">
-      {/* Brand */}
+    <header className="h-16 bg-white border-b border-[#E2DEC9] px-4 md:px-6 flex items-center justify-between gap-3 shrink-0 relative z-30 select-none">
+      {/* ---------------- Left: brand, then working on the file */}
       <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onToggleMobileSidebar}
@@ -99,7 +113,6 @@ export const TopBar: React.FC<TopBarProps> = ({
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Brand Lockup */}
         <h1 className="m-0 flex items-center gap-3 shrink-0 font-normal">
           <picture className="shrink-0">
             <source media="(min-width: 640px)" srcSet={`${import.meta.env.BASE_URL}sb-logo-header.svg`} />
@@ -111,18 +124,95 @@ export const TopBar: React.FC<TopBarProps> = ({
               loading="eager"
             />
           </picture>
-          <span className="hidden lg:block w-[1.5px] h-6 bg-[#2D2200]/20" aria-hidden="true" />
+          <span className="hidden xl:block w-[1.5px] h-6 bg-[#2D2200]/20" aria-hidden="true" />
           {/* App name: plain Super Joyful in ink, no sticker outline or shadow (never under 24px) */}
-          <span className="hidden lg:block font-joyful font-normal text-[24px] leading-none text-[#2D2200] whitespace-nowrap select-none">
+          <span className="hidden xl:block font-joyful font-normal text-[24px] leading-none text-[#2D2200] whitespace-nowrap select-none">
             Worksheet builder
           </span>
         </h1>
-      </div>
 
-      {/* Middle & Right Actions */}
-      <div className="flex items-center gap-2 shrink-0">
-        {/* Undo / Redo */}
-        <div className="hidden sm:flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9]">
+        <span className="hidden sm:block w-[1.5px] h-7 bg-[#2D2200]/20 shrink-0" aria-hidden="true" />
+
+        {/* File: Open, Save, Templates (tablet and up) */}
+        <div className={`${groupClass} hidden md:flex shrink-0`} role="group" aria-label="Worksheet">
+          <button type="button" onClick={onOpen} className={itemClass} title="Open a saved worksheet or start a new one">
+            <FolderOpen className="w-3.5 h-3.5" aria-hidden="true" />
+            Open
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saveState === 'saving'}
+            title={SAVE_TITLE[saveState]}
+            className={`${itemClass} disabled:cursor-default`}
+          >
+            <SaveIcon state={saveState} />
+            <span aria-live="polite">{SAVE_LABEL[saveState]}</span>
+          </button>
+          <button type="button" onClick={onOpenTemplates} className={itemClass} title="Start from a ready-made worksheet">
+            <BookOpen className="w-3.5 h-3.5" aria-hidden="true" />
+            Templates
+          </button>
+        </div>
+
+        {/* File menu (phones) */}
+        <div className="relative md:hidden shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowFileMenu(!showFileMenu)}
+            aria-haspopup="menu"
+            aria-expanded={showFileMenu}
+            className={`${groupClass} gap-1.5 px-2.5 py-1.5 text-xs font-bold text-[#2D2200]`}
+            title={SAVE_TITLE[saveState]}
+          >
+            <SaveIcon state={saveState} />
+            File
+            <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+          </button>
+          {showFileMenu && (
+            <div
+              role="menu"
+              className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-[#E2DEC9] p-2 z-50 space-y-1"
+              onMouseLeave={() => setShowFileMenu(false)}
+            >
+              {[
+                { label: 'Open', Icon: FolderOpen, run: onOpen },
+                { label: SAVE_LABEL[saveState], Icon: Save, run: onSave },
+                { label: 'Rename', Icon: Pencil, run: onRename },
+                { label: 'Templates', Icon: BookOpen, run: onOpenTemplates },
+              ].map(({ label, Icon, run }) => (
+                <button
+                  key={label}
+                  role="menuitem"
+                  onClick={() => {
+                    setShowFileMenu(false);
+                    run();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-[#2D2200] hover:bg-[#FAF8F0] rounded-lg text-left transition-colors"
+                >
+                  <Icon className="w-4 h-4" aria-hidden="true" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Which worksheet this is; click to rename */}
+        <button
+          type="button"
+          onClick={onRename}
+          title="Rename this worksheet"
+          className="hidden lg:flex items-center gap-1.5 min-w-0 max-w-[14rem] px-2 py-1 rounded-md text-sm hover:bg-[#FAF8F0] transition-colors group"
+        >
+          <span className={`truncate ${worksheetName ? 'font-bold text-[#2D2200]' : 'italic text-[#6B5838]'}`}>
+            {worksheetName ?? 'Untitled worksheet'}
+          </span>
+          <Pencil className="w-3 h-3 text-[#6B5838] opacity-0 group-hover:opacity-100 shrink-0" aria-hidden="true" />
+        </button>
+
+        {/* Edit: Undo, Redo */}
+        <div className={`${groupClass} hidden sm:flex shrink-0`} role="group" aria-label="Undo and redo">
           <button
             onClick={onUndo}
             disabled={!canUndo}
@@ -140,81 +230,10 @@ export const TopBar: React.FC<TopBarProps> = ({
             <Redo2 className="w-4 h-4" />
           </button>
         </div>
+      </div>
 
-        {/* Page Size Segmented Toggle */}
-        <div className="hidden sm:flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9] text-xs font-bold text-[#6B5838]">
-          <button
-            type="button"
-            onClick={() => onTogglePageSize('letter')}
-            title="Use US Letter paper (8.5 × 11 in)"
-            className={`px-2.5 py-1 rounded-md transition-all ${
-              pageSize === 'letter'
-                ? 'bg-white text-[#2D2200] shadow-xs'
-                : 'hover:text-[#2D2200]'
-            }`}
-          >
-            Letter
-          </button>
-          <button
-            type="button"
-            onClick={() => onTogglePageSize('a4')}
-            title="Use A4 paper (210 × 297 mm)"
-            className={`px-2.5 py-1 rounded-md transition-all ${
-              pageSize === 'a4'
-                ? 'bg-white text-[#2D2200] shadow-xs'
-                : 'hover:text-[#2D2200]'
-            }`}
-          >
-            A4
-          </button>
-        </div>
-
-        {/* Open and Save */}
-        <div className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9]">
-          <button
-            type="button"
-            onClick={onOpen}
-            title="Open a saved worksheet or start a new one"
-            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-[#2D2200] hover:bg-white rounded-md transition-colors whitespace-nowrap"
-          >
-            <FolderOpen className="w-3.5 h-3.5" aria-hidden="true" />
-            <span className="hidden md:inline">Open</span>
-            <span className="sr-only md:hidden">Open</span>
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={saveState === 'saving'}
-            title={SAVE_TITLE[saveState]}
-            aria-live="polite"
-            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-[#2D2200] hover:bg-white rounded-md transition-colors whitespace-nowrap disabled:cursor-default"
-          >
-            {saveState === 'saved' ? (
-              <Check className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
-            ) : saveState === 'error' ? (
-              <CloudOff className="w-3.5 h-3.5 text-[#E52311]" aria-hidden="true" />
-            ) : (
-              <Save className={`w-3.5 h-3.5 ${saveState === 'saving' ? 'motion-safe:animate-pulse' : ''}`} aria-hidden="true" />
-            )}
-            <span className="hidden md:inline">{SAVE_LABEL[saveState]}</span>
-            <span className="sr-only md:hidden">{SAVE_LABEL[saveState]}</span>
-          </button>
-        </div>
-
-        {/* Account: who is signed in, sign out */}
-        {account && <AccountMenu account={account} />}
-
-        {/* Templates Gallery Button */}
-        <button
-          onClick={onOpenTemplates}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#2D2200] bg-[#FAF8F0] hover:bg-[#F2F2E2] border border-[#E2DEC9] rounded-lg transition-colors whitespace-nowrap"
-          title="Start from a ready-made worksheet"
-        >
-          <BookOpen className="w-3.5 h-3.5 text-[#2D2200]" />
-          <span className="hidden md:inline">Templates</span>
-        </button>
-
-        {/* Share Link Button */}
+      {/* ---------------- Right: sending it out */}
+      <div className="flex items-center gap-2 shrink-0">
         <button
           onClick={handleCopy}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#2D2200] bg-[#FAF8F0] hover:bg-[#F2F2E2] border border-[#E2DEC9] rounded-lg transition-colors whitespace-nowrap"
@@ -245,7 +264,6 @@ export const TopBar: React.FC<TopBarProps> = ({
             <span>{isExportingPdf ? 'Exporting...' : 'Print / PDF'}</span>
           </button>
 
-          {/* Export Dropdown Popover */}
           {showExportMenu && (
             <div
               className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-[#E2DEC9] p-2 z-50 space-y-1 animate-in fade-in slide-in-from-top-1"
@@ -261,9 +279,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 <Download className="w-4 h-4 text-[#2D2200]" />
                 <div>
                   <div>Download Vector PDF</div>
-                  <div className="text-[10px] text-[#6B5838] font-normal">
-                    Sharp client-side PDF file
-                  </div>
+                  <div className="text-[10px] text-[#6B5838] font-normal">Sharp client-side PDF file</div>
                 </div>
               </button>
 
@@ -277,14 +293,15 @@ export const TopBar: React.FC<TopBarProps> = ({
                 <Printer className="w-4 h-4 text-[#2D2200]" />
                 <div>
                   <div>Browser Print Dialog</div>
-                  <div className="text-[10px] text-[#6B5838] font-normal">
-                    Direct print to paper or PDF
-                  </div>
+                  <div className="text-[10px] text-[#6B5838] font-normal">Direct print to paper or PDF</div>
                 </div>
               </button>
             </div>
           )}
         </div>
+
+        {/* Account: who is signed in, sign out */}
+        {account && <AccountMenu account={account} />}
       </div>
     </header>
   );

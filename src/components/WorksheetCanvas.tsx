@@ -43,6 +43,7 @@ interface WorksheetCanvasProps {
   onChangePageTitle: (pageId: string, title: string) => void;
   onDeleteBlock: (pageId: string, slotId: string) => void;
   onOpenSettings: (pageId: string, slot: Slot) => void;
+  onTogglePageSize: (size: PageSizeId) => void;
 }
 
 const DEFAULT_ZOOM = { single: 0.85, grid: 0.32 } as const;
@@ -233,6 +234,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
   onChangePageTitle,
   onDeleteBlock,
   onOpenSettings,
+  onTogglePageSize,
 }) => {
   const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
   const [gridZoom, setGridZoom] = useState<number>(DEFAULT_ZOOM.grid);
@@ -522,6 +524,30 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
                   : preset.id === 'top-half-2-quarter'
                   ? '1/2 + 2/4'
                   : '2/4 + 1/2'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Paper size: a setting of the page, so it sits with the slot layouts */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#6B5838] hidden xl:inline">Paper:</span>
+          <div role="group" aria-label="Paper size" className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9] gap-1">
+            {([
+              { id: 'letter', label: 'Letter', tip: 'Use US Letter paper (8.5 × 11 in)' },
+              { id: 'a4', label: 'A4', tip: 'Use A4 paper (210 × 297 mm)' },
+            ] as const).map(({ id, label, tip }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => onTogglePageSize(id)}
+                aria-pressed={pageSize === id}
+                title={tip}
+                className={`px-2 py-1 text-[11px] font-bold rounded-md transition-all ${
+                  pageSize === id ? 'bg-white text-[#2D2200] shadow-xs' : 'text-[#6B5838] hover:text-[#2D2200]'
+                }`}
+              >
+                {label}
               </button>
             ))}
           </div>
