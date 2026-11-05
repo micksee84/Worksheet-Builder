@@ -12,8 +12,8 @@
  * 900 -> "900normal". So each weight is registered under that exact style name.
  *
  * Nunito is licensed under the SIL Open Font License (see public/fonts/Nunito-OFL.txt).
- * Super Joyful is optional: drop SuperJoyful.ttf into public/fonts and page titles
- * will use it. Until then titles fall back to Nunito.
+ * Chunky Puffly (page titles) is a TrueType copy of the brand font, because jsPDF cannot
+ * embed CFF-based .otf files. If it is missing, titles fall back to Nunito.
  */
 
 import type { jsPDF } from 'jspdf';
@@ -31,7 +31,7 @@ const FONT_FILES: FontFile[] = [
   { url: assetUrl('fonts/Nunito_700Bold.ttf'), family: 'Nunito', style: 'bold', required: true },
   { url: assetUrl('fonts/Nunito_800ExtraBold.ttf'), family: 'Nunito', style: '800normal', required: true },
   { url: assetUrl('fonts/Nunito_900Black.ttf'), family: 'Nunito', style: '900normal', required: true },
-  { url: assetUrl('fonts/SuperJoyful.ttf'), family: 'Super Joyful', style: 'normal', required: false },
+  { url: assetUrl('fonts/ChunkyPuffly.ttf'), family: 'Chunky Puffly', style: 'normal', required: false },
 ];
 
 interface LoadedFont extends FontFile {

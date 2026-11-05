@@ -80,7 +80,8 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
         {/* Page Title: Ink Style sticker. Built from three layers so it survives PDF export:
             a flat ink shadow (6% down-right), an ink outline (3.2% all round), then white letters. */}
         {(() => {
-          const titleText = page.title || `Page ${pageIndex + 1}`;
+          // Chunky Puffly titles are always capitals. Done here, not with CSS, so the PDF matches.
+          const titleText = (page.title || `Page ${pageIndex + 1}`).toUpperCase();
           const size = TITLE_FONT_SIZE;
           const outline = size * 0.032 * 2; // stroke is centred, so double it to sit 3.2% outside
           const shadow = size * 0.06;
@@ -88,7 +89,7 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
           const common = {
             y: layout.titleBaseline,
             fontSize: size,
-            fontFamily: 'Super Joyful, Nunito, sans-serif',
+            fontFamily: 'Chunky Puffly, Nunito, sans-serif',
             fontWeight: 'normal',
             letterSpacing: 0.4,
           };

@@ -1,17 +1,19 @@
 @import "tailwindcss";
 
-/* Brand type: Nunito for all product UI and copy (Tailwind's font-sans), Super Joyful
-   for titles only. Without this, font-sans falls back to the system font. */
+/* Brand type: Nunito for all product UI and copy (Tailwind's font-sans), Chunky Puffly
+   in capitals for titles only. Without this, font-sans falls back to the system font. */
 @theme {
   --font-sans: 'Nunito', ui-sans-serif, system-ui, sans-serif;
-  --font-joyful: 'Super Joyful', 'Nunito', sans-serif;
+  --font-joyful: 'Chunky Puffly', 'Nunito', sans-serif;
 }
 
-/* Ink die-cut: Super Joyful screen headers (24-36px). Ink letters, a white ring at
+/* Ink die-cut: Chunky Puffly screen headers (24-36px). Ink letters, a white ring at
    3.2% and a flat ink shadow at about 7%, per the Ink Style guide. */
 .ink-die-cut {
   font-family: var(--font-joyful);
   font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
   line-height: 1.1;
   padding-right: 0.1em;
   color: #2D2200;
@@ -26,6 +28,8 @@
 .ink-sticker {
   font-family: var(--font-joyful);
   font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
   line-height: 1.1;
   padding-right: 0.1em;
   color: #FFFFFF;

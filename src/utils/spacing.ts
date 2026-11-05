@@ -27,7 +27,7 @@ export const FRAME_STROKE = 2.25; // activity box border
 export const RULE_STROKE = 1.5; // header and footer rules, write-on lines
 
 /** Type on the page header and footer. */
-export const TITLE_FONT_SIZE = 26; // Super Joyful ink sticker; never under 24
+export const TITLE_FONT_SIZE = 26; // Chunky Puffly ink sticker, capitals; never under 24
 export const NAME_FONT_SIZE = 13;
 export const FOOTER_FONT_SIZE = 9;
 
