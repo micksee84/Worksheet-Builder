@@ -6,18 +6,23 @@
  * - Grouped by development area (pre-writing, literacy, maths, thinking, feelings, world, creative)
  * - Draggable block cards (via @dnd-kit useDraggable)
  * - Tap to add for mobile & quick workflow
+ * - Slim view (desktop): half the width, just names and add buttons. It switches on by
+ *   itself while a block's settings are open, and can be toggled any time.
  */
 
 import React, { useState, useMemo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { getAllBlocks } from '../registry/blockRegistry';
 import { BlockDefinition, BlockCategory } from '../types';
-import { Search, Plus, Sparkles, Filter, X } from 'lucide-react';
+import { Search, Plus, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 interface SidebarProps {
   onAddBlock: (blockId: string) => void;
   isOpenOnMobile: boolean;
   onCloseMobile: () => void;
+  /** Slim view on desktop: names and add buttons only, at half the width. */
+  slim?: boolean;
+  onToggleSlim?: () => void;
 }
 
 const CATEGORY_LABELS: Record<BlockCategory, { label: string; color: string; badge: string }> = {
@@ -33,7 +38,10 @@ const CATEGORY_LABELS: Record<BlockCategory, { label: string; color: string; bad
 const DraggableBlockCard: React.FC<{
   block: BlockDefinition;
   onAdd: (blockId: string) => void;
-}> = ({ block, onAdd }) => {
+  slim: boolean;
+}> = ({ block, onAdd, slim }) => {
+  // Detail only shows in the full view. The phone drawer is always full.
+  const detail = slim ? 'lg:hidden' : '';
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `library-block-${block.id}`,
     data: {
@@ -54,11 +62,12 @@ const DraggableBlockCard: React.FC<{
       style={style}
       {...listeners}
       {...attributes}
-      className="group relative bg-white border border-[#E2DEC9] hover:border-[#009BD9] rounded-xl p-3.5 shadow-xs hover:shadow-md transition-all select-none"
+      title={slim ? block.description : undefined}
+      className={`group relative bg-white border border-[#E2DEC9] hover:border-[#009BD9] rounded-xl p-3.5 shadow-xs hover:shadow-md transition-all select-none ${slim ? 'lg:px-2.5 lg:py-2' : ''}`}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className={`flex items-start justify-between gap-2 ${slim ? 'lg:items-center lg:gap-1' : ''}`}>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-1">
+          <div className={`flex items-center gap-1.5 mb-1 ${detail}`}>
             <span
               className="w-2 h-2 rounded-full shrink-0"
               style={{ backgroundColor: CATEGORY_LABELS[block.category].color }}
@@ -68,16 +77,22 @@ const DraggableBlockCard: React.FC<{
             </span>
           </div>
 
-          <h4 className="text-sm font-extrabold text-[#2D2200] leading-snug group-hover:text-[#009BD9] transition-colors">
-            {block.displayName}
+          <h4 className={`text-sm font-extrabold text-[#2D2200] leading-snug group-hover:text-[#009BD9] transition-colors ${slim ? 'lg:text-[13px] lg:flex lg:items-center lg:gap-1.5' : ''}`}>
+            {slim && (
+              <span
+                className="hidden lg:inline-block w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: CATEGORY_LABELS[block.category].color }}
+              />
+            )}
+            <span className="min-w-0">{block.displayName}</span>
           </h4>
 
-          <p className="text-xs text-[#6B5838] mt-1 line-clamp-2 leading-relaxed">
+          <p className={`text-xs text-[#6B5838] mt-1 line-clamp-2 leading-relaxed ${detail}`}>
             {block.description}
           </p>
 
           {/* Skill tags */}
-          <div className="flex flex-wrap items-center gap-1 mt-2.5">
+          <div className={`flex flex-wrap items-center gap-1 mt-2.5 ${detail}`}>
             {block.skillTags.slice(0, 2).map((tag, idx) => (
               <span
                 key={tag}
@@ -110,7 +125,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onAddBlock,
   isOpenOnMobile,
   onCloseMobile,
+  slim = false,
+  onToggleSlim,
 }) => {
+  const hideWhenSlim = slim ? 'lg:hidden' : '';
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
@@ -161,16 +179,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-80 lg:w-84 bg-[#FAF8F0] border-r border-[#E2DEC9] flex flex-col transition-transform duration-200 ease-in-out ${
+        className={`fixed lg:static inset-y-0 left-0 z-40 w-80 ${slim ? 'lg:w-42' : 'lg:w-84'} shrink-0 bg-[#FAF8F0] border-r border-[#E2DEC9] flex flex-col transition-[transform,width] duration-200 ease-in-out ${
           isOpenOnMobile ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Top Header */}
-        <div className="p-4 border-b border-[#E2DEC9] bg-white">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-extrabold text-[#2D2200] font-sans">
-              Activity Blocks
+        <div className={`p-4 border-b border-[#E2DEC9] bg-white ${slim ? 'lg:p-3' : ''}`}>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h2 className="text-base font-extrabold text-[#2D2200] font-sans truncate">
+              {slim ? (
+                <>
+                  <span className="lg:hidden">Activity Blocks</span>
+                  <span className="hidden lg:inline">Blocks</span>
+                </>
+              ) : (
+                'Activity Blocks'
+              )}
             </h2>
+            {onToggleSlim && (
+              <button
+                type="button"
+                onClick={onToggleSlim}
+                title={slim ? 'Show full block details' : 'Slim view: more room for your page'}
+                aria-label={slim ? 'Show full block details' : 'Switch to slim view'}
+                aria-pressed={slim}
+                className="hidden lg:inline-flex p-1.5 text-[#6B5838] hover:text-[#2D2200] hover:bg-[#F2F2E2] rounded-lg transition-colors shrink-0"
+              >
+                {slim ? <PanelLeftOpen className="w-4.5 h-4.5" /> : <PanelLeftClose className="w-4.5 h-4.5" />}
+              </button>
+            )}
             <button
               onClick={onCloseMobile}
               title="Close the activity list"
@@ -185,7 +222,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#A39C8E]" />
             <input
               type="text"
-              placeholder="Search activities or skills..."
+              placeholder={slim ? 'Search' : 'Search activities or skills...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-7 py-2 text-xs font-medium text-[#2D2200] bg-[#FAF8F0] border border-[#E2DEC9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#009BD9] focus:bg-white transition-all placeholder:text-[#A39C8E]"
@@ -202,7 +239,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* Skill Tag Filters */}
-          <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto pb-1 text-[11px] scrollbar-none">
+          <div className={`flex items-center gap-1.5 mt-2.5 overflow-x-auto pb-1 text-[11px] scrollbar-none ${hideWhenSlim}`}>
             <button
               onClick={() => setSelectedTag(null)}
               className={`px-2.5 py-1 rounded-md font-semibold whitespace-nowrap transition-colors ${
@@ -230,8 +267,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Scrollable Block List Grouped by Category */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6">
-          <div className="bg-[#FFF9E6] border border-[#F2B800]/30 rounded-xl p-3 text-xs text-[#6B5838] leading-relaxed">
+        <div className={`flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6 ${slim ? 'lg:p-3 lg:space-y-4' : ''}`}>
+          <div className={`${hideWhenSlim} bg-[#FFF9E6] border border-[#F2B800]/30 rounded-xl p-3 text-xs text-[#6B5838] leading-relaxed`}>
             <span className="font-bold text-[#2D2200]">Tip: </span>
             Drag an activity onto the page, or tap <Plus className="inline w-3.5 h-3.5 text-[#2D2200]" /> to add it to the next empty space.
           </div>
@@ -244,19 +281,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div key={cat} className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-[#6B5838]">
-                    {CATEGORY_LABELS[cat].label}
+                    {slim ? (
+                      <>
+                        <span className="lg:hidden">{CATEGORY_LABELS[cat].label}</span>
+                        <span className="hidden lg:inline">{CATEGORY_LABELS[cat].badge}</span>
+                      </>
+                    ) : (
+                      CATEGORY_LABELS[cat].label
+                    )}
                   </h3>
                   <span className="text-[11px] font-semibold tabular-nums text-[#6B5F45]">
                     {catBlocks.length}
                   </span>
                 </div>
 
-                <div className="space-y-2">
+                <div className={`space-y-2 ${slim ? 'lg:space-y-1.5' : ''}`}>
                   {catBlocks.map((block) => (
                     <DraggableBlockCard
                       key={block.id}
                       block={block}
                       onAdd={onAddBlock}
+                      slim={slim}
                     />
                   ))}
                 </div>

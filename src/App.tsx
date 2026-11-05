@@ -132,6 +132,33 @@ export default function App() {
 
   // Inspector & modal states
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  // Block list view. Slim while a block's settings are open, so the page keeps its room;
+  // otherwise whatever the grown-up last chose (remembered in this browser).
+  const [slimPreferred, setSlimPreferred] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sb.blocksSlim') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const [fullWhileEditing, setFullWhileEditing] = useState(false);
+  useEffect(() => {
+    if (!isInspectorOpen) setFullWhileEditing(false);
+  }, [isInspectorOpen]);
+  const isSidebarSlim = isInspectorOpen ? !fullWhileEditing : slimPreferred;
+  const handleToggleSidebarSlim = () => {
+    if (isInspectorOpen) {
+      setFullWhileEditing((v) => !v);
+      return;
+    }
+    const next = !slimPreferred;
+    setSlimPreferred(next);
+    try {
+      localStorage.setItem('sb.blocksSlim', next ? '1' : '0');
+    } catch {
+      /* private window: just not remembered */
+    }
+  };
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -721,6 +748,8 @@ export default function App() {
               onAddBlock={handleAddBlockToActivePage}
               isOpenOnMobile={isMobileSidebarOpen}
               onCloseMobile={() => setIsMobileSidebarOpen(false)}
+              slim={isSidebarSlim}
+              onToggleSlim={handleToggleSidebarSlim}
             />
 
             {/* Pages panel: every page, top to bottom */}
