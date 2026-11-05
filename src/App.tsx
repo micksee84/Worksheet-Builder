@@ -41,7 +41,6 @@ import {
   loadWorksheetFromStorage,
   clearWorksheetStorage,
 } from './utils/storage';
-import { loadAccountWorksheet } from './utils/cloudWorksheets';
 import { useAuth } from './auth/AuthProvider';
 import { useAccountSync } from './auth/useAccountSync';
 import {
@@ -60,6 +59,9 @@ import { PagesPanel } from './components/PagesPanel';
 import { dropKind, firstFreeSlot, isSlotBlockDrag, moveBlock, SlotBlockDrag } from './utils/blockMoves';
 import { Trash2 } from 'lucide-react';
 import { RemoveBlockConfirm } from './components/RemoveBlockConfirm';
+import { SaveWorksheetDialog } from './components/SaveWorksheetDialog';
+import { isInBrowserLibrary, isUnnamed, LibrarySource, loadFromLibrary, saveToLibrary } from './utils/worksheetLibrary';
+import type { SaveState } from './components/TopBar';
 import { BlockSettingsDrawer } from './components/BlockSettingsDrawer';
 import { TemplateGalleryModal } from './components/TemplateGalleryModal';
 import { PrintDoneToast, PrintDoneKind } from './components/PrintDoneToast';
@@ -235,23 +237,6 @@ export default function App() {
     onOpenWorksheet: openWorksheet,
   });
 
-  const handleOpenFromAccount = useCallback(
-    async (id: string) => {
-      await accountSync.saveNow();
-      const loaded = await loadAccountWorksheet(id);
-      if (!loaded) return;
-      openWorksheet(loaded);
-      accountSync.markSaved(loaded);
-      setIsMyWorksheetsOpen(false);
-    },
-    [accountSync, openWorksheet]
-  );
-
-  const handleNewWorksheet = useCallback(async () => {
-    await accountSync.saveNow();
-    openWorksheet(createInitialWorksheet());
-    setIsMyWorksheetsOpen(false);
-  }, [accountSync, openWorksheet]);
 
   const handleSignOut = useCallback(async () => {
     await accountSync.saveNow();
@@ -272,6 +257,101 @@ export default function App() {
     },
     [setWorksheetNow]
   );
+
+  // ---------------------------------------------------------------- Save and Open
+  // Saved worksheets live in the account when signed in (always, on the website), or in
+  // this browser when sign-in is off. Saving is free and unlimited.
+  const librarySource: LibrarySource = accountSync.active ? 'account' : 'browser';
+  const savedKey = (ws: Worksheet) => `${ws.id}:${ws.updatedAt}`;
+  // Browser library: which version of the open worksheet is saved there.
+  const [browserSavedKey, setBrowserSavedKey] = useState<string | null>(() =>
+    isInBrowserLibrary(worksheet.id) ? savedKey(worksheet) : null
+  );
+  const [manualSave, setManualSave] = useState<'idle' | 'saving' | 'error'>('idle');
+  const [isNamingSave, setIsNamingSave] = useState(false);
+
+  // Browser library: once a worksheet is saved, later changes keep it up to date.
+  useEffect(() => {
+    if (librarySource !== 'browser' || browserSavedKey === null) return;
+    if (!isInBrowserLibrary(worksheet.id) || browserSavedKey === savedKey(worksheet)) return;
+    const timer = setTimeout(async () => {
+      if (await saveToLibrary('browser', worksheet)) setBrowserSavedKey(savedKey(worksheet));
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [worksheet, librarySource, browserSavedKey]);
+
+  const saveState: SaveState = (() => {
+    if (manualSave === 'saving') return 'saving';
+    if (manualSave === 'error') return 'error';
+    if (librarySource === 'account') {
+      if (isUnnamed(worksheet)) return 'unsaved';
+      if (accountSync.status === 'saving') return 'saving';
+      if (accountSync.status === 'error') return 'error';
+      return 'saved';
+    }
+    if (browserSavedKey === null || !isInBrowserLibrary(worksheet.id)) return 'unsaved';
+    return browserSavedKey === savedKey(worksheet) ? 'saved' : 'saving';
+  })();
+
+  /** Save now, renaming first when a name is given. */
+  const saveWorksheet = useCallback(
+    async (name?: string) => {
+      let ws = worksheetRef.current;
+      if (name && name !== ws.title) ws = updateWorksheet((prev) => ({ ...prev, title: name }));
+      setManualSave('saving');
+      const ok = await saveToLibrary(librarySource, ws);
+      if (ok && librarySource === 'account') accountSync.markSaved(ws);
+      if (ok && librarySource === 'browser') setBrowserSavedKey(savedKey(ws));
+      setManualSave(ok ? 'idle' : 'error');
+      if (ok) trackEvent('worksheet_saved', { pageCount: ws.pages.length });
+    },
+    [librarySource, accountSync, updateWorksheet]
+  );
+
+  const handleSave = useCallback(() => {
+    if (isUnnamed(worksheetRef.current)) setIsNamingSave(true);
+    else saveWorksheet();
+  }, [saveWorksheet]);
+
+  // Ctrl or Cmd + S saves, like any other app.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [handleSave]);
+
+  /** Before switching worksheets, make sure the open one is saved where it lives. */
+  const flushCurrent = useCallback(async () => {
+    if (librarySource === 'account') await accountSync.saveNow();
+    else if (isInBrowserLibrary(worksheetRef.current.id)) await saveToLibrary('browser', worksheetRef.current);
+  }, [librarySource, accountSync]);
+
+  const handleOpenSaved = useCallback(
+    async (id: string) => {
+      await flushCurrent();
+      const loaded = await loadFromLibrary(librarySource, id);
+      if (!loaded) return;
+      openWorksheet(loaded);
+      if (librarySource === 'account') accountSync.markSaved(loaded);
+      else setBrowserSavedKey(savedKey(loaded));
+      setManualSave('idle');
+      setIsMyWorksheetsOpen(false);
+    },
+    [flushCurrent, librarySource, accountSync, openWorksheet]
+  );
+
+  const handleNewWorksheet = useCallback(async () => {
+    await flushCurrent();
+    openWorksheet(createInitialWorksheet());
+    setBrowserSavedKey(null);
+    setManualSave('idle');
+    setIsMyWorksheetsOpen(false);
+  }, [flushCurrent, openWorksheet]);
 
   // Undo / Redo handlers
   const handleUndo = useCallback(() => {
@@ -800,6 +880,9 @@ export default function App() {
         <div id="app-interactive-shell" className="flex flex-col h-full w-full">
           {/* Top Bar */}
           <TopBar
+            saveState={saveState}
+            onSave={handleSave}
+            onOpen={() => setIsMyWorksheetsOpen(true)}
             pageSize={worksheet.pageSize}
             onTogglePageSize={handleTogglePageSize}
             canUndo={history.length > 0}
@@ -817,7 +900,6 @@ export default function App() {
                 ? {
                     email: user.email ?? '',
                     syncStatus: accountSync.status,
-                    onOpenMyWorksheets: () => setIsMyWorksheetsOpen(true),
                     onSignOut: handleSignOut,
                   }
                 : null
@@ -940,9 +1022,22 @@ export default function App() {
           isOpen={isMyWorksheetsOpen}
           currentId={worksheet.id}
           onClose={() => setIsMyWorksheetsOpen(false)}
-          onOpen={handleOpenFromAccount}
+          onOpen={handleOpenSaved}
           onNew={handleNewWorksheet}
+          source={librarySource}
         />
+
+        {/* First Save: name the worksheet */}
+        {isNamingSave && (
+          <SaveWorksheetDialog
+            initialName={isUnnamed(worksheet) ? '' : worksheet.title}
+            onCancel={() => setIsNamingSave(false)}
+            onSave={(name) => {
+              setIsNamingSave(false);
+              saveWorksheet(name);
+            }}
+          />
+        )}
 
         {/* Quiet confirmation after a PDF download or print */}
         <PrintDoneToast

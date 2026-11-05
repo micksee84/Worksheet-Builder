@@ -4,6 +4,7 @@
  * Controls:
  * - Worksheet Title (editable)
  * - Page Size Switch (US Letter / A4)
+ * - Save (names the worksheet the first time) and Open (saved worksheets)
  * - Undo / Redo
  * - Templates Gallery button
  * - Share Link copy
@@ -26,15 +27,18 @@ import {
   CloudOff,
   LogOut,
   UserRound,
+  Save,
 } from 'lucide-react';
 import type { SyncStatus } from '../auth/useAccountSync';
 
 export interface TopBarAccount {
   email: string;
   syncStatus: SyncStatus;
-  onOpenMyWorksheets: () => void;
   onSignOut: () => void;
 }
+
+/** What the Save button shows: not saved yet, saving now, saved, or a problem. */
+export type SaveState = 'unsaved' | 'saving' | 'saved' | 'error';
 
 interface TopBarProps {
   pageSize: PageSizeId;
@@ -51,6 +55,9 @@ interface TopBarProps {
   isExportingPdf: boolean;
   /** Present when a grown-up is signed in. */
   account?: TopBarAccount | null;
+  saveState: SaveState;
+  onSave: () => void;
+  onOpen: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -67,6 +74,9 @@ export const TopBar: React.FC<TopBarProps> = ({
   onToggleMobileSidebar,
   isExportingPdf,
   account,
+  saveState,
+  onSave,
+  onOpen,
 }) => {
   const [copied, setCopied] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -159,7 +169,39 @@ export const TopBar: React.FC<TopBarProps> = ({
           </button>
         </div>
 
-        {/* Account: save status, my worksheets, sign out */}
+        {/* Open and Save */}
+        <div className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9]">
+          <button
+            type="button"
+            onClick={onOpen}
+            title="Open a saved worksheet or start a new one"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-[#2D2200] hover:bg-white rounded-md transition-colors whitespace-nowrap"
+          >
+            <FolderOpen className="w-3.5 h-3.5" aria-hidden="true" />
+            <span className="hidden md:inline">Open</span>
+            <span className="sr-only md:hidden">Open</span>
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saveState === 'saving'}
+            title={SAVE_TITLE[saveState]}
+            aria-live="polite"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-[#2D2200] hover:bg-white rounded-md transition-colors whitespace-nowrap disabled:cursor-default"
+          >
+            {saveState === 'saved' ? (
+              <Check className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
+            ) : saveState === 'error' ? (
+              <CloudOff className="w-3.5 h-3.5 text-[#E52311]" aria-hidden="true" />
+            ) : (
+              <Save className={`w-3.5 h-3.5 ${saveState === 'saving' ? 'motion-safe:animate-pulse' : ''}`} aria-hidden="true" />
+            )}
+            <span className="hidden md:inline">{SAVE_LABEL[saveState]}</span>
+            <span className="sr-only md:hidden">{SAVE_LABEL[saveState]}</span>
+          </button>
+        </div>
+
+        {/* Account: who is signed in, sign out */}
         {account && <AccountMenu account={account} />}
 
         {/* Templates Gallery Button */}
@@ -248,6 +290,20 @@ export const TopBar: React.FC<TopBarProps> = ({
   );
 };
 
+const SAVE_LABEL: Record<SaveState, string> = {
+  unsaved: 'Save',
+  saving: 'Saving...',
+  saved: 'Saved',
+  error: 'Save again',
+};
+
+const SAVE_TITLE: Record<SaveState, string> = {
+  unsaved: 'Save this worksheet so you can open it again (Ctrl or Cmd + S)',
+  saving: 'Saving your worksheet',
+  saved: 'Saved. Changes keep saving on their own.',
+  error: "Couldn't save just now. Check your connection and click to try again.",
+};
+
 const SYNC_LABEL: Record<SyncStatus, string> = {
   off: '',
   idle: 'Saved to your account',
@@ -267,15 +323,11 @@ const AccountMenu: React.FC<{ account: TopBarAccount }> = ({ account }) => {
         onClick={() => setOpen(!open)}
         aria-haspopup="menu"
         aria-expanded={open}
-        title={SYNC_LABEL[syncStatus] || 'Your account'}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#2D2200] bg-[#FAF8F0] hover:bg-[#F2F2E2] border border-[#E2DEC9] rounded-lg transition-colors whitespace-nowrap"
+        title={`Signed in as ${account.email}`}
+        aria-label="Your account"
+        className="flex items-center gap-1.5 p-2 text-[#2D2200] bg-[#FAF8F0] hover:bg-[#F2F2E2] border border-[#E2DEC9] rounded-lg transition-colors"
       >
-        <SyncIcon
-          className={`w-3.5 h-3.5 ${syncStatus === 'saving' ? 'motion-safe:animate-pulse' : ''}`}
-          aria-hidden="true"
-        />
-        <span className="hidden md:inline">My worksheets</span>
-        <span className="sr-only">{SYNC_LABEL[syncStatus]}</span>
+        <UserRound className="w-3.5 h-3.5" aria-hidden="true" />
       </button>
 
       {open && (
@@ -285,23 +337,12 @@ const AccountMenu: React.FC<{ account: TopBarAccount }> = ({ account }) => {
           onMouseLeave={() => setOpen(false)}
         >
           <div className="px-3 py-2 flex items-center gap-2 text-xs text-[#6B5838]">
-            <UserRound className="w-4 h-4 shrink-0" aria-hidden="true" />
+            <SyncIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span className="truncate">{account.email}</span>
           </div>
           <p className="px-3 pb-2 text-[11px] text-[#6B5838] border-b border-[#E2DEC9]">
             {SYNC_LABEL[syncStatus]}
           </p>
-          <button
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              account.onOpenMyWorksheets();
-            }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-[#2D2200] hover:bg-[#FAF8F0] rounded-lg text-left transition-colors"
-          >
-            <FolderOpen className="w-4 h-4" aria-hidden="true" />
-            Open my worksheets
-          </button>
           <button
             role="menuitem"
             onClick={() => {

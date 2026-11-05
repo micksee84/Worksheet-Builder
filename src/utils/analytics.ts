@@ -9,6 +9,7 @@ export interface AnalyticsEventMap {
   'block_added': { blockId: string; size?: string; pageIndex?: number };
   'block_removed': { blockId: string };
   'block_moved': { blockId: string };
+  'worksheet_saved': { pageCount: number };
   'template_opened': { templateId: string; pageCount: number };
   'pdf_downloaded': { pageCount: number; blockIds: string[]; pageSize: string };
   'worksheet_printed': { pageCount: number; blockIds: string[]; pageSize: string };

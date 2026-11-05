@@ -1,16 +1,12 @@
 /**
  * @license
  * Sunshine Brigade Worksheet Builder - My worksheets
- * Worksheets saved to the signed-in account: open one, start a new one, or delete one.
+ * Saved worksheets (the Open button): open one, start a new one, or delete one.
  */
 
 import React, { useEffect, useState } from 'react';
 import { X, FolderOpen, Plus, Trash2, FileText } from 'lucide-react';
-import {
-  SavedWorksheetSummary,
-  deleteAccountWorksheet,
-  listAccountWorksheets,
-} from '../utils/cloudWorksheets';
+import { LibrarySource, SavedWorksheetSummary, deleteFromLibrary, listLibrary } from '../utils/worksheetLibrary';
 
 interface MyWorksheetsModalProps {
   isOpen: boolean;
@@ -18,6 +14,8 @@ interface MyWorksheetsModalProps {
   onClose: () => void;
   onOpen: (id: string) => void;
   onNew: () => void;
+  /** Where saved worksheets live: the account, or this browser when sign-in is off. */
+  source: LibrarySource;
 }
 
 const dateFormat = new Intl.DateTimeFormat('en-CA', {
@@ -33,6 +31,7 @@ export const MyWorksheetsModal: React.FC<MyWorksheetsModalProps> = ({
   onClose,
   onOpen,
   onNew,
+  source,
 }) => {
   const [items, setItems] = useState<SavedWorksheetSummary[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -44,7 +43,7 @@ export const MyWorksheetsModal: React.FC<MyWorksheetsModalProps> = ({
     setItems(null);
     setFailed(false);
     setConfirmDeleteId(null);
-    listAccountWorksheets().then((list) => {
+    listLibrary(source).then((list) => {
       if (cancelled) return;
       if (list === null) setFailed(true);
       else setItems(list);
@@ -52,12 +51,12 @@ export const MyWorksheetsModal: React.FC<MyWorksheetsModalProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [isOpen]);
+  }, [isOpen, source]);
 
   if (!isOpen) return null;
 
   const handleDelete = async (id: string) => {
-    const ok = await deleteAccountWorksheet(id);
+    const ok = await deleteFromLibrary(source, id);
     if (ok) setItems((prev) => prev?.filter((w) => w.id !== id) ?? prev);
     setConfirmDeleteId(null);
   };
@@ -74,7 +73,7 @@ export const MyWorksheetsModal: React.FC<MyWorksheetsModalProps> = ({
           <div className="flex items-center gap-2.5">
             <FolderOpen className="w-5 h-5 text-[#2D2200]" aria-hidden="true" />
             <h2 id="my-worksheets-title" className="text-lg font-extrabold text-[#2D2200]">
-              My worksheets
+              Open a worksheet
             </h2>
           </div>
           <button
@@ -109,8 +108,12 @@ export const MyWorksheetsModal: React.FC<MyWorksheetsModalProps> = ({
 
           {items && items.length === 0 && (
             <p className="px-2 py-4 text-sm text-[#6B5F45]">
-              Your saved worksheets will show up here. Every change saves on its own.
+              Worksheets you save will show up here. Click Save in the top bar to save this one.
             </p>
+          )}
+
+          {source === 'browser' && (
+            <p className="px-2 text-xs text-[#6B5F45]">Saved in this browser only, because sign-in is off here.</p>
           )}
 
           {items?.map((ws) => {
