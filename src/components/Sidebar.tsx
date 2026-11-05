@@ -134,12 +134,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const allBlocks = useMemo(() => getAllBlocks(), []);
 
-  // Collect unique skill tags
+  // Every skill tag, most used first (so the first few chips are the most useful).
   const allTags = useMemo(() => {
-    const set = new Set<string>();
-    allBlocks.forEach((b) => b.skillTags.forEach((t) => set.add(t)));
-    return Array.from(set);
+    const counts = new Map<string, number>();
+    allBlocks.forEach((b) => b.skillTags.forEach((t) => counts.set(t, (counts.get(t) || 0) + 1)));
+    return Array.from(counts.keys()).sort((a, b) => counts.get(b)! - counts.get(a)! || a.localeCompare(b));
   }, [allBlocks]);
+
+  // Skill chips wrap onto new lines (no sideways scrolling, which a mouse wheel can't do).
+  // The first few show; "More skills" shows the rest. A chosen skill always stays visible.
+  const COLLAPSED_TAGS = 5;
+  const [showAllTags, setShowAllTags] = useState(false);
+  const visibleTags = useMemo(() => {
+    if (showAllTags) return allTags;
+    const first = allTags.slice(0, COLLAPSED_TAGS);
+    return selectedTag && !first.includes(selectedTag) ? [...first, selectedTag] : first;
+  }, [allTags, showAllTags, selectedTag]);
+  const hiddenCount = allTags.length - visibleTags.length;
 
   // Filter blocks
   const filteredBlocks = useMemo(() => {
@@ -239,7 +250,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* Skill Tag Filters */}
-          <div className={`flex items-center gap-1.5 mt-2.5 overflow-x-auto pb-1 text-[11px] scrollbar-none ${hideWhenSlim}`}>
+          <div
+            className={`flex flex-wrap items-center gap-1.5 mt-2.5 text-[11px] ${showAllTags ? 'max-h-36 overflow-y-auto pr-1' : ''} ${hideWhenSlim}`}
+            role="group"
+            aria-label="Filter by skill"
+          >
             <button
               onClick={() => setSelectedTag(null)}
               className={`px-2.5 py-1 rounded-md font-semibold whitespace-nowrap transition-colors ${
@@ -250,7 +265,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               All Skills
             </button>
-            {allTags.slice(0, 5).map((tag) => (
+            {visibleTags.map((tag) => (
               <button
                 key={tag}
                 onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
@@ -263,6 +278,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {tag}
               </button>
             ))}
+            {(hiddenCount > 0 || showAllTags) && (
+              <button
+                type="button"
+                onClick={() => setShowAllTags(!showAllTags)}
+                aria-expanded={showAllTags}
+                className="px-2.5 py-1 rounded-md font-bold whitespace-nowrap text-[#2D2200] border border-dashed border-[#A39C8E] hover:border-[#2D2200] transition-colors"
+              >
+                {showAllTags ? 'Fewer' : `More skills (${hiddenCount})`}
+              </button>
+            )}
           </div>
         </div>
 
