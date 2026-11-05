@@ -736,6 +736,8 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
           className="relative"
         >
         <div
+          // Dragging a placed block outside this box removes it (see App handleDragEnd).
+          data-worksheet-page=""
           style={{ width: pageW, height: pageH, left: stage.left, top: stage.top }}
           className="absolute"
         >

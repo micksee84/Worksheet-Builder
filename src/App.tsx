@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   DndContext,
+  DragMoveEvent,
   DragOverlay,
   PointerSensor,
   TouchSensor,
@@ -54,6 +55,7 @@ import { Sidebar } from './components/Sidebar';
 import { WorksheetCanvas } from './components/WorksheetCanvas';
 import { PagesPanel } from './components/PagesPanel';
 import { dropKind, firstFreeSlot, isSlotBlockDrag, moveBlock, SlotBlockDrag } from './utils/blockMoves';
+import { Trash2 } from 'lucide-react';
 import { BlockSettingsDrawer } from './components/BlockSettingsDrawer';
 import { TemplateGalleryModal } from './components/TemplateGalleryModal';
 import { PrintDoneToast, PrintDoneKind } from './components/PrintDoneToast';
@@ -371,9 +373,29 @@ export default function App() {
     trackEvent('block_moved', { blockId: drag.blockId });
   };
 
+  // A placed block dragged off the page and let go is removed (Undo brings it back).
+  const [dragOffPage, setDragOffPage] = useState(false);
+  const isOffPage = (event: DragMoveEvent | DragEndEvent) => {
+    if (event.over) return false; // over a slot or a page thumbnail
+    const start = event.activatorEvent as PointerEvent | TouchEvent;
+    const point = 'touches' in start ? start.touches[0] ?? start.changedTouches[0] : start;
+    if (!point) return false;
+    const x = point.clientX + event.delta.x;
+    const y = point.clientY + event.delta.y;
+    const page = document.querySelector('[data-worksheet-page]')?.getBoundingClientRect();
+    if (!page) return false;
+    return x < page.left || x > page.right || y < page.top || y > page.bottom;
+  };
+  const handleDragMove = (event: DragMoveEvent) => {
+    if (!isSlotBlockDrag(event.active.data.current)) return;
+    const off = isOffPage(event);
+    setDragOffPage((prev) => (prev === off ? prev : off));
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { over, active } = event;
     setActiveDragItem(null);
+    setDragOffPage(false);
 
     if (!over) return;
 
@@ -382,6 +404,10 @@ export default function App() {
 
     // A placed block dragged to another slot: move it, or swap with the block there.
     if (isSlotBlockDrag(activeData)) {
+      if (!over) {
+        if (isOffPage(event)) handleDeleteBlock(activeData.sourcePageId, activeData.sourceSlotId);
+        return;
+      }
       if (overData?.type === 'slot-target') {
         const page = worksheetRef.current.pages.find((p) => p.id === overData.pageId);
         const slot = page?.slots.find((s) => s.id === overData.slotId);
@@ -742,7 +768,12 @@ export default function App() {
     <DndContext
       sensors={sensors}
       onDragStart={handleDragStart}
+      onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
+      onDragCancel={() => {
+        setActiveDragItem(null);
+        setDragOffPage(false);
+      }}
     >
       <div id="worksheet-builder-app" className="flex flex-col h-screen w-screen bg-[#F2F2E2] overflow-hidden">
         {/* Interactive Shell (Hidden during Print) */}
@@ -841,7 +872,16 @@ export default function App() {
 
         {/* Drag Overlay Ghost */}
         <DragOverlay>
-          {draggedBlockDef && (
+          {draggedBlockDef && dragOffPage && (
+            <div className="w-64 bg-white border-2 border-[#E52311] rounded-xl p-3 shadow-2xl select-none pointer-events-none scale-105 flex items-center gap-3">
+              <Trash2 className="w-5 h-5 text-[#E52311] shrink-0" />
+              <div className="min-w-0">
+                <h4 className="text-sm font-extrabold text-[#2D2200] truncate">Release to remove</h4>
+                <p className="text-xs text-[#6B5838] truncate">{draggedBlockDef.displayName}. Undo brings it back.</p>
+              </div>
+            </div>
+          )}
+          {draggedBlockDef && !dragOffPage && (
             <div className="w-64 bg-white border-2 border-[#009BD9] rounded-xl p-3 shadow-2xl opacity-90 select-none pointer-events-none scale-105">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B5F45]">
                 {draggedBlockDef.category}
@@ -850,7 +890,7 @@ export default function App() {
                 {draggedBlockDef.displayName}
               </h4>
               <p className="text-xs text-[#6B5838] truncate">
-                Drop into any slot
+                {activeDragItem?.type === 'slot-block' ? 'Move, swap, or drag off the page to remove' : 'Drop into any slot'}
               </p>
             </div>
           )}
