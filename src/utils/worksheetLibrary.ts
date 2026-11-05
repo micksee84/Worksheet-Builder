@@ -76,6 +76,7 @@ export async function listLibrary(source: LibrarySource): Promise<SavedWorksheet
       id: w.id,
       title: (w.title || '').trim() || 'My worksheet',
       pageCount: Array.isArray(w.pages) ? w.pages.length : 1,
+      createdAt: w.createdAt || w.updatedAt || 0,
       updatedAt: w.updatedAt || 0,
     }))
     .sort((a, b) => b.updatedAt - a.updatedAt);
@@ -85,6 +86,17 @@ export async function loadFromLibrary(source: LibrarySource, id: string): Promis
   if (source === 'account') return loadAccountWorksheet(id);
   const entry = readBrowser()[id];
   return entry ? validateWorksheet(entry.worksheet) : null;
+}
+
+/**
+ * Rename a saved worksheet. Its "last updated" time stays the same, since only the name
+ * changed. Returns the renamed worksheet, or null if it couldn't be saved.
+ */
+export async function renameInLibrary(source: LibrarySource, id: string, name: string): Promise<Worksheet | null> {
+  const ws = await loadFromLibrary(source, id);
+  if (!ws) return null;
+  const renamed = { ...ws, title: name };
+  return (await saveToLibrary(source, renamed)) ? renamed : null;
 }
 
 export async function deleteFromLibrary(source: LibrarySource, id: string): Promise<boolean> {

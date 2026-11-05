@@ -1026,6 +1026,10 @@ export default function App() {
           onClose={() => setIsMyWorksheetsOpen(false)}
           onOpen={handleOpenSaved}
           onNew={handleNewWorksheet}
+          onRenamed={(id, name) => {
+            // Renamed the open worksheet: show the new name without counting it as an edit.
+            if (id === worksheetRef.current.id) setWorksheetNow({ ...worksheetRef.current, title: name });
+          }}
           source={librarySource}
         />
 

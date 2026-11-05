@@ -17,6 +17,8 @@ export interface SavedWorksheetSummary {
   id: string;
   title: string;
   pageCount: number;
+  /** When it was first saved. */
+  createdAt: number;
   updatedAt: number;
 }
 
@@ -52,7 +54,7 @@ export async function listAccountWorksheets(): Promise<SavedWorksheetSummary[] |
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('worksheets')
-    .select('id, title, updated_at, pages:data->worksheet->pages')
+    .select('id, title, created_at, updated_at, pages:data->worksheet->pages')
     .order('updated_at', { ascending: false })
     .limit(100);
   if (error) {
@@ -63,6 +65,7 @@ export async function listAccountWorksheets(): Promise<SavedWorksheetSummary[] |
     id: row.id,
     title: row.title,
     pageCount: Array.isArray(row.pages) ? row.pages.length : 1,
+    createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime(),
   }));
 }
