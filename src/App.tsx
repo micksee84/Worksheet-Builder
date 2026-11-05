@@ -59,6 +59,7 @@ import { WorksheetCanvas } from './components/WorksheetCanvas';
 import { PagesPanel } from './components/PagesPanel';
 import { dropKind, firstFreeSlot, isSlotBlockDrag, moveBlock, SlotBlockDrag } from './utils/blockMoves';
 import { Trash2 } from 'lucide-react';
+import { RemoveBlockConfirm } from './components/RemoveBlockConfirm';
 import { BlockSettingsDrawer } from './components/BlockSettingsDrawer';
 import { TemplateGalleryModal } from './components/TemplateGalleryModal';
 import { PrintDoneToast, PrintDoneKind } from './components/PrintDoneToast';
@@ -383,8 +384,9 @@ export default function App() {
     trackEvent('block_moved', { blockId: drag.blockId });
   };
 
-  // A placed block dragged off the page and let go is removed (Undo brings it back).
+  // A placed block dragged off the page and let go asks before it is removed.
   const [dragOffPage, setDragOffPage] = useState(false);
+  const [pendingRemove, setPendingRemove] = useState<{ pageId: string; slotId: string; name: string } | null>(null);
   const isOffPage = (event: DragMoveEvent | DragEndEvent) => {
     if (event.over) return false; // over a slot or a page thumbnail
     const start = event.activatorEvent as PointerEvent | TouchEvent;
@@ -410,7 +412,13 @@ export default function App() {
     // Placed block let go off the page: remove it.
     if (!over) {
       const dragged = active.data.current;
-      if (isSlotBlockDrag(dragged) && isOffPage(event)) handleDeleteBlock(dragged.sourcePageId, dragged.sourceSlotId);
+      if (isSlotBlockDrag(dragged) && isOffPage(event)) {
+        setPendingRemove({
+          pageId: dragged.sourcePageId,
+          slotId: dragged.sourceSlotId,
+          name: getBlockById(dragged.blockId)?.displayName || 'This activity',
+        });
+      }
       return;
     }
 
@@ -889,7 +897,7 @@ export default function App() {
               <Trash2 className="w-5 h-5 text-[#E52311] shrink-0" />
               <div className="min-w-0">
                 <h4 className="text-sm font-extrabold text-[#2D2200] truncate">Release to remove</h4>
-                <p className="text-xs text-[#6B5838] truncate">{draggedBlockDef.displayName}. Undo brings it back.</p>
+                <p className="text-xs text-[#6B5838] truncate">{draggedBlockDef.displayName}</p>
               </div>
             </div>
           )}
@@ -907,6 +915,18 @@ export default function App() {
             </div>
           )}
         </DragOverlay>
+
+        {/* Ask before removing a block dragged off the page */}
+        {pendingRemove && (
+          <RemoveBlockConfirm
+            name={pendingRemove.name}
+            onNo={() => setPendingRemove(null)}
+            onYes={() => {
+              handleDeleteBlock(pendingRemove.pageId, pendingRemove.slotId);
+              setPendingRemove(null);
+            }}
+          />
+        )}
 
         {/* Templates Gallery Modal */}
         <TemplateGalleryModal
