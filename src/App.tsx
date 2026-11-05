@@ -407,17 +407,18 @@ export default function App() {
     setActiveDragItem(null);
     setDragOffPage(false);
 
-    if (!over) return;
+    // Placed block let go off the page: remove it.
+    if (!over) {
+      const dragged = active.data.current;
+      if (isSlotBlockDrag(dragged) && isOffPage(event)) handleDeleteBlock(dragged.sourcePageId, dragged.sourceSlotId);
+      return;
+    }
 
     const overData = over.data.current;
     const activeData = active.data.current;
 
     // A placed block dragged to another slot: move it, or swap with the block there.
     if (isSlotBlockDrag(activeData)) {
-      if (!over) {
-        if (isOffPage(event)) handleDeleteBlock(activeData.sourcePageId, activeData.sourceSlotId);
-        return;
-      }
       if (overData?.type === 'slot-target') {
         const page = worksheetRef.current.pages.find((p) => p.id === overData.pageId);
         const slot = page?.slots.find((s) => s.id === overData.slotId);
