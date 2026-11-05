@@ -5,7 +5,7 @@
  * A big bubble letter (or number) with numbered strokes, dashed guides and arrows, so a
  * child learns where each stroke starts and which way it goes. Under it, practice rows
  * on handwriting lines step down the help: a small bubble letter, then dotted letters,
- * then just the start dots, then space to write it alone.
+ * then space to write it alone.
  *
  * Every shape comes from Sunshine Print (letterStrokes.ts) through BubbleLetter, so the
  * bubble letters always match the dotted letters and the font.
@@ -17,17 +17,16 @@ import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { BubbleHelpers, BubbleLetter, BubbleWeight, bubblePad, MIN_NUMBERED_HEIGHT } from '../components/BubbleLetter';
-import { HandwrittenText, handwritingSizes, LETTER_GAP } from '../components/HandwrittenText';
+import { HandwrittenText, LETTER_GAP } from '../components/HandwrittenText';
 import { blockSpacing, HALF_SPACE, SPACE } from '../utils/spacing';
-import { INK_STYLE } from '../config/appConfig';
-import { DESCENDER_LETTERS, layoutText, placeLetter } from './letterStrokes';
+import { DESCENDER_LETTERS, layoutText } from './letterStrokes';
 
 const BUBBLE_SHARE: Record<BubbleWeight, number> = { slim: 0.15, regular: 0.2, chunky: 0.25 };
 
 /** Letters in a bubble row sit further apart than dotted ones, so the outlines don't touch. */
 const bubbleGap = (weight: BubbleWeight) => LETTER_GAP + BUBBLE_SHARE[weight] + 0.08;
 
-type ItemKind = 'bubble' | 'dotted' | 'start' | 'blank';
+type ItemKind = 'bubble' | 'dotted' | 'blank';
 
 export const BubbleTracingRenderer: React.FC<BlockRenderProps> = ({ instance, size, width, height }) => {
   const raw = String(instance.settings.letter || 'A').charAt(0) || 'A';
@@ -136,20 +135,11 @@ const PracticeRow: React.FC<PracticeRowProps> = ({ text, x, y, h, width, deep, w
   const slotW = bubbleLayout.width * h + pad * 2 + SPACE;
   const count = Math.max(2, Math.floor(width / slotW));
   const slot = width / count;
-  // After the bubble: dotted copies, then start dots only, then space to write alone.
-  // Fading always keeps at least one of each, plus one dotted copy.
+  // After the bubble: dotted copies, then space to write it alone. No black start dots
+  // in the practice rows: the big letter above already shows where to start.
   const rest = count - 1;
-  const blanks = practice === 'fade' && rest >= 3 ? Math.max(1, Math.floor(rest / 4)) : 0;
-  const starts = practice === 'fade' && rest >= 3 ? Math.max(1, Math.floor(rest / 4)) : 0;
-  const kinds: ItemKind[] = [
-    'bubble',
-    ...Array<ItemKind>(rest - blanks - starts).fill('dotted'),
-    ...Array<ItemKind>(starts).fill('start'),
-    ...Array<ItemKind>(blanks).fill('blank'),
-  ];
-
-  const dottedW = layoutText(text, LETTER_GAP).width * h;
-  const sz = handwritingSizes(h);
+  const blanks = practice === 'fade' && rest >= 3 ? Math.max(1, Math.floor(rest / 3)) : 0;
+  const kinds: ItemKind[] = ['bubble', ...Array<ItemKind>(rest - blanks).fill('dotted'), ...Array<ItemKind>(blanks).fill('blank')];
 
   return (
     <g className="bubble-practice-row">
@@ -161,23 +151,12 @@ const PracticeRow: React.FC<PracticeRowProps> = ({ text, x, y, h, width, deep, w
           return (
             <g key={i}>
               {bubbleLayout.items.map((it, k) => (
-                <BubbleLetter key={k} ch={it.ch} x={left + it.x * h} y={y} h={h} weight={weight} helpers="arrows" guide={guide} />
+                <BubbleLetter key={k} ch={it.ch} x={left + it.x * h} y={y} h={h} weight={weight} helpers="arrows" guide={guide} startMarks={false} />
               ))}
             </g>
           );
         }
-        if (kind === 'dotted') return <HandwrittenText key={i} text={text} x={cx} y={y} h={h} align="middle" variant="trace" />;
-        if (kind === 'start') {
-          const left = cx - dottedW / 2;
-          return (
-            <g key={i}>
-              {layoutText(text, LETTER_GAP).items.map((it, k) => {
-                const p = placeLetter(it.ch, left + it.x * h, y, h, sz.dotGap);
-                return p ? <circle key={k} cx={p.start[0]} cy={p.start[1]} r={sz.startR} fill={INK_STYLE.ink} /> : null;
-              })}
-            </g>
-          );
-        }
+        if (kind === 'dotted') return <HandwrittenText key={i} text={text} x={cx} y={y} h={h} align="middle" variant="trace" startDots={false} />;
         return null;
       })}
     </g>
@@ -223,7 +202,7 @@ export const BUBBLE_SETTINGS: SettingsFieldSchema[] = [
     label: 'Practice rows',
     type: 'select',
     options: [
-      { label: 'Fade out (dotted, then start dots, then on their own)', value: 'fade' },
+      { label: 'Fade out (dotted, then space to write alone)', value: 'fade' },
       { label: 'All dotted', value: 'dotted' },
     ],
     helperText: 'Bubble style, half and full boxes.',

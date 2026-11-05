@@ -37,6 +37,8 @@ export interface BubbleOptions {
   helpers?: BubbleHelpers;
   /** Dashes and arrows in Ink, or a step lighter so the child's line stands out. */
   guide?: 'ink' | 'grey';
+  /** Mark where each stroke starts (number or dot). Off on small practice letters. */
+  startMarks?: boolean;
 }
 
 /** Shared sizes, so every bubble letter on a page is drawn the same way. */
@@ -108,7 +110,7 @@ export interface BubbleLetterProps extends BubbleOptions {
   h: number;
 }
 
-export const BubbleLetter: React.FC<BubbleLetterProps> = ({ ch, x, y, h, weight = 'regular', helpers = 'numbers', guide = 'ink' }) => {
+export const BubbleLetter: React.FC<BubbleLetterProps> = ({ ch, x, y, h, weight = 'regular', helpers = 'numbers', guide = 'ink', startMarks = true }) => {
   const raw = strokeTracks(ch);
   if (!raw) return null;
   const map = ([u, v]: P): P => [x + u * h, y + v * h];
@@ -118,7 +120,7 @@ export const BubbleLetter: React.FC<BubbleLetterProps> = ({ ch, x, y, h, weight 
   const ink = INK_STYLE.ink;
   const paper = INK_STYLE.paper;
   const guideColour = guide === 'ink' ? ink : INK_STYLE.traceDot;
-  const showNumbers = helpers === 'numbers' && h >= MIN_NUMBERED_HEIGHT;
+  const showNumbers = startMarks && helpers === 'numbers' && h >= MIN_NUMBERED_HEIGHT;
   const showArrows = helpers !== 'dots';
   const r = sz.numberR;
 
@@ -158,7 +160,7 @@ export const BubbleLetter: React.FC<BubbleLetterProps> = ({ ch, x, y, h, weight 
       {/* Guides: dashes along the centre line, an arrow at the end */}
       {tracks.map((t, i) => {
         if (t.dot) return null;
-        const from = starts[i].s + (showNumbers ? r * 1.35 : sz.startR * 2);
+        const from = starts[i].s + (showNumbers ? r * 1.35 : startMarks ? sz.startR * 2 : 0);
         const to = t.total - (showArrows ? sz.arrow * 0.85 : 0);
         const end = t.pts[t.pts.length - 1];
         const back = pointAt(t, t.total - sz.arrow);
@@ -185,7 +187,7 @@ export const BubbleLetter: React.FC<BubbleLetterProps> = ({ ch, x, y, h, weight 
       })}
 
       {/* Where to start: numbered circles, or a plain start dot */}
-      {starts.map(({ p }, i) =>
+      {startMarks && starts.map(({ p }, i) =>
         showNumbers ? (
           <g key={`n${i}`}>
             <circle cx={p[0]} cy={p[1]} r={r} fill={paper} stroke={ink} strokeWidth={INK_STYLE.minLineWidth} />
