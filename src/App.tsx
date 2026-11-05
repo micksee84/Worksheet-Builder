@@ -7,6 +7,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   DndContext,
+  CollisionDetection,
+  pointerWithin,
+  rectIntersection,
   DragMoveEvent,
   DragOverlay,
   PointerSensor,
@@ -183,6 +186,13 @@ export default function App() {
     activationConstraint: { delay: 180, tolerance: 6 },
   });
   const sensors = useSensors(pointerSensor, touchSensor);
+  // Placed blocks are big, so they target whatever is under the pointer (a slot, a page
+  // thumbnail, or nothing when off the page). Library cards keep the forgiving box overlap.
+  const collisionDetection: CollisionDetection = useCallback((args) => {
+    const underPointer = pointerWithin(args);
+    if (underPointer.length || isSlotBlockDrag(args.active.data.current)) return underPointer;
+    return rectIntersection(args);
+  }, []);
 
   // Always-current copy of the worksheet, so updates never work from a stale value
   // and history can be recorded outside React's state updater (which may run twice).
@@ -767,6 +777,7 @@ export default function App() {
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
