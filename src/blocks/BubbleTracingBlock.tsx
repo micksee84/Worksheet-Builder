@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { BlockDefinition, BlockRenderProps } from '../types';
+import { BlockRenderProps, SettingsFieldSchema } from '../types';
 import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
@@ -184,86 +184,50 @@ const PracticeRow: React.FC<PracticeRowProps> = ({ text, x, y, h, width, deep, w
   );
 };
 
-const CHOICES = [
-  ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c) => ({ label: c, value: c })),
-  ...'0123456789'.split('').map((c) => ({ label: c, value: c })),
+/** Settings the bubble style adds to Letter tracing. */
+export const BUBBLE_SETTINGS: SettingsFieldSchema[] = [
+  {
+    key: 'helpers',
+    label: 'Stroke helpers',
+    type: 'select',
+    options: [
+      { label: 'Numbers and arrows', value: 'numbers' },
+      { label: 'Arrows only', value: 'arrows' },
+      { label: 'Start dots only', value: 'dots' },
+    ],
+    helperText: 'Bubble style. Numbers show the order of the strokes on the big letter.',
+  },
+  {
+    key: 'weight',
+    label: 'Bubble size',
+    type: 'select',
+    options: [
+      { label: 'Slim', value: 'slim' },
+      { label: 'Regular', value: 'regular' },
+      { label: 'Chunky (easier)', value: 'chunky' },
+    ],
+    helperText: 'Bubble style only.',
+  },
+  {
+    key: 'guide',
+    label: 'Guide dashes',
+    type: 'select',
+    options: [
+      { label: 'Dark', value: 'ink' },
+      { label: 'Light grey', value: 'grey' },
+    ],
+    helperText: 'Bubble style only.',
+  },
+  {
+    key: 'practice',
+    label: 'Practice rows',
+    type: 'select',
+    options: [
+      { label: 'Fade out (dotted, then start dots, then on their own)', value: 'fade' },
+      { label: 'All dotted', value: 'dotted' },
+    ],
+    helperText: 'Bubble style, half and full boxes.',
+  },
 ];
 
-export const BubbleTracingBlockDefinition: BlockDefinition = {
-  id: 'bubble-tracing',
-  displayName: 'Bubble letter tracing',
-  description: 'A big bubble letter or number with numbered strokes and arrows, then practice rows that fade to writing it alone.',
-  category: 'letters',
-  skillTags: ['letter formation', 'stroke order', 'alphabet', 'number formation', 'pencil control'],
-  ageRange: '3–5',
-  allowedSizes: ['full', 'half', 'quarter'],
-  settingsSchema: [
-    {
-      key: 'letter',
-      label: 'Letter or number',
-      type: 'select',
-      options: CHOICES,
-      helperText: 'Choose A to Z or 0 to 9.',
-    },
-    {
-      key: 'caseMode',
-      label: 'Letter case',
-      type: 'select',
-      options: [
-        { label: 'Both (Aa)', value: 'both' },
-        { label: 'Uppercase only (A)', value: 'upper' },
-        { label: 'Lowercase only (a)', value: 'lower' },
-      ],
-      helperText: 'Numbers ignore this.',
-    },
-    {
-      key: 'helpers',
-      label: 'Stroke helpers',
-      type: 'select',
-      options: [
-        { label: 'Numbers and arrows', value: 'numbers' },
-        { label: 'Arrows only', value: 'arrows' },
-        { label: 'Start dots only', value: 'dots' },
-      ],
-      helperText: 'Numbers show the order of the strokes on the big letter.',
-    },
-    {
-      key: 'weight',
-      label: 'Bubble size',
-      type: 'select',
-      options: [
-        { label: 'Slim', value: 'slim' },
-        { label: 'Regular', value: 'regular' },
-        { label: 'Chunky (easier)', value: 'chunky' },
-      ],
-    },
-    {
-      key: 'guide',
-      label: 'Guide dashes',
-      type: 'select',
-      options: [
-        { label: 'Dark', value: 'ink' },
-        { label: 'Light grey', value: 'grey' },
-      ],
-    },
-    {
-      key: 'practice',
-      label: 'Practice rows',
-      type: 'select',
-      options: [
-        { label: 'Fade out (dotted, then start dots, then on their own)', value: 'fade' },
-        { label: 'All dotted', value: 'dotted' },
-      ],
-      helperText: 'Half and full boxes only.',
-    },
-  ],
-  defaultSettings: {
-    letter: 'A',
-    caseMode: 'both',
-    helpers: 'numbers',
-    weight: 'regular',
-    guide: 'ink',
-    practice: 'fade',
-  },
-  render: (props) => <BubbleTracingRenderer {...props} />,
-};
+export const BUBBLE_DEFAULTS = { helpers: 'numbers', weight: 'regular', guide: 'ink', practice: 'fade' };

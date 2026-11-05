@@ -17,8 +17,13 @@ import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
 import { DESCENDER_LETTERS, lettersWidth } from './letterStrokes';
 import { HandwrittenText } from '../components/HandwrittenText';
+import { BUBBLE_DEFAULTS, BUBBLE_SETTINGS, BubbleTracingRenderer } from './BubbleTracingBlock';
 
-export const LetterTracingRenderer: React.FC<BlockRenderProps> = ({
+/** Bubble letters are the default; "dotted" keeps the original rows of dotted letters. */
+export const LetterTracingRenderer: React.FC<BlockRenderProps> = (props) =>
+  (props.instance.settings.style || 'bubble') === 'bubble' ? <BubbleTracingRenderer {...props} /> : <DottedLetterRenderer {...props} />;
+
+const DottedLetterRenderer: React.FC<BlockRenderProps> = ({
   instance,
   size,
   width,
@@ -111,12 +116,21 @@ function widestRowUnits(caseMode: 'both' | 'upper' | 'lower', gap: number): numb
 export const LetterTracingBlockDefinition: BlockDefinition = {
   id: 'letter-tracing',
   displayName: 'Letter tracing',
-  description: 'A solid letter to copy, then dotted letters to trace on handwriting lines.',
+  description: 'A big bubble letter with numbered strokes and arrows, then practice rows to trace. Or rows of dotted letters.',
   category: 'letters',
-  skillTags: ['alphabet', 'letter formation', 'phonics'],
+  skillTags: ['alphabet', 'letter formation', 'stroke order', 'phonics'],
   ageRange: '3–5',
   allowedSizes: ['full', 'half', 'quarter'],
   settingsSchema: [
+    {
+      key: 'style',
+      label: 'Style',
+      type: 'select',
+      options: [
+        { label: 'Bubble letter with stroke order', value: 'bubble' },
+        { label: 'Dotted letters', value: 'dotted' },
+      ],
+    },
     {
       key: 'letter',
       label: 'Letter (A-Z)',
@@ -137,10 +151,13 @@ export const LetterTracingBlockDefinition: BlockDefinition = {
         { label: 'Lowercase Only (a)', value: 'lower' },
       ],
     },
+    ...BUBBLE_SETTINGS,
   ],
   defaultSettings: {
+    style: 'bubble',
     letter: 'A',
     caseMode: 'both',
+    ...BUBBLE_DEFAULTS,
   },
   render: (props) => <LetterTracingRenderer {...props} />,
 };
