@@ -10,7 +10,7 @@
 import React, { useEffect, useRef } from 'react';
 import { BlockInstance, BlockDefinition, CharacterCorner, Slot } from '../types';
 import { CHARACTERS, CharacterId, FEATURES, assetUrl } from '../config/appConfig';
-import { X, Trash2, Sparkles, Smile } from 'lucide-react';
+import { X, Trash2, Settings, Smile } from 'lucide-react';
 
 interface BlockSettingsDrawerProps {
   isOpen: boolean;
@@ -130,7 +130,7 @@ export const BlockSettingsDrawer: React.FC<BlockSettingsDrawerProps> = ({
         {/* Dynamic Fields from settingsSchema */}
         <div className="space-y-5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-[#6B5838] flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-[#F2B800]" />
+            <Settings className="w-3.5 h-3.5" aria-hidden="true" />
             Activity Settings
           </h3>
 
