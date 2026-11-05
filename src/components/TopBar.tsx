@@ -3,10 +3,10 @@
  * Sunshine Brigade Worksheet Builder - Top Bar
  *
  * Grouped the way most design tools are:
- *   Left  (working on the file): logo | Open, Save, Templates · worksheet name | Undo, Redo
+ *   Left  (working on the file): logo | New, Open, Save, Templates · worksheet name | Undo, Redo
  *   Right (sending it out):      Share, Print / PDF (the one main button), account
  * Paper size lives with the page, in the canvas toolbar beside the slot layouts.
- * Below tablet width, Open, Save and Templates fold into one File menu.
+ * Below tablet width, New, Open, Save and Templates fold into one File menu.
  */
 
 import React, { useState } from 'react';
@@ -27,6 +27,7 @@ import {
   Save,
   Pencil,
   ChevronDown,
+  FilePlus2,
 } from 'lucide-react';
 import type { SyncStatus } from '../auth/useAccountSync';
 
@@ -55,6 +56,7 @@ interface TopBarProps {
   saveState: SaveState;
   onSave: () => void;
   onOpen: () => void;
+  onNew: () => void;
   /** The worksheet's name, or null while it still has a starter name. */
   worksheetName: string | null;
   onRename: () => void;
@@ -88,6 +90,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   saveState,
   onSave,
   onOpen,
+  onNew,
   worksheetName,
   onRename,
 }) => {
@@ -133,8 +136,12 @@ export const TopBar: React.FC<TopBarProps> = ({
 
         <span className="hidden sm:block w-[1.5px] h-7 bg-[#2D2200]/20 shrink-0" aria-hidden="true" />
 
-        {/* File: Open, Save, Templates (tablet and up) */}
+        {/* File: New, Open, Save, Templates (tablet and up) */}
         <div className={`${groupClass} hidden md:flex shrink-0`} role="group" aria-label="Worksheet">
+          <button type="button" onClick={onNew} className={itemClass} title="Start a new, blank worksheet">
+            <FilePlus2 className="w-3.5 h-3.5" aria-hidden="true" />
+            New
+          </button>
           <button type="button" onClick={onOpen} className={itemClass} title="Open a saved worksheet or start a new one">
             <FolderOpen className="w-3.5 h-3.5" aria-hidden="true" />
             Open
@@ -176,6 +183,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               onMouseLeave={() => setShowFileMenu(false)}
             >
               {[
+                { label: 'New', Icon: FilePlus2, run: onNew },
                 { label: 'Open', Icon: FolderOpen, run: onOpen },
                 { label: SAVE_LABEL[saveState], Icon: Save, run: onSave },
                 { label: 'Rename', Icon: Pencil, run: onRename },

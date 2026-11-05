@@ -60,7 +60,8 @@ import { dropKind, firstFreeSlot, isSlotBlockDrag, moveBlock, SlotBlockDrag } fr
 import { Trash2 } from 'lucide-react';
 import { RemoveBlockConfirm } from './components/RemoveBlockConfirm';
 import { SaveWorksheetDialog } from './components/SaveWorksheetDialog';
-import { isInBrowserLibrary, isUnnamed, LibrarySource, loadFromLibrary, saveToLibrary } from './utils/worksheetLibrary';
+import { deleteFromLibrary, isInBrowserLibrary, isUnnamed, LibrarySource, loadFromLibrary, saveToLibrary } from './utils/worksheetLibrary';
+import { SaveFirstDialog } from './components/SaveFirstDialog';
 import type { SaveState } from './components/TopBar';
 import { BlockSettingsDrawer } from './components/BlockSettingsDrawer';
 import { TemplateGalleryModal } from './components/TemplateGalleryModal';
@@ -68,6 +69,19 @@ import { PrintDoneToast, PrintDoneKind } from './components/PrintDoneToast';
 import { PrintContainer } from './components/PrintContainer';
 import { TooltipLayer } from './components/TooltipLayer';
 import { MyWorksheetsModal } from './components/MyWorksheetsModal';
+
+/** A blank worksheet for New: one page, two empty halves. Keeps the current paper size. */
+function createBlankWorksheet(pageSize: Worksheet['pageSize'] = 'letter'): Worksheet {
+  const now = Date.now();
+  return {
+    id: `ws_${now}`,
+    title: 'Untitled worksheet',
+    pageSize,
+    createdAt: now,
+    updatedAt: now,
+    pages: [{ id: 'page_1', title: 'Page 1', layout: '2-half', showDateName: true, slots: createSlotsForPreset('2-half') }],
+  };
+}
 
 // Initial default blank/starter worksheet
 function createInitialWorksheet(): Worksheet {
@@ -332,9 +346,28 @@ export default function App() {
     else if (isInBrowserLibrary(worksheetRef.current.id)) await saveToLibrary('browser', worksheetRef.current);
   }, [librarySource, accountSync]);
 
-  const handleOpenSaved = useCallback(
-    async (id: string) => {
-      await flushCurrent();
+  // ---------------------------------------------------------------- Leaving a worksheet
+  // New, opening another worksheet, or picking a template all leave the open worksheet.
+  // If it has never been saved and has been changed, ask first: Save / Don't save / Cancel.
+  // A saved worksheet keeps saving on its own, so leaving it never asks.
+  const hasUnsavedWork = saveState === 'unsaved' && worksheet.updatedAt !== worksheet.createdAt;
+  const [leavePrompt, setLeavePrompt] = useState<{ name: string; run: (discard: boolean) => void } | null>(null);
+  const afterSaveRef = useRef<(() => void) | null>(null);
+
+  const guardLeave = (run: (discard: boolean) => void) => {
+    if (hasUnsavedWork) setLeavePrompt({ name: isUnnamed(worksheet) ? 'Untitled worksheet' : worksheet.title, run });
+    else run(false);
+  };
+
+  /** Save the worksheet being left, or (Don't save) drop the copy auto-saved to the account. */
+  const leaveCurrent = async (discard: boolean) => {
+    if (!discard) return flushCurrent();
+    if (librarySource === 'account') await deleteFromLibrary('account', worksheetRef.current.id);
+  };
+
+  const handleOpenSaved = (id: string) =>
+    guardLeave(async (discard) => {
+      await leaveCurrent(discard);
       const loaded = await loadFromLibrary(librarySource, id);
       if (!loaded) return;
       openWorksheet(loaded);
@@ -342,17 +375,28 @@ export default function App() {
       else setBrowserSavedKey(savedKey(loaded));
       setManualSave('idle');
       setIsMyWorksheetsOpen(false);
-    },
-    [flushCurrent, librarySource, accountSync, openWorksheet]
-  );
+    });
 
-  const handleNewWorksheet = useCallback(async () => {
-    await flushCurrent();
-    openWorksheet(createInitialWorksheet());
-    setBrowserSavedKey(null);
-    setManualSave('idle');
-    setIsMyWorksheetsOpen(false);
-  }, [flushCurrent, openWorksheet]);
+  const handleNewWorksheet = () =>
+    guardLeave(async (discard) => {
+      await leaveCurrent(discard);
+      openWorksheet(createBlankWorksheet(worksheetRef.current.pageSize));
+      setBrowserSavedKey(null);
+      setManualSave('idle');
+      setIsMyWorksheetsOpen(false);
+      trackEvent('worksheet_new', {});
+    });
+
+  // Closing the tab with unsaved work: the browser shows its own "Leave site?" warning.
+  useEffect(() => {
+    if (!hasUnsavedWork) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [hasUnsavedWork]);
 
   // Undo / Redo handlers
   const handleUndo = useCallback(() => {
@@ -814,12 +858,15 @@ export default function App() {
 
   // Load a template.
   // Goes through history so Undo brings back the worksheet the parent was working on.
-  const handleSelectTemplate = useCallback(
-    (template: TemplateItem) => {
+  const handleSelectTemplate = (template: TemplateItem) =>
+    guardLeave(async (discard) => {
+      await leaveCurrent(discard);
       const cloned = JSON.parse(JSON.stringify(template.worksheet)) as Worksheet;
       cloned.id = `ws_${Date.now()}`;
 
       updateWorksheet(() => cloned);
+      setBrowserSavedKey(null);
+      setManualSave('idle');
       setActivePageIndex(0);
       setIsTemplateModalOpen(false);
       setSelectedSlotRef(null);
@@ -829,9 +876,7 @@ export default function App() {
         templateId: template.id,
         pageCount: cloned.pages.length,
       });
-    },
-    [updateWorksheet]
-  );
+    });
 
   // PDF Export
   const handleDownloadPdf = useCallback(async () => {
@@ -884,6 +929,7 @@ export default function App() {
             saveState={saveState}
             onSave={handleSave}
             onOpen={() => setIsMyWorksheetsOpen(true)}
+            onNew={handleNewWorksheet}
             worksheetName={isUnnamed(worksheet) ? null : worksheet.title}
             onRename={() => setIsRenaming(true)}
             canUndo={history.length > 0}
@@ -1047,14 +1093,43 @@ export default function App() {
           />
         )}
 
+        {/* Leaving an unsaved worksheet: Save / Don't save / Cancel */}
+        {leavePrompt && (
+          <SaveFirstDialog
+            name={leavePrompt.name}
+            onCancel={() => setLeavePrompt(null)}
+            onDiscard={() => {
+              const { run } = leavePrompt;
+              setLeavePrompt(null);
+              run(true);
+            }}
+            onSave={() => {
+              const { run } = leavePrompt;
+              setLeavePrompt(null);
+              afterSaveRef.current = () => run(false);
+              if (isUnnamed(worksheetRef.current)) setIsNamingSave(true);
+              else saveWorksheet().then(() => {
+                afterSaveRef.current?.();
+                afterSaveRef.current = null;
+              });
+            }}
+          />
+        )}
+
         {/* First Save: name the worksheet */}
         {isNamingSave && (
           <SaveWorksheetDialog
             initialName={isUnnamed(worksheet) ? '' : worksheet.title}
-            onCancel={() => setIsNamingSave(false)}
-            onSave={(name) => {
+            onCancel={() => {
               setIsNamingSave(false);
-              saveWorksheet(name);
+              afterSaveRef.current = null;
+            }}
+            onSave={async (name) => {
+              setIsNamingSave(false);
+              await saveWorksheet(name);
+              // Saving before New, Open or a template: carry on with it now.
+              afterSaveRef.current?.();
+              afterSaveRef.current = null;
             }}
           />
         )}
