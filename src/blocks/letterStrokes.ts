@@ -237,6 +237,32 @@ export function placeLetter(ch: string, x: number, y: number, h: number, dotGap:
   return { paths, dots, traceDots, start };
 }
 
+/** One stroke as the pencil moves: a dense run of points, or a single dot. In line units. */
+export type StrokeTrack = { kind: 'line'; pts: P[] } | { kind: 'dot'; p: P };
+
+/**
+ * Every stroke of a letter, in writing order, as evenly dense points (about every
+ * `step` line units). Used by the bubble letters to lay out dashes, arrows and numbers.
+ */
+export function strokeTracks(ch: string, step = 0.01): StrokeTrack[] | null {
+  const glyph = LETTER_STROKES[ch];
+  if (!glyph) return null;
+  return glyph.strokes.map((stroke): StrokeTrack => {
+    if (stroke.length === 1 && stroke[0][0] === 'D') return { kind: 'dot', p: [stroke[0][1], stroke[0][2]] };
+    const pts: P[] = [];
+    stroke.forEach((seg) => {
+      if (seg[0] === 'D') return;
+      // Rough length, so long arcs get as many points as long lines.
+      const a = segPoint(seg, 0);
+      const b = segPoint(seg, 1);
+      const len = seg[0] === 'L' ? Math.hypot(b[0] - a[0], b[1] - a[1]) : (Math.abs(seg[6] - seg[5]) * Math.PI * Math.max(seg[3], seg[4])) / 180;
+      const n = Math.max(2, Math.ceil(len / step));
+      for (let i = pts.length ? 1 : 0; i <= n; i++) pts.push(segPoint(seg, i / n));
+    });
+    return { kind: 'line', pts };
+  });
+}
+
 /** Tangent direction at the start (t = 0) or end (t = 1) of a piece. */
 function tangent(piece: Piece, atEnd: boolean): number {
   const e = 0.002;

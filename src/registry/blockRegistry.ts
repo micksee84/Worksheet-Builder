@@ -12,6 +12,7 @@
 import { BlockDefinition, BlockInstance, BlockCategory, BlockCharacterConfig } from '../types';
 import { LineTracingBlockDefinition } from '../blocks/LineTracingBlock';
 import { LetterTracingBlockDefinition } from '../blocks/LetterTracingBlock';
+import { BubbleTracingBlockDefinition } from '../blocks/BubbleTracingBlock';
 import { WordTracingBlockDefinition } from '../blocks/WordTracingBlock';
 import { NumberTracingBlockDefinition } from '../blocks/NumberTracingBlock';
 import { CountCircleBlockDefinition } from '../blocks/CountCircleBlock';
@@ -38,6 +39,7 @@ export const REGISTERED_BLOCKS: BlockDefinition[] = [
   CutGlueBlockDefinition,
   // Early literacy
   LetterTracingBlockDefinition,
+  BubbleTracingBlockDefinition,
   WordTracingBlockDefinition,
   BeginningSoundsBlockDefinition,
   RhymeMatchBlockDefinition,
