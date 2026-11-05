@@ -53,6 +53,7 @@ import { TopBar } from './components/TopBar';
 import { Sidebar } from './components/Sidebar';
 import { WorksheetCanvas } from './components/WorksheetCanvas';
 import { PagesPanel } from './components/PagesPanel';
+import { dropKind, firstFreeSlot, isSlotBlockDrag, moveBlock, SlotBlockDrag } from './utils/blockMoves';
 import { BlockSettingsDrawer } from './components/BlockSettingsDrawer';
 import { TemplateGalleryModal } from './components/TemplateGalleryModal';
 import { PrintDoneToast, PrintDoneKind } from './components/PrintDoneToast';
@@ -168,7 +169,7 @@ export default function App() {
 
   // Drag and drop state
   const [activeDragItem, setActiveDragItem] = useState<{
-    type: 'library-block';
+    type: 'library-block' | 'slot-block';
     blockId: string;
   } | null>(null);
 
@@ -352,7 +353,22 @@ export default function App() {
         type: 'library-block',
         blockId: data.blockId,
       });
+    } else if (isSlotBlockDrag(data)) {
+      setActiveDragItem({ type: 'slot-block', blockId: data.blockId });
     }
+  };
+
+  /** Move (or swap) a placed block, and keep the settings panel on the block it was showing. */
+  const movePlacedBlock = (drag: SlotBlockDrag, target: { pageId: string; slotId: string }) => {
+    const source = { pageId: drag.sourcePageId, slotId: drag.sourceSlotId };
+    updateWorksheet((prev) => moveBlock(prev, source, target));
+    setSelectedSlotRef((sel) => {
+      if (!sel) return sel;
+      if (sel.pageId === source.pageId && sel.slotId === source.slotId) return target;
+      if (sel.pageId === target.pageId && sel.slotId === target.slotId) return source;
+      return sel;
+    });
+    trackEvent('block_moved', { blockId: drag.blockId });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -363,6 +379,22 @@ export default function App() {
 
     const overData = over.data.current;
     const activeData = active.data.current;
+
+    // A placed block dragged to another slot: move it, or swap with the block there.
+    if (isSlotBlockDrag(activeData)) {
+      if (overData?.type === 'slot-target') {
+        const page = worksheetRef.current.pages.find((p) => p.id === overData.pageId);
+        const slot = page?.slots.find((s) => s.id === overData.slotId);
+        if (!slot) return;
+        const kind = dropKind(activeData, overData.pageId, slot);
+        if (kind === 'move' || kind === 'swap') movePlacedBlock(activeData, { pageId: overData.pageId, slotId: slot.id });
+      } else if (overData?.type === 'page-thumb') {
+        const page = worksheetRef.current.pages.find((p) => p.id === overData.pageId);
+        const free = page ? firstFreeSlot(page, activeData) : null;
+        if (page && free) movePlacedBlock(activeData, { pageId: page.id, slotId: free.id });
+      }
+      return;
+    }
 
     // Dropped on a page in the pages panel: goes in that page's next empty space.
     if (overData && overData.type === 'page-thumb' && activeData && activeData.type === 'library-block') {

@@ -10,7 +10,8 @@
  */
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import { useDndContext, useDraggable, useDroppable } from '@dnd-kit/core';
+import { dropKind, isSlotBlockDrag, SlotBlockDrag } from '../utils/blockMoves';
 import { Page, PageSizeId, Slot, PageLayoutPreset, BlockInstance } from '../types';
 import { PAGE_SPECS } from '../config/appConfig';
 import { LAYOUT_PRESETS, calculateSlotGeometries } from '../utils/layoutPresets';
@@ -100,6 +101,26 @@ const DroppableSlotOverlay: React.FC<{
     },
   });
 
+  // A placed block can be picked up and dragged to another slot (see utils/blockMoves).
+  const dragData: SlotBlockDrag | undefined = slot.block
+    ? { type: 'slot-block', sourcePageId: pageId, sourceSlotId: slot.id, sourceSize: slot.size, blockId: slot.block.blockId }
+    : undefined;
+  const drag = useDraggable({
+    id: `slot-block-${pageId}-${slot.id}`,
+    data: dragData,
+    disabled: !slot.block || dropOnly,
+  });
+  const { active } = useDndContext();
+  const activeData = active?.data.current;
+  const moving = isSlotBlockDrag(activeData) ? activeData : null;
+  const kind = moving ? dropKind(moving, pageId, slot) : null;
+  const hint =
+    kind === 'move' ? 'Move here' : kind === 'swap' ? 'Swap blocks' : kind === 'no-fit' ? "Doesn't fit here" : kind === 'self' ? null : 'Drop block here!';
+  const setRefs = (el: HTMLDivElement | null) => {
+    setNodeRef(el);
+    drag.setNodeRef(el);
+  };
+
   if (dropOnly) {
     return (
       <div
@@ -121,9 +142,14 @@ const DroppableSlotOverlay: React.FC<{
     );
   }
 
+  const showOver = isOver && hint !== null;
+  const blocked = kind === 'no-fit';
   return (
     <div
-      ref={setNodeRef}
+      ref={setRefs}
+      {...(slot.block ? drag.listeners : {})}
+      {...(slot.block ? drag.attributes : {})}
+      aria-label={slot.block ? `${slot.label}: drag to move, click to change settings` : undefined}
       onClick={onSelect}
       // Clicking a placed block opens (or switches) its settings, so it doesn't count as
       // clicking away from the settings panel.
@@ -135,19 +161,29 @@ const DroppableSlotOverlay: React.FC<{
         width: `${width}px`,
         height: `${height}px`,
       }}
-      className={`group rounded-lg transition-all cursor-pointer ${
-        isOver
+      className={`group rounded-lg transition-all ${slot.block ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${
+        drag.isDragging
+          ? 'bg-white/70 border-2 border-dashed border-[#A39C8E]'
+          : showOver && blocked
+          ? 'bg-[#2D2200]/5 border-2 border-dashed border-[#A39C8E]'
+          : showOver
           ? 'bg-[#009BD9]/15 border-2 border-dashed border-[#009BD9] shadow-inner'
+          : moving && (kind === 'move' || kind === 'swap')
+          ? 'border-2 border-dashed border-[#009BD9]/40'
           : isSelected
           ? 'border-2 border-[#009BD9] bg-[#009BD9]/5'
           : 'hover:border hover:border-[#009BD9]/50'
       }`}
     >
       {/* Drag hover hint */}
-      {isOver && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg">
-          <span className="text-xs font-black text-[#2D2200] bg-[#FAF8F0] px-3 py-1.5 rounded-full border-[1.5px] border-[#2D2200]">
-            Drop block here!
+      {showOver && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg pointer-events-none">
+          <span
+            className={`text-xs font-black px-3 py-1.5 rounded-full border-[1.5px] ${
+              blocked ? 'text-[#6B5838] bg-white border-[#A39C8E]' : 'text-[#2D2200] bg-[#FAF8F0] border-[#2D2200]'
+            }`}
+          >
+            {hint}
           </span>
         </div>
       )}
