@@ -12,8 +12,14 @@
  *   - spacing adapts to the size of the shape.
  *
  * Every shape fits the same band (`half` above and below the row's centre line), so
- * mixed rows match in height and sit evenly apart. A complexity level changes how many
- * bumps, points, steps or loops fit across the line.
+ * mixed rows match in height and sit evenly apart.
+ *
+ * Sizing rule: each style has a target bump shape (how wide one bump is for its height),
+ * and the number of bumps comes from the length of the line. So a quarter box gets fewer
+ * bumps of the same shape, never the same bumps squeezed into a zigzag. Complexity
+ * changes that target shape (Tricky = tighter bumps), not a fixed count. If a line is
+ * too short for even one good bump, the bump gets lower rather than narrower. Dots get
+ * closer on smaller curves so they still read as curves.
  */
 
 export type LineStyle = 'straight' | 'wave' | 'zigzag' | 'loops' | 'castle';
@@ -174,13 +180,17 @@ export function buildTraceShape(
 
   switch (style) {
     case 'wave': {
-      const peaks = pick(level, [2, 3, 5]);
-      const amp = half * pick(level, [0.75, 1, 1]);
-      const humps = peaks * 2;
+      // One hump (half a wave) is `ratio` times as wide as it is tall.
+      const amp0 = half * pick(level, [0.75, 1, 1]);
+      const ratio = pick(level, [5, 3, 2.2]);
+      const humps = Math.max(2, Math.round(W / (ratio * amp0)));
       const w = W / humps;
+      const amp = Math.min(amp0, w / 1.9); // never steeper than this, or it reads as a zigzag
       const pieces: Piece[] = [];
       for (let i = 0; i < humps; i++) pieces.push(hump(startX + i * w, startX + (i + 1) * w, y, amp, i % 2 === 0 ? -1 : 1));
-      return flat(pieces);
+      // At least ~7 dots per hump, so the curve stays round.
+      const humpLen = Math.hypot(w, amp * 2.4);
+      return flat(pieces, Math.max(5, Math.min(target, humpLen / 7)));
     }
 
     case 'zigzag': {
@@ -188,7 +198,7 @@ export function buildTraceShape(
       // Keep every level pointy: the pitch never gets much wider than the band is tall.
       const amp = half;
       const pitch0 = half * 2 * pick(level, [2.1, 1.5, 1.0]);
-      const points = Math.max(pick(level, [4, 6, 9]), Math.round(W / pitch0));
+      const points = Math.max(3, Math.round(W / pitch0));
       const pitch = W / points;
       const pieces: Piece[] = [];
       let x = startX;
@@ -206,10 +216,13 @@ export function buildTraceShape(
 
     case 'castle': {
       // Square steps centred on the line: up, along the top, down, along the bottom.
-      const cycles = pick(level, [3, 5, 8]);
-      const amp = half * pick(level, [0.75, 1, 1]);
+      // Each flat top or bottom is `ratio` times the step height; steps never get narrower than tall.
+      const amp0 = half * pick(level, [0.75, 1, 1]);
+      const ratio = pick(level, [4, 2, 1.5]);
       const lead = Math.min(W * 0.06, 24);
+      const cycles = Math.max(1, Math.round((W - lead * 2) / (2 * ratio * amp0)));
       const step = (W - lead * 2) / (cycles * 2);
+      const amp = Math.min(amp0, step);
       const pieces: Piece[] = [line([startX, y], [startX + lead, y])];
       let x = startX + lead;
       pieces.push(line([x, y], [x, y - amp]));
@@ -222,14 +235,15 @@ export function buildTraceShape(
         pieces.push(line([x, y + amp], [x, i === cycles - 1 ? y : y - amp], i < cycles - 1));
       }
       pieces.push(line([x, y], [endX, y]));
-      return flat(pieces, target * 0.7);
+      return flat(pieces, Math.max(4.5, Math.min(target * 0.7, step / 3, amp * 0.7)));
     }
 
     case 'loops': {
       const base = y + half;
       if (level === 0) {
         // Gentle: rounded arches standing on the bottom of the band.
-        const n = 4;
+        // Arches about 2.5 times as wide as they are tall.
+        const n = Math.max(1, Math.round(W / (2.5 * 2 * half)));
         const w = W / n;
         const ctrl = base - (half * 2 * 4) / 3;
         const pieces: Piece[] = [];
@@ -241,10 +255,11 @@ export function buildTraceShape(
       }
       // Medium and Tricky: real joined loops. The loop size to travel ratio (b / c) sets
       // how round they are; Tricky packs in more, tighter loops.
-      const b = half;
       const ratio = level === 1 ? 2.1 : 2.6;
-      const n = Math.max(level === 1 ? 4 : 6, Math.round(W / ((Math.PI * 2 * b) / ratio)));
+      const n = Math.max(2, Math.round(W / ((Math.PI * 2 * half) / ratio)));
       const c = W / (Math.PI * 2 * n);
+      // On a very short line, shrink the loops rather than let them run into each other.
+      const b = Math.min(half, c * ratio * 1.15);
       const pieces: Piece[] = [];
       for (let i = 0; i < n; i++) pieces.push(loop(startX + i * c * Math.PI * 2, y, c, b));
       // Closer dots so the curl of each loop reads clearly.
