@@ -11,6 +11,7 @@
  */
 
 import React from 'react';
+import { HandArtBox, hasHandArt } from './handArt';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
@@ -35,6 +36,8 @@ const LABELS: Record<Feeling, string> = {
 
 /** One feeling face, drawn in a 100 x 100 box. */
 export function Face({ feeling, cx, cy, size }: { feeling: Feeling; cx: number; cy: number; size: number }) {
+  // Version 0.3: hand-drawn faces
+  if (hasHandArt('feeling-' + feeling)) return <HandArtBox id={'feeling-' + feeling} cx={cx} cy={cy} size={size} />;
   const k = size / 100;
   const w = Math.max(1.5, Math.min(3, size * 0.035)) / k;
   const ink = '#2D2200';

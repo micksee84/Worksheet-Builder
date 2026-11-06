@@ -5,6 +5,17 @@
  */
 
 import React from 'react';
+import { HandArtBox, hasHandArt } from './handArt';
+
+/** Version 0.3: hand-drawn counting art, in the same 100-unit frame as the shapes below. */
+const HAND_ID: Record<string, string> = {
+  stars: 'count-star',
+  apples: 'count-apple',
+  hearts: 'count-heart',
+  circles: 'count-circle',
+  balloons: 'count-balloon',
+  flowers: 'count-flower',
+};
 
 export type ShapeType = 'stars' | 'apples' | 'hearts' | 'circles' | 'balloons' | 'flowers';
 
@@ -16,6 +27,8 @@ interface RenderShapeProps {
 }
 
 export const KidShape: React.FC<RenderShapeProps> = ({ type, cx, cy, size }) => {
+  const handId = HAND_ID[type];
+  if (handId && hasHandArt(handId)) return <HandArtBox id={handId} cx={cx} cy={cy} size={size} />;
   const r = size / 2;
 
   switch (type) {

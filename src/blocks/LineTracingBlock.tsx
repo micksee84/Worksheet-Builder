@@ -9,6 +9,7 @@
  */
 
 import React from 'react';
+import { HandArt } from './handArt';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
@@ -68,11 +69,10 @@ export const LineTracingRenderer: React.FC<BlockRenderProps> = ({
           {/* Trace line: soft grey dots */}
           <TraceDots dots={line.dots} r={line.r} />
 
-          {/* Finish marker: cute 5-point star */}
-          <path
-            d={`M ${endX + 10} ${line.endY - 6} L ${endX + 12} ${line.endY - 2} L ${endX + 16} ${line.endY - 2} L ${endX + 13} ${line.endY + 1} L ${endX + 14} ${line.endY + 5} L ${endX + 10} ${line.endY + 2.5} L ${endX + 6} ${line.endY + 5} L ${endX + 7} ${line.endY + 1} L ${endX + 4} ${line.endY - 2} L ${endX + 8} ${line.endY - 2} Z`}
-            fill="#2D2200"
-          />
+          {/* Finish marker: hand-drawn star (version 0.3), placed where the old star sat */}
+          <g transform={`translate(${endX} ${line.endY})`}>
+            <HandArt id="finish-star" minLine={0} />
+          </g>
         </g>
       ))}
 

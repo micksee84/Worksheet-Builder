@@ -42,7 +42,7 @@ function fromShapes(name: string): Art {
     return (
       <>
         {shapes.map(([role, d], i) => (
-          <path key={i} d={d} fill={role === 'k' ? c.S : c.F} {...stroke} />
+          <path key={i} d={d} fill={role === 'k' ? c.S : c.F} fillRule="evenodd" {...stroke} />
         ))}
       </>
     );

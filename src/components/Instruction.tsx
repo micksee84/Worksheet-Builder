@@ -4,10 +4,12 @@
  *
  * Every block starts with one short instruction for the grown-up, plus a small picture
  * cue (pencil, crayon, scissors...) so a child who can't read yet still knows what to do.
- * The cues are placeholder ink drawings in a 100 x 100 box, like the picture library.
+ * The cues are hand-drawn (version 0.3) in a 100 x 100 box, like the picture library;
+ * the older code drawings below stay as a fallback.
  */
 
 import React from 'react';
+import { HandArt, hasHandArt } from '../blocks/handArt';
 
 const INK = '#2D2200';
 const PAPER = '#FFFFFF';
@@ -118,7 +120,7 @@ export const Instruction: React.FC<InstructionProps> = ({ x, y, text, cue, size,
   return (
     <g className="block-instruction">
       <g transform={`translate(${x} ${y - baseSize + 1 - (iconSize - baseSize) / 2}) scale(${scale})`}>
-        {CUE_ART[cue](stroke)}
+        {hasHandArt('cue-' + cue) ? <HandArt id={'cue-' + cue} minLine={stroke} /> : CUE_ART[cue](stroke)}
       </g>
       <text
         x={x + iconSize + 6}

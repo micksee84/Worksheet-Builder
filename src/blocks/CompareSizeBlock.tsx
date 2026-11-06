@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { HandArt, HandCrayon } from './handArt';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
@@ -24,41 +25,22 @@ const QUESTIONS: Record<string, { text: string; short: string }> = {
   longest: { text: 'Circle the longest crayon in each row.', short: 'Circle the longest.' },
 };
 
-/** A tower of stacked blocks, standing on the baseline */
+/** A tower of stacked blocks, standing on the baseline (version 0.3: hand-drawn block) */
 function Tower({ cx, baseY, blocks, unit }: { cx: number; baseY: number; blocks: number; unit: number }) {
+  const k = unit / 100;
   return (
     <g>
       {Array.from({ length: blocks }).map((_, i) => (
-        <rect
-          key={i}
-          x={cx - unit / 2}
-          y={baseY - unit * (i + 1)}
-          width={unit}
-          height={unit}
-          rx="3"
-          ry="3"
-          fill="#FFFFFF"
-          stroke="#2D2200"
-          strokeWidth="2"
-        />
+        <g key={i} transform={`translate(${cx - unit / 2} ${baseY - unit * (i + 1)}) scale(${k})`}>
+          <HandArt id="compare-block" minLine={1.5 / k} />
+        </g>
       ))}
     </g>
   );
 }
 
 /** A crayon lying on its side, left-aligned so lengths are easy to compare */
-function Crayon({ x, cy, length, thickness }: { x: number; cy: number; length: number; thickness: number }) {
-  const tip = thickness * 1.1;
-  const body = Math.max(thickness, length - tip);
-  return (
-    <g>
-      <rect x={x} y={cy - thickness / 2} width={body} height={thickness} rx="4" ry="4" fill="#FFFFFF" stroke="#2D2200" strokeWidth="2" />
-      <path d={`M ${x + body} ${cy - thickness / 2} L ${x + body + tip} ${cy} L ${x + body} ${cy + thickness / 2} Z`} fill="#FFFFFF" stroke="#2D2200" strokeWidth="2" strokeLinejoin="round" />
-      <line x1={x + thickness * 0.8} y1={cy - thickness / 2} x2={x + thickness * 0.8} y2={cy + thickness / 2} stroke="#2D2200" strokeWidth="1.5" />
-      <line x1={x + body - thickness * 0.8} y1={cy - thickness / 2} x2={x + body - thickness * 0.8} y2={cy + thickness / 2} stroke="#2D2200" strokeWidth="1.5" />
-    </g>
-  );
-}
+const Crayon = HandCrayon;
 
 export const CompareSizeRenderer: React.FC<BlockRenderProps> = ({ instance, size, width, height }) => {
   const s = instance.settings;

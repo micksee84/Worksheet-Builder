@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import { HandArtBox, hasHandArt } from './handArt';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
@@ -24,6 +25,8 @@ const SHAPE_NAMES: Record<HuntShape, string> = {
 };
 
 export function shapePath(shape: HuntShape, cx: number, cy: number, r: number, rot: number): React.ReactNode {
+  // Version 0.3: hand-drawn shapes (frame: r 50 around the centre)
+  if (hasHandArt('shape-' + shape)) return <HandArtBox id={'shape-' + shape} cx={cx} cy={cy} size={r * 2} rotate={rot} />;
   const common = { fill: '#FFFFFF', stroke: '#2D2200', strokeWidth: 2.5, strokeLinejoin: 'round' as const };
   const t = `rotate(${rot} ${cx} ${cy})`;
   switch (shape) {
