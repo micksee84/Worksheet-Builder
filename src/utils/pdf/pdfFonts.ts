@@ -31,7 +31,6 @@ const FONT_FILES: FontFile[] = [
   { url: assetUrl('fonts/Nunito_700Bold.ttf'), family: 'Nunito', style: 'bold', required: true },
   { url: assetUrl('fonts/Nunito_800ExtraBold.ttf'), family: 'Nunito', style: '800normal', required: true },
   { url: assetUrl('fonts/Nunito_900Black.ttf'), family: 'Nunito', style: '900normal', required: true },
-  { url: assetUrl('fonts/ChunkyPuffly.ttf'), family: 'Chunky Puffly', style: 'normal', required: false },
 ];
 
 interface LoadedFont extends FontFile {

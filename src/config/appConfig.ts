@@ -37,7 +37,7 @@ export const INK_STYLE = {
 } as const;
 
 export const APP_FONTS = {
-  heading: '"Chunky Puffly", "Nunito", system-ui, sans-serif',
+  heading: '"Nunito", system-ui, sans-serif',
   body: '"Nunito", system-ui, sans-serif',
   handwriting: '"Nunito", "Comic Sans MS", system-ui, sans-serif',
 } as const;

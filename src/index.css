@@ -220,6 +220,21 @@
 }
 
 @layer components {
+/* Top bar name: Nunito, like the rest of the builder */
+.tb-wordmark {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.005em;
+  color: #2D2200;
+}
+.tb-appname {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1;
+  color: #2D2200;
+}
+
 /* ===== Top bar (brand header style). Cream ground, 3px ink rule, pill buttons.
    Hover: sun-yellow, lifts 1px up-left. Press: sky-blue, drops 1px down-right.
    Focus: 3px sky-blue ring, 3px offset. Flat sticker shadows only. ===== */

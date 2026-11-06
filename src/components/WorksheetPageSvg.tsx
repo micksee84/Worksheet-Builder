@@ -77,36 +77,19 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
       {/* All positions come from pageLayout (utils/spacing): every gap is 0.25 in. Lines use
           round caps, so they start and end half a stroke in from the margins. */}
       <g className="worksheet-header" transform={`translate(${margin}, 0)`}>
-        {/* Page Title: Ink Style sticker. Built from three layers so it survives PDF export:
-            a flat ink shadow (6% down-right), an ink outline (3.2% all round), then white letters. */}
-        {(() => {
-          // Chunky Puffly titles are always capitals. Done here, not with CSS, so the PDF matches.
-          const titleText = (page.title || `Page ${pageIndex + 1}`).toUpperCase();
-          const size = TITLE_FONT_SIZE;
-          const outline = size * 0.032 * 2; // stroke is centred, so double it to sit 3.2% outside
-          const shadow = size * 0.06;
-          const x = outline / 2; // the outline's left edge sits on the margin
-          const common = {
-            y: layout.titleBaseline,
-            fontSize: size,
-            fontFamily: 'Chunky Puffly, Nunito, sans-serif',
-            fontWeight: 'normal',
-            letterSpacing: 0.4,
-          };
-          return (
-            <g className="ink-sticker-title">
-              <text {...common} x={x + shadow} dy={shadow} fill="#2D2200" stroke="#2D2200" strokeWidth={outline} strokeLinejoin="round">
-                {titleText}
-              </text>
-              <text {...common} x={x} fill="#2D2200" stroke="#2D2200" strokeWidth={outline} strokeLinejoin="round">
-                {titleText}
-              </text>
-              <text {...common} x={x} fill="#FFFFFF">
-                {titleText}
-              </text>
-            </g>
-          );
-        })()}
+        {/* Page title: Nunito Black in ink, as typed. Same size and baseline as before, so
+            nothing else on the page moves. */}
+        <text
+          x={0}
+          y={layout.titleBaseline}
+          fontSize={TITLE_FONT_SIZE}
+          fontFamily="Nunito, sans-serif"
+          fontWeight="900"
+          fill="#2D2200"
+          className="page-title"
+        >
+          {page.title || `Page ${pageIndex + 1}`}
+        </text>
 
         {/* Name and Date, each with a write-on line on the label's baseline */}
         {layout.nameBaseline !== null && (

@@ -105,7 +105,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   };
 
   return (
-    <header className="h-[68px] bg-white border-b-[3px] border-[#2D2200] px-3 min-[480px]:px-4 md:px-6 flex items-center justify-between gap-2 min-[480px]:gap-3 shrink-0 relative z-30 select-none">
+    <header className="h-[60px] bg-white border-b-[3px] border-[#2D2200] px-3 min-[480px]:px-4 md:px-6 flex items-center justify-between gap-2 min-[480px]:gap-3 shrink-0 relative z-30 select-none">
       {/* ---------------- Left: brand, then working on the file */}
       <div className="flex items-center gap-2 min-[480px]:gap-3 min-w-0">
         <button
@@ -117,17 +117,17 @@ export const TopBar: React.FC<TopBarProps> = ({
           <Menu className="w-5 h-5" aria-hidden="true" />
         </button>
 
-        {/* Brand: name in Apfel Grotezk, same as the website header. No sun icon. */}
+        {/* Brand: name in Nunito (the builder uses Nunito throughout). No sun icon. */}
         <h1 className="m-0 flex items-center gap-3 shrink-0 font-normal">
           <a
             href="https://sunshinebrigade.ca"
-            className="sb-wordmark whitespace-nowrap text-[15px] min-[480px]:text-[17px] sm:text-[20px] no-underline hover:text-[#009BD9] focus-visible:outline-[3px] focus-visible:outline-[#009BD9] focus-visible:outline-offset-4 rounded"
+            className="tb-wordmark whitespace-nowrap text-[15px] min-[480px]:text-[16px] sm:text-[18px] no-underline hover:text-[#009BD9] focus-visible:outline-[3px] focus-visible:outline-[#009BD9] focus-visible:outline-offset-4 rounded"
             title="Go to sunshinebrigade.ca"
           >
             Sunshine Brigade
           </a>
-          <span className="hidden xl:block w-[1.5px] h-6 bg-[#2D2200]/25" aria-hidden="true" />
-          <span className="hidden xl:block sb-wordmark whitespace-nowrap text-[20px] select-none">
+          <span className="hidden xl:block w-[1.5px] h-5 bg-[#2D2200]/25" aria-hidden="true" />
+          <span className="hidden xl:block tb-appname whitespace-nowrap text-[18px] select-none">
             Worksheet builder
           </span>
         </h1>
