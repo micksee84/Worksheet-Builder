@@ -263,7 +263,15 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
-    const measure = () => setViewport({ w: el.clientWidth, h: el.clientHeight });
+    // clientWidth/Height round a fractional box (say 1000.5px) up, so a stage sized to them sits
+    // half a pixel too big, which brings in a scrollbar, which changes the fit, which removes the
+    // scrollbar... and the page wobbles. Measure the real box and round down instead.
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      const barW = el.offsetWidth - el.clientWidth;
+      const barH = el.offsetHeight - el.clientHeight;
+      setViewport({ w: Math.floor(rect.width - barW), h: Math.floor(rect.height - barH) });
+    };
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     measure();
@@ -652,6 +660,9 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
             : {
                 cursor: panning ? 'grabbing' : canPan ? 'grab' : undefined,
                 overscrollBehavior: isZoomedIn ? 'contain' : 'auto',
+                // Fitted to the screen there is nothing to scroll, so no scrollbars: one appearing
+                // would shrink the canvas, change the fit and make the page wobble.
+                overflow: isZoomedIn ? 'auto' : 'hidden',
               }
         }
       >
