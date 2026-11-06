@@ -62,13 +62,13 @@ interface TopBarProps {
   onRename: () => void;
 }
 
-const groupClass = 'flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9]';
-const itemClass =
-  'flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-[#2D2200] hover:bg-white rounded-md transition-colors whitespace-nowrap';
+// Brand header style: pill buttons and groups (see the "Top bar" block in index.css)
+const groupClass = 'tb-group';
+const itemClass = 'tb-item';
 
 const SaveIcon: React.FC<{ state: SaveState; className?: string }> = ({ state, className = 'w-3.5 h-3.5' }) =>
   state === 'saved' ? (
-    <Check className={`${className} text-emerald-600`} aria-hidden="true" />
+    <Check className={className} aria-hidden="true" />
   ) : state === 'error' ? (
     <CloudOff className={`${className} text-[#E52311]`} aria-hidden="true" />
   ) : (
@@ -105,36 +105,34 @@ export const TopBar: React.FC<TopBarProps> = ({
   };
 
   return (
-    <header className="h-16 bg-white border-b border-[#E2DEC9] px-4 md:px-6 flex items-center justify-between gap-3 shrink-0 relative z-30 select-none">
+    <header className="h-[68px] bg-white border-b-[3px] border-[#2D2200] px-3 min-[480px]:px-4 md:px-6 flex items-center justify-between gap-2 min-[480px]:gap-3 shrink-0 relative z-30 select-none">
       {/* ---------------- Left: brand, then working on the file */}
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2 min-[480px]:gap-3 min-w-0">
         <button
           onClick={onToggleMobileSidebar}
-          className="lg:hidden p-2 text-[#2D2200] hover:bg-[#FAF8F0] rounded-lg"
+          className="lg:hidden tb-btn tb-btn-icon"
           title="Show or hide the activities"
+          aria-label="Show or hide the activities"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-5 h-5" aria-hidden="true" />
         </button>
 
+        {/* Brand: name in Apfel Grotezk, same as the website header. No sun icon. */}
         <h1 className="m-0 flex items-center gap-3 shrink-0 font-normal">
-          <picture className="shrink-0">
-            <source media="(min-width: 640px)" srcSet={`${import.meta.env.BASE_URL}sb-logo-header.svg`} />
-            <img
-              src={`${import.meta.env.BASE_URL}sb-logo-icon.svg`}
-              alt="Sunshine Brigade"
-              draggable={false}
-              className="h-8 sm:h-[31px] w-auto select-none"
-              loading="eager"
-            />
-          </picture>
-          <span className="hidden xl:block w-[1.5px] h-6 bg-[#2D2200]/20" aria-hidden="true" />
-          {/* App name: plain Chunky Puffly capitals in ink, no sticker outline or shadow (never under 24px) */}
-          <span className="hidden xl:block font-joyful font-normal uppercase text-[24px] leading-none text-[#2D2200] whitespace-nowrap select-none">
+          <a
+            href="https://sunshinebrigade.ca"
+            className="sb-wordmark whitespace-nowrap text-[15px] min-[480px]:text-[17px] sm:text-[20px] no-underline hover:text-[#009BD9] focus-visible:outline-[3px] focus-visible:outline-[#009BD9] focus-visible:outline-offset-4 rounded"
+            title="Go to sunshinebrigade.ca"
+          >
+            Sunshine Brigade
+          </a>
+          <span className="hidden xl:block w-[1.5px] h-6 bg-[#2D2200]/25" aria-hidden="true" />
+          <span className="hidden xl:block sb-wordmark whitespace-nowrap text-[20px] select-none">
             Worksheet builder
           </span>
         </h1>
 
-        <span className="hidden sm:block w-[1.5px] h-7 bg-[#2D2200]/20 shrink-0" aria-hidden="true" />
+        <span className="hidden sm:block w-[1.5px] h-7 bg-[#2D2200]/25 shrink-0" aria-hidden="true" />
 
         {/* File: New, Open, Save, Templates (tablet and up) */}
         <div className={`${groupClass} hidden md:flex shrink-0`} role="group" aria-label="Worksheet">
@@ -169,17 +167,18 @@ export const TopBar: React.FC<TopBarProps> = ({
             onClick={() => setShowFileMenu(!showFileMenu)}
             aria-haspopup="menu"
             aria-expanded={showFileMenu}
-            className={`${groupClass} gap-1.5 px-2.5 py-1.5 text-xs font-bold text-[#2D2200]`}
+            aria-label="File menu"
+            className="tb-btn"
             title={SAVE_TITLE[saveState]}
           >
             <SaveIcon state={saveState} />
-            File
+            <span className="hidden min-[480px]:inline">File</span>
             <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
           {showFileMenu && (
             <div
               role="menu"
-              className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-[#E2DEC9] p-2 z-50 space-y-1"
+              className="tb-menu left-0 w-56"
               onMouseLeave={() => setShowFileMenu(false)}
             >
               {[
@@ -188,6 +187,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 { label: SAVE_LABEL[saveState], Icon: Save, run: onSave },
                 { label: 'Rename', Icon: Pencil, run: onRename },
                 { label: 'Templates', Icon: BookOpen, run: onOpenTemplates },
+                { label: 'Copy share link', Icon: Share2, run: onCopyShareLink },
               ].map(({ label, Icon, run }) => (
                 <button
                   key={label}
@@ -196,9 +196,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                     setShowFileMenu(false);
                     run();
                   }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-[#2D2200] hover:bg-[#FAF8F0] rounded-lg text-left transition-colors"
+                  className="tb-menu-item"
                 >
-                  <Icon className="w-4 h-4" aria-hidden="true" />
+                  <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
                   {label}
                 </button>
               ))}
@@ -211,12 +211,12 @@ export const TopBar: React.FC<TopBarProps> = ({
           type="button"
           onClick={onRename}
           title="Rename this worksheet"
-          className="hidden lg:flex items-center gap-1.5 min-w-0 max-w-[14rem] px-2 py-1 rounded-md text-sm hover:bg-[#FAF8F0] transition-colors group"
+          className="hidden lg:flex tb-name group"
         >
-          <span className={`truncate ${worksheetName ? 'font-bold text-[#2D2200]' : 'italic text-[#6B5838]'}`}>
+          <span className={`truncate ${worksheetName ? 'font-bold text-[#2D2200]' : 'font-semibold text-[#6B5F45]'}`}>
             {worksheetName ?? 'Untitled worksheet'}
           </span>
-          <Pencil className="w-3 h-3 text-[#6B5838] opacity-0 group-hover:opacity-100 shrink-0" aria-hidden="true" />
+          <Pencil className="w-3.5 h-3.5 text-[#6B5F45] opacity-0 group-hover:opacity-100 shrink-0" aria-hidden="true" />
         </button>
 
         {/* Edit: Undo, Redo */}
@@ -224,18 +224,20 @@ export const TopBar: React.FC<TopBarProps> = ({
           <button
             onClick={onUndo}
             disabled={!canUndo}
-            className="p-1.5 text-[#6B5838] hover:text-[#2D2200] disabled:opacity-30 rounded transition-colors"
+            className="tb-item tb-item-icon"
             title="Undo the last change"
+            aria-label="Undo"
           >
-            <Undo2 className="w-4 h-4" />
+            <Undo2 className="w-4 h-4" aria-hidden="true" />
           </button>
           <button
             onClick={onRedo}
             disabled={!canRedo}
-            className="p-1.5 text-[#6B5838] hover:text-[#2D2200] disabled:opacity-30 rounded transition-colors"
+            className="tb-item tb-item-icon"
             title="Redo the change you undid"
+            aria-label="Redo"
           >
-            <Redo2 className="w-4 h-4" />
+            <Redo2 className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -244,17 +246,17 @@ export const TopBar: React.FC<TopBarProps> = ({
       <div className="flex items-center gap-2 shrink-0">
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#2D2200] bg-[#FAF8F0] hover:bg-[#F2F2E2] border border-[#E2DEC9] rounded-lg transition-colors whitespace-nowrap"
+          className="tb-btn hidden sm:inline-flex"
           title="Copy a link to this worksheet"
         >
           {copied ? (
             <>
-              <Check className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="text-emerald-700 hidden md:inline">Copied!</span>
+              <Check className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden md:inline">Link copied</span>
             </>
           ) : (
             <>
-              <Share2 className="w-3.5 h-3.5 text-[#6B5838]" />
+              <Share2 className="w-4 h-4" aria-hidden="true" />
               <span className="hidden md:inline">Share</span>
             </>
           )}
@@ -266,15 +268,18 @@ export const TopBar: React.FC<TopBarProps> = ({
             onClick={() => setShowExportMenu(!showExportMenu)}
             disabled={isExportingPdf}
             title="Download a PDF or print your worksheet"
-            className="flex items-center gap-2 px-3.5 py-2 text-xs font-extrabold text-[#2D2200] bg-[#F2B800] hover:bg-[#e0ab00] rounded-lg shadow-xs transition-all whitespace-nowrap active:scale-95 disabled:opacity-50"
+            aria-haspopup="menu"
+            aria-expanded={showExportMenu}
+            className="tb-btn tb-btn-highlight"
           >
-            <Printer className="w-4 h-4 text-[#2D2200]" />
-            <span>{isExportingPdf ? 'Exporting...' : 'Print / PDF'}</span>
+            <Printer className="w-4 h-4" aria-hidden="true" />
+            <span>{isExportingPdf ? 'Exporting...' : <>Print<span className="hidden min-[480px]:inline"> / PDF</span></>}</span>
           </button>
 
           {showExportMenu && (
             <div
-              className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-[#E2DEC9] p-2 z-50 space-y-1 animate-in fade-in slide-in-from-top-1"
+              role="menu"
+              className="tb-menu right-0 w-60"
               onMouseLeave={() => setShowExportMenu(false)}
             >
               <button
@@ -282,12 +287,12 @@ export const TopBar: React.FC<TopBarProps> = ({
                   setShowExportMenu(false);
                   onDownloadPdf();
                 }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-[#2D2200] hover:bg-[#FAF8F0] rounded-lg text-left transition-colors"
+                className="tb-menu-item"
               >
-                <Download className="w-4 h-4 text-[#2D2200]" />
+                <Download className="w-4 h-4 shrink-0" aria-hidden="true" />
                 <div>
-                  <div>Download Vector PDF</div>
-                  <div className="text-[10px] text-[#6B5838] font-normal">Sharp client-side PDF file</div>
+                  <div>Download a PDF</div>
+                  <div className="tb-menu-note">Sharp lines, ready to print or share</div>
                 </div>
               </button>
 
@@ -296,12 +301,12 @@ export const TopBar: React.FC<TopBarProps> = ({
                   setShowExportMenu(false);
                   onPrintNative();
                 }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-[#2D2200] hover:bg-[#FAF8F0] rounded-lg text-left transition-colors"
+                className="tb-menu-item"
               >
-                <Printer className="w-4 h-4 text-[#2D2200]" />
+                <Printer className="w-4 h-4 shrink-0" aria-hidden="true" />
                 <div>
-                  <div>Browser Print Dialog</div>
-                  <div className="text-[10px] text-[#6B5838] font-normal">Direct print to paper or PDF</div>
+                  <div>Print now</div>
+                  <div className="tb-menu-note">Opens your browser's print window</div>
                 </div>
               </button>
             </div>
@@ -350,22 +355,22 @@ const AccountMenu: React.FC<{ account: TopBarAccount }> = ({ account }) => {
         aria-expanded={open}
         title={`Signed in as ${account.email}`}
         aria-label="Your account"
-        className="flex items-center gap-1.5 p-2 text-[#2D2200] bg-[#FAF8F0] hover:bg-[#F2F2E2] border border-[#E2DEC9] rounded-lg transition-colors"
+        className="tb-btn tb-btn-icon"
       >
-        <UserRound className="w-3.5 h-3.5" aria-hidden="true" />
+        <UserRound className="w-4 h-4" aria-hidden="true" />
       </button>
 
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-[#E2DEC9] p-2 z-50 space-y-1"
+          className="tb-menu right-0 w-64"
           onMouseLeave={() => setOpen(false)}
         >
-          <div className="px-3 py-2 flex items-center gap-2 text-xs text-[#6B5838]">
+          <div className="px-3 py-2 flex items-center gap-2 text-sm font-semibold text-[#6B5F45]">
             <SyncIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span className="truncate">{account.email}</span>
           </div>
-          <p className="px-3 pb-2 text-[11px] text-[#6B5838] border-b border-[#E2DEC9]">
+          <p className="px-3 pb-2 mb-1 tb-menu-note border-b-[1.5px] border-[#DDD9C4]">
             {SYNC_LABEL[syncStatus]}
           </p>
           <button
@@ -374,7 +379,7 @@ const AccountMenu: React.FC<{ account: TopBarAccount }> = ({ account }) => {
               setOpen(false);
               account.onSignOut();
             }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-[#2D2200] hover:bg-[#FAF8F0] rounded-lg text-left transition-colors"
+            className="tb-menu-item"
           >
             <LogOut className="w-4 h-4" aria-hidden="true" />
             Sign out

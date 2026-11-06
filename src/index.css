@@ -218,3 +218,114 @@
     width: auto !important;
   }
 }
+
+@layer components {
+/* ===== Top bar (brand header style). Cream ground, 3px ink rule, pill buttons.
+   Hover: sun-yellow, lifts 1px up-left. Press: sky-blue, drops 1px down-right.
+   Focus: 3px sky-blue ring, 3px offset. Flat sticker shadows only. ===== */
+.tb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: #2D2200;
+  background: #FFFFFF;
+  border: 1.5px solid #2D2200;
+  border-radius: 999px;
+  transition: background-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+.tb-btn-icon { padding: 0; width: 36px; justify-content: center; }
+.tb-btn-highlight { background: #F2B800; box-shadow: 3px 3px 0 #2D2200; }
+.tb-btn:hover:not(:disabled) { background: #F2B800; transform: translate(-1px, -1px); }
+.tb-btn-highlight:hover:not(:disabled) { box-shadow: 4px 4px 0 #2D2200; }
+.tb-btn:active:not(:disabled) { background: #009BD9; transform: translate(1px, 1px); }
+.tb-btn-highlight:active:not(:disabled) { box-shadow: 2px 2px 0 #2D2200; }
+.tb-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* A pill holding related buttons (New / Open / Save / Templates, Undo / Redo) */
+.tb-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: #FFFFFF;
+  border: 1.5px solid #2D2200;
+  border-radius: 999px;
+}
+.tb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  color: #2D2200;
+  border-radius: 999px;
+  transition: background-color 120ms ease;
+}
+.tb-item-icon { padding: 0; width: 30px; justify-content: center; }
+.tb-item:hover:not(:disabled) { background: #F2B800; }
+.tb-item:active:not(:disabled) { background: #009BD9; }
+.tb-item:disabled { opacity: 0.3; cursor: default; }
+
+.tb-btn:focus-visible,
+.tb-item:focus-visible,
+.tb-menu-item:focus-visible,
+.tb-name:focus-visible {
+  outline: 3px solid #009BD9;
+  outline-offset: 3px;
+}
+
+/* Drop-down menus: paper-white card, ink outline, flat sticker shadow */
+.tb-menu {
+  position: absolute;
+  margin-top: 8px;
+  padding: 8px;
+  background: #FFFFFF;
+  border: 1.5px solid #2D2200;
+  border-radius: 20px;
+  box-shadow: 4px 4px 0 #2D2200;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tb-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: left;
+  color: #2D2200;
+  border-radius: 12px;
+  transition: background-color 120ms ease;
+}
+.tb-menu-item:hover { background: #F2B800; }
+.tb-menu-item:active { background: #009BD9; }
+.tb-menu-note { font-size: 12px; font-weight: 600; color: #6B5F45; }
+
+/* Worksheet name (click to rename) */
+.tb-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 14rem;
+  padding: 4px 10px;
+  font-size: 15px;
+  border-radius: 999px;
+  transition: background-color 120ms ease;
+}
+.tb-name:hover { background: #F2F2E2; }
+}
