@@ -44,20 +44,26 @@
 /* ===== Sign-in and account UI. Matches sunshinebrigade.ca: Apfel Grotezk Satt
    headings in caps, Commit Mono eyebrows, Nunito for everything else. ===== */
 
-/* Sticker title: sun-yellow capitals, dark-olive outline at 3.2% and a flat shadow at 6%. */
+/* Sticker title: sun-yellow capitals, dark-olive outline at 4.5% (a 16-point ring) and the
+   same ring moved 6% down-right as a flat shadow. */
 .sb-sticker {
   font-family: var(--font-display);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   line-height: 1.18;
-  padding-right: 0.08em;
+  padding-right: 0.1em;
   color: #F2B800;
   text-wrap: balance;
   text-shadow:
-    0.032em 0 0 #2D2200, -0.032em 0 0 #2D2200, 0 0.032em 0 #2D2200, 0 -0.032em 0 #2D2200,
-    0.023em 0.023em 0 #2D2200, -0.023em 0.023em 0 #2D2200, 0.023em -0.023em 0 #2D2200, -0.023em -0.023em 0 #2D2200,
-    0.06em 0.06em 0 #2D2200, 0.092em 0.06em 0 #2D2200, 0.06em 0.092em 0 #2D2200, 0.085em 0.085em 0 #2D2200;
+    0.045em 0 0 #2D2200, 0.0416em 0.0172em 0 #2D2200, 0.0318em 0.0318em 0 #2D2200, 0.0172em 0.0416em 0 #2D2200,
+    0 0.045em 0 #2D2200, -0.0172em 0.0416em 0 #2D2200, -0.0318em 0.0318em 0 #2D2200, -0.0416em 0.0172em 0 #2D2200,
+    -0.045em 0 0 #2D2200, -0.0416em -0.0172em 0 #2D2200, -0.0318em -0.0318em 0 #2D2200, -0.0172em -0.0416em 0 #2D2200,
+    0 -0.045em 0 #2D2200, 0.0172em -0.0416em 0 #2D2200, 0.0318em -0.0318em 0 #2D2200, 0.0416em -0.0172em 0 #2D2200,
+    0.105em 0.06em 0 #2D2200, 0.1016em 0.0772em 0 #2D2200, 0.0918em 0.0918em 0 #2D2200, 0.0772em 0.1016em 0 #2D2200,
+    0.06em 0.105em 0 #2D2200, 0.0428em 0.1016em 0 #2D2200, 0.0282em 0.0918em 0 #2D2200, 0.0184em 0.0772em 0 #2D2200,
+    0.015em 0.06em 0 #2D2200, 0.0184em 0.0428em 0 #2D2200, 0.0282em 0.0282em 0 #2D2200, 0.0428em 0.0184em 0 #2D2200,
+    0.06em 0.015em 0 #2D2200, 0.0772em 0.0184em 0 #2D2200, 0.0918em 0.0282em 0 #2D2200, 0.1016em 0.0428em 0 #2D2200;
 }
 .sb-wordmark {
   font-family: var(--font-display);
