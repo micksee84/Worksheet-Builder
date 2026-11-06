@@ -18,7 +18,9 @@ import {
   useSensors,
   DragStartEvent,
   DragEndEvent,
+  Modifier,
 } from '@dnd-kit/core';
+import { getEventCoordinates } from '@dnd-kit/utilities';
 
 import {
   Worksheet,
@@ -121,6 +123,25 @@ function createInitialWorksheet(): Worksheet {
     ],
   };
 }
+
+
+/**
+ * Keeps the drag card under the mouse. By default the overlay starts at the top-left of
+ * whatever was picked up, so a block grabbed from the middle of a big slot trails far
+ * from the pointer. This moves the card so the pointer sits just inside its top-left
+ * corner, wherever it was grabbed, leaving the drop target visible.
+ */
+const GRAB_POINT = { x: 24, y: 22 };
+const followPointer: Modifier = ({ activatorEvent, draggingNodeRect, transform }) => {
+  if (!activatorEvent || !draggingNodeRect) return transform;
+  const start = getEventCoordinates(activatorEvent);
+  if (!start) return transform;
+  return {
+    ...transform,
+    x: transform.x + start.x - draggingNodeRect.left - GRAB_POINT.x,
+    y: transform.y + start.y - draggingNodeRect.top - GRAB_POINT.y,
+  };
+};
 
 export default function App() {
   const { user, signOut } = useAuth();
@@ -1021,7 +1042,7 @@ export default function App() {
         <PrintContainer worksheet={worksheet} />
 
         {/* Drag Overlay Ghost */}
-        <DragOverlay>
+        <DragOverlay modifiers={[followPointer]}>
           {draggedBlockDef && dragOffPage && (
             <div className="w-64 bg-white border-2 border-[#E52311] rounded-xl p-3 shadow-2xl select-none pointer-events-none scale-105 flex items-center gap-3">
               <Trash2 className="w-5 h-5 text-[#E52311] shrink-0" />
