@@ -110,7 +110,7 @@ export const ShapeHuntRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
         <g key={i}>{shapePath(p.shape, p.cx, p.cy, p.r, p.rot)}</g>
       ))}
 
-      {/* Count them */}
+      {/* Count them: a dashed write-in box (same as What comes next) so it doesn't read as another shape */}
       <line x1={paddingX} y1={areaBottom + 4} x2={width - paddingX} y2={areaBottom + 4} stroke="#B6B2A6" strokeWidth="1.5" />
       <g transform={`translate(${paddingX} ${areaBottom + countRowH / 2 + 6})`}>
         <text x="0" y="5" fill="#2D2200" fontSize={fontSize} fontWeight="700" fontFamily="Nunito, sans-serif">
@@ -124,8 +124,9 @@ export const ShapeHuntRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
           rx="12"
           ry="12"
           fill="#FFFFFF"
-          stroke="#2D2200"
+          stroke="#B6B2A6"
           strokeWidth="2"
+          strokeDasharray="8,6"
         />
       </g>
       <CharacterCorner config={instance.character} blockWidth={width} blockHeight={height} />
