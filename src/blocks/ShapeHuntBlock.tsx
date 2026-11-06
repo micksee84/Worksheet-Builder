@@ -70,7 +70,14 @@ export const ShapeHuntRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
   const sp = blockSpacing(size, height);
   const paddingX = sp.padX;
   const countRowH = size === 'quarter' ? 34 : 44;
-  const areaTop = sp.contentTop;
+  // The key (what to look for): a bigger shape in a dashed box, centred on the instruction line.
+  const keyFont = size === 'quarter' ? 12 : 14;
+  const keyText = size === 'quarter' ? `Colour every ${SHAPE_NAMES[target]}.` : `Find every ${SHAPE_NAMES[target]} and colour it in.`;
+  const keyBox = size === 'quarter' ? 30 : 40;
+  const keyLeft = paddingX + keyFont + 12 + keyText.length * keyFont * 0.47 + 10;
+  const keyCy = Math.max(sp.padX - 4 + keyBox / 2, sp.instructionY - keyFont * 0.35);
+  const keyBottom = keyCy + keyBox / 2;
+  const areaTop = Math.max(sp.contentTop, keyBottom + 8);
   const areaBottom = sp.contentBottom - countRowH;
   const areaLeft = paddingX;
   const areaRight = width - paddingX;
@@ -96,37 +103,47 @@ export const ShapeHuntRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
     }
   }
 
-  const fontSize = size === 'quarter' ? 12 : 14;
-  const instruction = size === 'quarter' ? `Colour every ${SHAPE_NAMES[target]}.` : `Find every ${SHAPE_NAMES[target]} and colour it in.`;
-  const keyX = paddingX + fontSize + 12 + instruction.length * fontSize * 0.5 + 12;
+  const fontSize = keyFont;
+  const instruction = keyText;
 
   return (
     <g className="shape-hunt-block">
       <Instruction x={paddingX} y={sp.instructionY} cue="crayon" size={size} text={instruction} />
-      {/* The key: what to look for */}
-      {shapePath(target, keyX, sp.instructionY - fontSize * 0.35, fontSize * 0.7, 0)}
+      {/* The key: what to look for, bigger and in a dashed box so it stands out */}
+      <rect
+        x={keyLeft}
+        y={keyCy - keyBox / 2}
+        width={keyBox}
+        height={keyBox}
+        rx="8"
+        ry="8"
+        fill="#FFFFFF"
+        stroke="#B6B2A6"
+        strokeWidth="2"
+        strokeDasharray="6,5"
+      />
+      {shapePath(target, keyLeft + keyBox / 2, keyCy, keyBox * 0.34, 0)}
 
       {placed.map((p, i) => (
         <g key={i}>{shapePath(p.shape, p.cx, p.cy, p.r, p.rot)}</g>
       ))}
 
-      {/* Count them: a dashed write-in box (same as What comes next) so it doesn't read as another shape */}
+      {/* Count them: a dashed line to write the number on */}
       <line x1={paddingX} y1={areaBottom + 4} x2={width - paddingX} y2={areaBottom + 4} stroke="#B6B2A6" strokeWidth="1.5" />
       <g transform={`translate(${paddingX} ${areaBottom + countRowH / 2 + 6})`}>
         <text x="0" y="5" fill="#2D2200" fontSize={fontSize} fontWeight="700" fontFamily="Nunito, sans-serif">
           How many did you find?
         </text>
-        <rect
-          x={fontSize * 0.5 * 23 + 10}
-          y={-countRowH * 0.36}
-          width={countRowH * 0.8}
-          height={countRowH * 0.72}
-          rx="12"
-          ry="12"
-          fill="#FFFFFF"
+        {/* A dashed line to write the number on */}
+        <line
+          x1={fontSize * 0.5 * 23 + 10}
+          y1={6}
+          x2={fontSize * 0.5 * 23 + 10 + fontSize * 5}
+          y2={6}
           stroke="#B6B2A6"
           strokeWidth="2"
           strokeDasharray="8,6"
+          strokeLinecap="round"
         />
       </g>
       <CharacterCorner config={instance.character} blockWidth={width} blockHeight={height} />
