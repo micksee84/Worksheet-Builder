@@ -10,6 +10,23 @@ import { svg2pdf } from 'svg2pdf.js';
 import { Worksheet, PageSizeId } from '../../types';
 import { trackEvent } from '../analytics';
 import { registerPdfFonts } from './pdfFonts';
+import { isUnnamed } from '../worksheetLibrary';
+
+/**
+ * The file name for a worksheet: the name the grown-up gave it when saving, as typed
+ * ("Week 3 letters" -> "Week 3 letters.pdf"). Before it has a name, fall back to the
+ * first page's title, then to "Sunshine worksheet".
+ */
+export function worksheetFileName(worksheet: Worksheet): string {
+  const saved = isUnnamed(worksheet) ? '' : (worksheet.title || '').trim();
+  const pageTitle = worksheet.pages.find((p) => p.title?.trim())?.title?.trim() ?? '';
+  const base = (saved || pageTitle || 'Sunshine worksheet')
+    .replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ') // characters files can't use
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120);
+  return base || 'Sunshine worksheet';
+}
 
 export interface ExportPdfOptions {
   fileName?: string;
@@ -67,15 +84,7 @@ export async function exportWorksheetToPdf(
       });
     }
 
-    // Name the file after the first page's title (what's printed on the sheet), e.g.
-    // "Lines and letters" -> lines_and_letters.pdf.
-    const firstTitle = worksheet.pages.find((p) => p.title?.trim())?.title ?? '';
-    const cleanTitle = firstTitle
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '');
-    const fileName = options.fileName || `${cleanTitle || 'sunshine_worksheet'}.pdf`;
+    const fileName = options.fileName || `${worksheetFileName(worksheet)}.pdf`;
 
     pdf.save(fileName);
 
@@ -131,6 +140,11 @@ export function printWorksheetNative(worksheet: Worksheet, onSuccess?: () => voi
   });
 
   applyPrintPageSize(worksheet.pageSize);
+  // Browsers suggest the tab title as the file name for "Save as PDF", so use the
+  // worksheet's name while the print dialog is open.
+  const previousTitle = document.title;
+  document.title = worksheetFileName(worksheet);
   window.print();
+  document.title = previousTitle;
   onSuccess?.();
 }
