@@ -22,6 +22,9 @@ interface BlockSettingsDrawerProps {
   onUpdateSettings: (newSettings: Record<string, any>) => void;
   onUpdateCharacter: (character: { id: CharacterId; corner: CharacterCorner } | null) => void;
   onRemoveBlock: () => void;
+  /** Slim the block list while editing on smaller screens (desktop only). */
+  autoSlim?: boolean;
+  onToggleAutoSlim?: (on: boolean) => void;
 }
 
 export const BlockSettingsDrawer: React.FC<BlockSettingsDrawerProps> = ({
@@ -33,6 +36,8 @@ export const BlockSettingsDrawer: React.FC<BlockSettingsDrawerProps> = ({
   onUpdateSettings,
   onUpdateCharacter,
   onRemoveBlock,
+  autoSlim,
+  onToggleAutoSlim,
 }) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const visible = Boolean(isOpen && slot && blockDef && instance);
@@ -303,6 +308,27 @@ export const BlockSettingsDrawer: React.FC<BlockSettingsDrawerProps> = ({
         </div>
         )}
       </div>
+
+      {/* Room to work: slim the block list while editing on smaller screens */}
+      {onToggleAutoSlim && (
+        <label className="hidden lg:flex items-center justify-between gap-3 px-4 py-3 border-t border-[#E2DEC9] cursor-pointer select-none">
+          <span className="text-xs text-[#2D2200]">
+            <span className="block font-bold">Slim the block list while editing</span>
+            <span className="block text-[11px] text-[#6B5F45]">Only on smaller screens, to keep the page in view</span>
+          </span>
+          <span className="relative inline-flex shrink-0">
+            <input
+              type="checkbox"
+              role="switch"
+              checked={!!autoSlim}
+              onChange={(e) => onToggleAutoSlim(e.target.checked)}
+              className="peer sr-only"
+            />
+            <span className="w-9 h-5 rounded-full border-[1.5px] border-[#2D2200] bg-white peer-checked:bg-[#F2B800] transition-colors peer-focus-visible:outline-[3px] peer-focus-visible:outline-[#009BD9] peer-focus-visible:outline-offset-2" />
+            <span className="absolute top-[3px] left-[3px] w-[14px] h-[14px] rounded-full bg-[#2D2200] transition-transform peer-checked:translate-x-4" />
+          </span>
+        </label>
+      )}
 
       {/* Footer Actions */}
       <div className="p-4 border-t border-[#E2DEC9] bg-[#FAF8F0] flex items-center justify-between gap-3">

@@ -176,8 +176,8 @@ export default function App() {
 
   // Inspector & modal states
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
-  // Block list view. Slim while a block's settings are open, so the page keeps its room;
-  // otherwise whatever the grown-up last chose (remembered in this browser).
+  // Block list view: whatever the grown-up last chose (remembered in this browser), except
+  // that on smaller screens it goes slim while a block's settings are open (see autoSlim).
   const [slimPreferred, setSlimPreferred] = useState<boolean>(() => {
     try {
       return localStorage.getItem('sb.blocksSlim') === '1';
@@ -189,9 +189,35 @@ export default function App() {
   useEffect(() => {
     if (!isInspectorOpen) setFullWhileEditing(false);
   }, [isInspectorOpen]);
-  const isSidebarSlim = isInspectorOpen ? !fullWhileEditing : slimPreferred;
+  // Auto-slim while editing: only when the window is tight on room, and only if the
+  // grown-up hasn't switched it off (remembered in this browser).
+  const ROOMY_WIDTH = 1600;
+  const [autoSlim, setAutoSlim] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sb.autoSlim') !== '0';
+    } catch {
+      return true;
+    }
+  });
+  const handleToggleAutoSlim = (on: boolean) => {
+    setAutoSlim(on);
+    setFullWhileEditing(false);
+    try {
+      localStorage.setItem('sb.autoSlim', on ? '1' : '0');
+    } catch {
+      /* private window: just not remembered */
+    }
+  };
+  const [isRoomy, setIsRoomy] = useState(() => typeof window === 'undefined' || window.innerWidth >= ROOMY_WIDTH);
+  useEffect(() => {
+    const onResize = () => setIsRoomy(window.innerWidth >= ROOMY_WIDTH);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const autoSlimNow = isInspectorOpen && autoSlim && !isRoomy;
+  const isSidebarSlim = autoSlimNow ? !fullWhileEditing : slimPreferred;
   const handleToggleSidebarSlim = () => {
-    if (isInspectorOpen) {
+    if (autoSlimNow) {
       setFullWhileEditing((v) => !v);
       return;
     }
@@ -1023,6 +1049,8 @@ export default function App() {
             <BlockSettingsDrawer
               isOpen={isInspectorOpen}
               onClose={() => setIsInspectorOpen(false)}
+              autoSlim={autoSlim}
+              onToggleAutoSlim={handleToggleAutoSlim}
               slot={selectedSlot}
               pageId={selectedSlotRef?.pageId || null}
               blockDef={selectedBlockDef}
