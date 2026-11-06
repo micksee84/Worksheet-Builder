@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <!-- Finn the Fox -->
+  <!-- Ears -->
+  <polygon points="18,12 36,44 14,46" fill="#D9531E" stroke="#2D2200" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="21,18 32,42 18,44" fill="#2D2200"/>
+  <polygon points="82,12 86,46 64,44" fill="#D9531E" stroke="#2D2200" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="79,18 82,44 68,42" fill="#2D2200"/>
+  <!-- Head -->
+  <path d="M50 86 C24 74 18 52 24 38 C32 26 68 26 76 38 C82 52 76 74 50 86 Z" fill="#E65D24" stroke="#2D2200" stroke-width="3.5"/>
+  <!-- Cheeks white fur -->
+  <path d="M25 45 C35 60 44 74 50 84 C56 74 65 60 75 45 C70 70 58 84 50 84 C42 84 30 70 25 45 Z" fill="#F2F2E2" stroke="#2D2200" stroke-width="2"/>
+  <!-- Eyes -->
+  <circle cx="38" cy="46" r="4.5" fill="#2D2200"/>
+  <circle cx="39.5" cy="44.5" r="1.5" fill="#FFFFFF"/>
+  <circle cx="62" cy="46" r="4.5" fill="#2D2200"/>
+  <circle cx="63.5" cy="44.5" r="1.5" fill="#FFFFFF"/>
+  <!-- Cheeks pink -->
+  <circle cx="30" cy="58" r="4.5" fill="#E52311" opacity="0.3"/>
+  <circle cx="70" cy="58" r="4.5" fill="#E52311" opacity="0.3"/>
+  <!-- Nose & mouth -->
+  <ellipse cx="50" cy="74" rx="4.5" ry="3.5" fill="#2D2200"/>
+  <path d="M50 77.5 L50 80.5" stroke="#2D2200" stroke-width="2"/>
+</svg>
