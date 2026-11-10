@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { HandArtBox, hasHandArt } from './handArt';
+import { HandArtBox } from './handArt';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
@@ -36,88 +36,8 @@ const LABELS: Record<Feeling, string> = {
 
 /** One feeling face, drawn in a 100 x 100 box. */
 export function Face({ feeling, cx, cy, size }: { feeling: Feeling; cx: number; cy: number; size: number }) {
-  // Version 0.3: hand-drawn faces
-  if (hasHandArt('feeling-' + feeling)) return <HandArtBox id={'feeling-' + feeling} cx={cx} cy={cy} size={size} />;
-  const k = size / 100;
-  const w = Math.max(1.5, Math.min(3, size * 0.035)) / k;
-  const ink = '#2D2200';
-  const line = { fill: 'none', stroke: ink, strokeWidth: w, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-  const eyeDots = (
-    <>
-      <circle cx="36" cy="42" r="5" fill={ink} />
-      <circle cx="64" cy="42" r="5" fill={ink} />
-    </>
-  );
-  const wideEyes = (
-    <>
-      <circle cx="36" cy="42" r="9" fill="#FFFFFF" stroke={ink} strokeWidth={w * 0.8} />
-      <circle cx="64" cy="42" r="9" fill="#FFFFFF" stroke={ink} strokeWidth={w * 0.8} />
-      <circle cx="36" cy="43" r="4" fill={ink} />
-      <circle cx="64" cy="43" r="4" fill={ink} />
-    </>
-  );
-  let features: React.ReactNode;
-  switch (feeling) {
-    case 'happy':
-      features = (
-        <>
-          {eyeDots}
-          <path d="M30 60 Q50 80 70 60" {...line} />
-        </>
-      );
-      break;
-    case 'sad':
-      features = (
-        <>
-          {eyeDots}
-          <path d="M26 34 L40 28 M74 34 L60 28" {...line} />
-          <path d="M32 74 Q50 58 68 74" {...line} />
-          <path d="M66 50 Q62 58 66 62 Q70 58 66 50 Z" fill="#FFFFFF" stroke={ink} strokeWidth={w * 0.7} />
-        </>
-      );
-      break;
-    case 'angry':
-      features = (
-        <>
-          {eyeDots}
-          <path d="M26 28 L42 36 M74 28 L58 36" {...line} />
-          <path d="M34 70 Q50 62 66 70" {...line} />
-        </>
-      );
-      break;
-    case 'scared':
-      features = (
-        <>
-          {wideEyes}
-          <path d="M26 26 Q34 20 44 26 M56 26 Q66 20 74 26" {...line} />
-          <path d="M32 70 Q38 64 44 70 Q50 76 56 70 Q62 64 68 70" {...line} />
-        </>
-      );
-      break;
-    case 'surprised':
-      features = (
-        <>
-          {wideEyes}
-          <path d="M26 24 Q36 16 46 24 M54 24 Q64 16 74 24" {...line} />
-          <ellipse cx="50" cy="70" rx="8" ry="10" fill="#FFFFFF" stroke={ink} strokeWidth={w} />
-        </>
-      );
-      break;
-    case 'calm':
-      features = (
-        <>
-          <path d="M28 44 Q36 50 44 44 M56 44 Q64 50 72 44" {...line} />
-          <path d="M38 64 Q50 72 62 64" {...line} />
-        </>
-      );
-      break;
-  }
-  return (
-    <g transform={`translate(${cx - size / 2} ${cy - size / 2}) scale(${k})`}>
-      <circle cx="50" cy="50" r="44" fill="#FFFFFF" stroke={ink} strokeWidth={w} />
-      {features}
-    </g>
-  );
+  // Awaiting redraw: template-grid placeholder
+  return <HandArtBox id={'feeling-' + feeling} cx={cx} cy={cy} size={size} />;
 }
 
 export const FeelingsRenderer: React.FC<BlockRenderProps> = ({ instance, size, width, height }) => {

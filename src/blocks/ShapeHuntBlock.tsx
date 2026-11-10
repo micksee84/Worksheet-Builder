@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { HandArtBox, hasHandArt } from './handArt';
+import { HandArtBox } from './handArt';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
@@ -24,36 +24,9 @@ const SHAPE_NAMES: Record<HuntShape, string> = {
   heart: 'heart',
 };
 
-export function shapePath(shape: HuntShape, cx: number, cy: number, r: number, rot: number): React.ReactNode {
-  // Version 0.3: hand-drawn shapes (frame: r 50 around the centre)
-  if (hasHandArt('shape-' + shape)) return <HandArtBox id={'shape-' + shape} cx={cx} cy={cy} size={r * 2} rotate={rot} />;
-  const common = { fill: '#FFFFFF', stroke: '#2D2200', strokeWidth: 2.5, strokeLinejoin: 'round' as const };
-  const t = `rotate(${rot} ${cx} ${cy})`;
-  switch (shape) {
-    case 'circle':
-      return <circle cx={cx} cy={cy} r={r} {...common} />;
-    case 'square':
-      return <rect x={cx - r * 0.86} y={cy - r * 0.86} width={r * 1.72} height={r * 1.72} rx={r * 0.12} {...common} transform={t} />;
-    case 'triangle':
-      return <path d={`M ${cx} ${cy - r} L ${cx + r * 0.95} ${cy + r * 0.7} L ${cx - r * 0.95} ${cy + r * 0.7} Z`} {...common} transform={t} />;
-    case 'star': {
-      const pts: string[] = [];
-      for (let i = 0; i < 10; i++) {
-        const radius = i % 2 === 0 ? r : r * 0.46;
-        const a = (i * Math.PI) / 5 - Math.PI / 2;
-        pts.push(`${cx + radius * Math.cos(a)},${cy + radius * Math.sin(a)}`);
-      }
-      return <polygon points={pts.join(' ')} {...common} transform={t} />;
-    }
-    case 'heart':
-      return (
-        <path
-          d={`M ${cx} ${cy + r * 0.85} C ${cx - r * 1.3} ${cy + r * 0.1}, ${cx - r * 1.1} ${cy - r * 0.95}, ${cx} ${cy - r * 0.35} C ${cx + r * 1.1} ${cy - r * 0.95}, ${cx + r * 1.3} ${cy + r * 0.1}, ${cx} ${cy + r * 0.85} Z`}
-          {...common}
-          transform={t}
-        />
-      );
-  }
+export function shapePath(shape: HuntShape, cx: number, cy: number, r: number, _rot: number): React.ReactNode {
+  // Awaiting redraw: template-grid placeholder (frame: r 50 around the centre)
+  return <HandArtBox id={'shape-' + shape} cx={cx} cy={cy} size={r * 2} />;
 }
 
 export const ShapeHuntRenderer: React.FC<BlockRenderProps> = ({ instance, size, width, height }) => {
