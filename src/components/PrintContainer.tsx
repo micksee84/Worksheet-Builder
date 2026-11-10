@@ -9,6 +9,7 @@
 import React from 'react';
 import { Worksheet } from '../types';
 import { WorksheetPageSvg } from './WorksheetPageSvg';
+import { pageDims } from '../config/appConfig';
 
 interface PrintContainerProps {
   worksheet: Worksheet;
@@ -38,12 +39,16 @@ export const PrintContainer: React.FC<PrintContainerProps> = ({ worksheet }) => 
             justifyContent: 'center',
           }}
         >
-          <WorksheetPageSvg
-            page={page}
-            pageIndex={index}
-            pageSize={worksheet.pageSize}
-            isInteractive={false}
-          />
+          {pageDims(worksheet.pageSize, page).landscape ? (
+            // Printing from the browser uses one paper direction for every page, so
+            // landscape pages (week plans, first–then boards) turn a quarter to fit.
+            // The PDF download keeps them truly landscape.
+            <div style={{ width: '100vh', height: '100vw', transform: 'rotate(90deg)', flex: 'none' }}>
+              <WorksheetPageSvg page={page} pageIndex={index} pageSize={worksheet.pageSize} isInteractive={false} />
+            </div>
+          ) : (
+            <WorksheetPageSvg page={page} pageIndex={index} pageSize={worksheet.pageSize} isInteractive={false} />
+          )}
         </div>
       ))}
     </div>

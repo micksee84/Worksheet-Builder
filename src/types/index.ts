@@ -90,6 +90,38 @@ export interface Page {
   layout: PageLayoutPreset;
   slots: Slot[];
   showDateName: boolean;
+  /** A planner page (routine, week, checklist, first–then) instead of activity slots. */
+  planner?: PlannerData;
+}
+
+// ---------- Planner pages ----------
+export type PlannerKind = 'day' | 'week' | 'checklist' | 'first-then';
+export type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+
+export interface PlannerItem {
+  id: string;
+  label: string;
+  /** Picture library name */
+  picture: string;
+  /** Day view: start time, minutes after midnight */
+  start?: number;
+  /** Day view: how long, in minutes (30-minute steps) */
+  minutes?: number;
+  /** Week view: which day; items keep their order in the list */
+  day?: DayKey;
+  /** First–then: which side */
+  side?: 'first' | 'then';
+}
+
+export interface PlannerData {
+  kind: PlannerKind;
+  /** Day view hours shown, e.g. 7 to 20 */
+  startHour: number;
+  endHour: number;
+  showTimes: boolean;
+  weekdaysOnly: boolean;
+  showTicks: boolean;
+  items: PlannerItem[];
 }
 
 export interface Worksheet {
@@ -115,3 +147,15 @@ export interface DraggedSlotBlock {
 }
 
 export type DragPayload = DraggedLibraryBlock | DraggedSlotBlock;
+
+/** A routine activity dragged from the planner library */
+export interface DraggedPlannerActivity {
+  type: 'planner-activity';
+  activityId: string;
+}
+/** A planner item already on the page, being moved */
+export interface DraggedPlannerItem {
+  type: 'planner-item';
+  pageId: string;
+  itemId: string;
+}

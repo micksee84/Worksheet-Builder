@@ -10,13 +10,15 @@ export interface AnalyticsEventMap {
   'block_removed': { blockId: string };
   'block_moved': { blockId: string };
   'worksheet_saved': { pageCount: number };
-  'worksheet_new': Record<string, never>;
+  'worksheet_new': { kind?: string };
   'template_opened': { templateId: string; pageCount: number };
   'pdf_downloaded': { pageCount: number; blockIds: string[]; pageSize: string };
   'worksheet_printed': { pageCount: number; blockIds: string[]; pageSize: string };
-  'page_added': { pageCount: number };
+  'page_added': { pageCount: number; kind?: string };
   'page_deleted': { pageCount: number };
   'page_layout_changed': { layout: string };
+  'planner_activity_added': { activity?: string; kind: string };
+  'planner_view_changed': { kind: string };
 }
 
 export function trackEvent<K extends keyof AnalyticsEventMap>(

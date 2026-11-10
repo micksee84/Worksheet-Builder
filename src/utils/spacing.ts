@@ -55,9 +55,13 @@ export interface PageLayout {
 }
 
 /** Where everything on a page goes. Depends only on the paper size and whether Name/Date shows. */
-export function pageLayout(pageSizeId: PageSizeId, showDateName = true): PageLayout {
+export function pageLayout(
+  pageSizeId: PageSizeId,
+  showDateName = true,
+  dims?: { width: number; height: number }
+): PageLayout {
   const spec = PAGE_SPECS[pageSizeId as keyof typeof PAGE_SPECS] || PAGE_SPECS.letter;
-  const { width, height } = spec;
+  const { width, height } = dims ?? spec;
   const halfRule = RULE_STROKE / 2;
   const halfFrame = FRAME_STROKE / 2;
 

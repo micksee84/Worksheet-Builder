@@ -12,8 +12,10 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDndContext, useDraggable, useDroppable } from '@dnd-kit/core';
 import { dropKind, isSlotBlockDrag, SlotBlockDrag } from '../utils/blockMoves';
-import { Page, PageSizeId, Slot, PageLayoutPreset, BlockInstance } from '../types';
-import { PAGE_SPECS } from '../config/appConfig';
+import { Page, PageSizeId, Slot, PageLayoutPreset, BlockInstance, PlannerKind } from '../types';
+import { PAGE_SPECS, pageDims } from '../config/appConfig';
+import { PlannerOverlay } from '../planner/PlannerOverlay';
+import { KIND_LABELS } from '../planner/plannerModel';
 import { LAYOUT_PRESETS, calculateSlotGeometries } from '../utils/layoutPresets';
 import { WorksheetPageSvg } from './WorksheetPageSvg';
 import {
@@ -44,6 +46,12 @@ interface WorksheetCanvasProps {
   onDeleteBlock: (pageId: string, slotId: string) => void;
   onOpenSettings: (pageId: string, slot: Slot) => void;
   onTogglePageSize: (size: PageSizeId) => void;
+  /** Planner pages */
+  selectedPlannerItemId?: string | null;
+  onSelectPlannerItem?: (pageId: string, itemId: string) => void;
+  onPlannerBackground?: (pageId: string) => void;
+  onChangePlannerKind?: (pageId: string, kind: PlannerKind) => void;
+  onOpenPlannerSettings?: () => void;
 }
 
 const DEFAULT_ZOOM = { single: 0.85, grid: 0.32 } as const;
@@ -235,11 +243,18 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
   onDeleteBlock,
   onOpenSettings,
   onTogglePageSize,
+  selectedPlannerItemId = null,
+  onSelectPlannerItem,
+  onPlannerBackground,
+  onChangePlannerKind,
+  onOpenPlannerSettings,
 }) => {
   const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
   const [gridZoom, setGridZoom] = useState<number>(DEFAULT_ZOOM.grid);
   const activePage = pages[activePageIndex] || pages[0];
   const spec = PAGE_SPECS[pageSize as keyof typeof PAGE_SPECS] || PAGE_SPECS.letter;
+  // The open page's size: landscape for week plans and first–then boards
+  const dims = pageDims(pageSize, activePage);
   const geometries = calculateSlotGeometries(pageSize, activePage.layout, activePage.showDateName);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -280,22 +295,22 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
 
   const fitZoom =
     viewport.w && viewport.h
-      ? Math.min(MAX_ZOOM, (viewport.w - FRAME_GUTTER * 2) / spec.width, (viewport.h - FRAME_GUTTER * 2) / spec.height)
+      ? Math.min(MAX_ZOOM, (viewport.w - FRAME_GUTTER * 2) / dims.width, (viewport.h - FRAME_GUTTER * 2) / dims.height)
       : DEFAULT_ZOOM.single;
   const zoomLevel = zoomChoice === 'fit' ? fitZoom : Math.min(MAX_ZOOM, Math.max(fitZoom, zoomChoice));
   const isZoomedIn = zoomLevel > fitZoom + 0.001;
-  const pageW = spec.width * zoomLevel;
-  const pageH = spec.height * zoomLevel;
+  const pageW = dims.width * zoomLevel;
+  const pageH = dims.height * zoomLevel;
 
   // The scrollable stage: at least the canvas size, or the page plus a gutter all round when zoomed in.
   // The page sits centred in it, so it is centred when it fits and scrolls edge to edge when it doesn't.
   const stageSize = useCallback(
     (z: number) => {
-      const w = Math.max(viewport.w, spec.width * z + FRAME_GUTTER * 2);
-      const h = Math.max(viewport.h, spec.height * z + FRAME_GUTTER * 2);
-      return { w, h, left: (w - spec.width * z) / 2, top: (h - spec.height * z) / 2 };
+      const w = Math.max(viewport.w, dims.width * z + FRAME_GUTTER * 2);
+      const h = Math.max(viewport.h, dims.height * z + FRAME_GUTTER * 2);
+      return { w, h, left: (w - dims.width * z) / 2, top: (h - dims.height * z) / 2 };
     },
-    [viewport.w, viewport.h, spec.width, spec.height],
+    [viewport.w, viewport.h, dims.width, dims.height],
   );
   const stage = stageSize(zoomLevel);
 
@@ -505,6 +520,39 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
           )}
         </div>
 
+        {/* Center: planner view picker (planner pages) or slot layouts (worksheet pages) */}
+        {activePage.planner ? (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#6B5838] hidden sm:inline">Planner:</span>
+            <div role="group" aria-label="Planner view" className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9] gap-1">
+              {(Object.keys(KIND_LABELS) as PlannerKind[]).map((kind) => (
+                <button
+                  key={kind}
+                  type="button"
+                  onClick={() => onChangePlannerKind?.(activePage.id, kind)}
+                  aria-pressed={activePage.planner!.kind === kind}
+                  title={KIND_LABELS[kind].blurb}
+                  className={`px-2 py-1 text-[11px] font-bold rounded-md transition-all ${
+                    activePage.planner!.kind === kind ? 'bg-white text-[#2D2200] shadow-xs' : 'text-[#6B5838] hover:text-[#2D2200]'
+                  }`}
+                >
+                  {KIND_LABELS[kind].label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              data-opens-settings=""
+              onClick={onOpenPlannerSettings}
+              className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold text-[#2D2200] bg-white border border-[#E2DEC9] rounded-lg hover:border-[#2D2200]"
+              title="Hours, times, tick boxes and more"
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">Settings</span>
+            </button>
+          </div>
+        ) : (
+        <>
         {/* Center: Page Layout Grid Picker */}
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] font-bold uppercase tracking-wider text-[#6B5838] hidden sm:inline">
@@ -536,6 +584,8 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
             ))}
           </div>
         </div>
+        </>
+        )}
 
         {/* Paper size: a setting of the page, so it sits with the slot layouts */}
         <div className="flex items-center gap-1.5">
@@ -629,7 +679,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
       {/* Page Title Quick Editor Banner */}
       <div className="bg-[#FAF8F0] px-6 py-2 border-b border-[#E2DEC9] flex items-center justify-between text-xs">
         <div className="flex items-center gap-2 flex-1 max-w-xl">
-          <span className="text-[#6B5838] font-bold shrink-0">Worksheet Header Title:</span>
+          <span className="text-[#6B5838] font-bold shrink-0">{activePage.planner ? 'Planner title:' : 'Worksheet Header Title:'}</span>
           <input
             type="text"
             value={activePage.title}
@@ -674,6 +724,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
             <div className="flex flex-wrap gap-6 items-start">
               {pages.map((page, idx) => {
                 const pageGeoms = calculateSlotGeometries(pageSize, page.layout, page.showDateName);
+                const pd = pageDims(pageSize, page);
                 const isActive = idx === activePageIndex;
                 return (
                   <div key={page.id} className="flex flex-col gap-2 shrink-0">
@@ -691,7 +742,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
                           onSelectPageIndex(idx);
                         }
                       }}
-                      style={{ width: spec.width * gridZoom, height: spec.height * gridZoom }}
+                      style={{ width: pd.width * gridZoom, height: pd.height * gridZoom }}
                       className={`relative rounded-md bg-white cursor-pointer transition-shadow focus:outline-none focus-visible:outline-[3px] focus-visible:outline-[#009BD9] focus-visible:outline-offset-[3px] ${
                         isActive
                           ? 'outline-[3px] outline outline-[#2D2200] outline-offset-[3px] shadow-[4px_4px_0_#2D2200]'
@@ -700,8 +751,8 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
                     >
                       <div
                         style={{
-                          width: spec.width,
-                          height: spec.height,
+                          width: pd.width,
+                          height: pd.height,
                           transform: `scale(${gridZoom})`,
                           transformOrigin: 'top left',
                         }}
@@ -713,7 +764,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
                           pageSize={pageSize}
                           isInteractive={true}
                         />
-                        {page.slots.map((slot) => {
+                        {!page.planner && page.slots.map((slot) => {
                           const geom = pageGeoms[slot.id];
                           if (!geom) return null;
                           return (
@@ -737,7 +788,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
                     </div>
                     <div
                       className="flex items-center justify-between gap-2"
-                      style={{ width: spec.width * gridZoom }}
+                      style={{ width: pd.width * gridZoom }}
                     >
                       <span className="text-xs font-bold text-[#2D2200] truncate">
                         {idx + 1}. {page.title || `Page ${idx + 1}`}
@@ -782,9 +833,11 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
           style={{
             transform: `scale(${zoomLevel})`,
             transformOrigin: 'top left',
-            width: `${spec.width}px`,
-            height: `${spec.height}px`,
+            width: `${dims.width}px`,
+            height: `${dims.height}px`,
           }}
+          data-page-surface=""
+          data-page-width={dims.width}
           className="absolute top-0 left-0 select-none shadow-2xl rounded-xs"
         >
           {/* Base SVG Page (True Vector Output) */}
@@ -798,8 +851,19 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
             isInteractive={true}
           />
 
+          {/* Planner pages: the page is one drop target, each activity a handle */}
+          {activePage.planner && (
+            <PlannerOverlay
+              page={activePage}
+              pageSize={pageSize}
+              selectedItemId={selectedPlannerItemId}
+              onSelectItem={(itemId) => onSelectPlannerItem?.(activePage.id, itemId)}
+              onBackground={() => onPlannerBackground?.(activePage.id)}
+            />
+          )}
+
           {/* Interactive Droppable Overlay Targets */}
-          <div className="absolute inset-0 pointer-events-auto">
+          <div className={`absolute inset-0 ${activePage.planner ? 'hidden' : 'pointer-events-auto'}`}>
             {activePage.slots.map((slot) => {
               const geom = geometries[slot.id];
               if (!geom) return null;

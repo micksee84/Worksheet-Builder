@@ -94,3 +94,18 @@ export const CHARACTERS = [
 ] as const;
 
 export type CharacterId = typeof CHARACTERS[number]['id'];
+
+/**
+ * The size of one page in points. Week plans and first–then boards are landscape,
+ * everything else is portrait.
+ */
+export function pageDims(
+  pageSize: PageSizeId,
+  page?: { planner?: { kind: string } }
+): { width: number; height: number; landscape: boolean } {
+  const spec = PAGE_SPECS[pageSize as keyof typeof PAGE_SPECS] || PAGE_SPECS.letter;
+  const landscape = page?.planner?.kind === 'week' || page?.planner?.kind === 'first-then';
+  return landscape
+    ? { width: spec.height, height: spec.width, landscape }
+    : { width: spec.width, height: spec.height, landscape };
+}

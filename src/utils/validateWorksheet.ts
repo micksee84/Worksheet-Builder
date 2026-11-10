@@ -6,6 +6,7 @@
  * so a bad link or an old save can never leave the app stuck on a blank screen.
  */
 
+import type { PlannerData, PlannerItem } from '../types';
 import { Worksheet, Page, Slot, PageLayoutPreset, BlockInstance } from '../types';
 import { PAGE_SPECS, CHARACTERS } from '../config/appConfig';
 import { LAYOUT_PRESETS, createSlotsForPreset } from './layoutPresets';
@@ -90,12 +91,47 @@ function validatePage(raw: unknown, index: number): Page | null {
     slot.block = isObject(match) ? validateBlock(match.block) : null;
   });
 
+  const planner = validatePlanner(raw.planner);
   return {
     id: typeof raw.id === 'string' && raw.id ? raw.id : `page_${Date.now()}_${index}`,
     title: cleanString(raw.title, `Page ${index + 1}`),
     layout,
-    slots,
+    slots: planner ? [] : slots,
     showDateName: raw.showDateName !== false,
+    ...(planner ? { planner } : {}),
+  };
+}
+
+const PLANNER_KINDS = new Set(['day', 'week', 'checklist', 'first-then']);
+const DAY_KEYS = new Set(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
+const num = (v: unknown, min: number, max: number, fallback: number) =>
+  typeof v === 'number' && Number.isFinite(v) ? Math.max(min, Math.min(max, Math.round(v))) : fallback;
+
+/** A planner page's data, cleaned the same way as blocks: bad values fall back, bad items drop out. */
+function validatePlanner(raw: unknown): PlannerData | null {
+  if (!isObject(raw) || !PLANNER_KINDS.has(raw.kind)) return null;
+  const startHour = num(raw.startHour, 0, 23, 7);
+  const endHour = Math.max(startHour + 1, num(raw.endHour, 1, 24, 20));
+  const items: PlannerItem[] = (Array.isArray(raw.items) ? raw.items : [])
+    .filter((it: unknown) => isObject(it) && typeof it.id === 'string')
+    .slice(0, 80)
+    .map((it: Record<string, any>) => ({
+      id: it.id,
+      label: cleanString(it.label, 'Activity').slice(0, 40),
+      picture: typeof it.picture === 'string' ? it.picture : 'star',
+      ...(typeof it.start === 'number' ? { start: num(it.start, 0, 24 * 60, 0) } : {}),
+      ...(typeof it.minutes === 'number' ? { minutes: num(it.minutes, 30, 12 * 60, 30) } : {}),
+      ...(DAY_KEYS.has(it.day) ? { day: it.day } : {}),
+      ...(it.side === 'first' || it.side === 'then' ? { side: it.side } : {}),
+    }));
+  return {
+    kind: raw.kind,
+    startHour,
+    endHour,
+    showTimes: raw.showTimes !== false,
+    weekdaysOnly: raw.weekdaysOnly === true,
+    showTicks: raw.showTicks === true,
+    items,
   };
 }
 

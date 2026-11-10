@@ -250,6 +250,12 @@ export const PICTURES: Record<string, { label: string; sound: string }> = {
   yarn: { label: 'yarn', sound: 'y' },
   'yo-yo': { label: 'yo yo', sound: 'y' },
   zebra: { label: 'zebra', sound: 'z' },
+  // Planner pictures still to draw (they print as placeholders until then)
+  pencil: { label: 'pencil', sound: 'p' },
+  tv: { label: 'TV', sound: '' },
+  pyjamas: { label: 'pyjamas', sound: 'p' },
+  friends: { label: 'friends', sound: '' },
+  face: { label: 'face', sound: 'f' },
   icecream: { label: 'ice cream', sound: '' }, // older name for ice-cream, kept so saved worksheets still open
 };
 

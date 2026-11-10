@@ -7,7 +7,8 @@
 
 import React from 'react';
 import { Page, PageSizeId, BlockInstance, Slot } from '../types';
-import { PAGE_SPECS } from '../config/appConfig';
+import { pageDims } from '../config/appConfig';
+import { PlannerPageContent } from '../planner/PlannerPageContent';
 import { calculateSlotGeometries, SlotGeometry } from '../utils/layoutPresets';
 import { getBlockById } from '../registry/blockRegistry';
 import {
@@ -38,9 +39,9 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
   onDeleteBlock,
   isInteractive = true,
 }) => {
-  const spec = PAGE_SPECS[pageSize as keyof typeof PAGE_SPECS] || PAGE_SPECS.letter;
-  const { width: pageWidth, height: pageHeight } = spec;
-  const layout = pageLayout(pageSize, page.showDateName);
+  const dims = pageDims(pageSize, page);
+  const { width: pageWidth, height: pageHeight } = dims;
+  const layout = pageLayout(pageSize, page.showDateName, dims);
   const margin = layout.left;
   const innerWidth = layout.right - layout.left;
   const geometries = calculateSlotGeometries(pageSize, page.layout, page.showDateName);
@@ -143,8 +144,10 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
       {/* ==================================================== */}
       {/* SLOTS & ACTIVITIES                                   */}
       {/* ==================================================== */}
+      {page.planner && <PlannerPageContent planner={page.planner} pageSize={pageSize} showDateName={page.showDateName} />}
+
       <g className="worksheet-slots">
-        {page.slots.map((slot) => {
+        {!page.planner && page.slots.map((slot) => {
           const geom = geometries[slot.id];
           if (!geom) return null;
 

@@ -30,6 +30,9 @@ import {
   BlockInstance,
   BlockDefinition,
   PageSizeId,
+  PlannerData,
+  PlannerItem,
+  PlannerKind,
 } from './types';
 import { PAGE_SPECS, CharacterId } from './config/appConfig';
 import {
@@ -71,6 +74,25 @@ import { PrintDoneToast, PrintDoneKind } from './components/PrintDoneToast';
 import { PrintContainer } from './components/PrintContainer';
 import { TooltipLayer } from './components/TooltipLayer';
 import { MyWorksheetsModal } from './components/MyWorksheetsModal';
+import { PlannerLibrary, PictureThumb } from './planner/PlannerLibrary';
+import { PlannerDrawer } from './planner/PlannerDrawer';
+import { WhatAreYouMaking, MakeChoice } from './planner/WhatAreYouMaking';
+import { GRAB_TOP } from './planner/PlannerOverlay';
+import { plannerGeometry, dropTarget } from './planner/plannerLayout';
+import {
+  addItem,
+  createPlannerPage,
+  itemFromActivity,
+  KIND_LABELS,
+  newItemId,
+  normalize,
+  placeItem,
+  samplePlanner,
+  STEP,
+  switchKind,
+} from './planner/plannerModel';
+import { getActivity } from './planner/activities';
+import { pageDims } from './config/appConfig';
 
 /** A blank worksheet for New: one page, two empty halves. Keeps the current paper size. */
 function createBlankWorksheet(pageSize: Worksheet['pageSize'] = 'letter'): Worksheet {
@@ -238,9 +260,18 @@ export default function App() {
 
   // Drag and drop state
   const [activeDragItem, setActiveDragItem] = useState<{
-    type: 'library-block' | 'slot-block';
+    type: 'library-block' | 'slot-block' | 'planner-activity' | 'planner-item';
     blockId: string;
+    /** Planner drags: what the drag card shows */
+    label?: string;
+    picture?: string;
   } | null>(null);
+
+  // Planner pages: the selected activity, whether the planner panel is open, and the
+  // "What are you making?" chooser (for New or Add page)
+  const [plannerSel, setPlannerSel] = useState<{ pageId: string; itemId: string } | null>(null);
+  const [isPlannerPanelOpen, setIsPlannerPanelOpen] = useState(false);
+  const [makeChooser, setMakeChooser] = useState<'new' | 'add' | null>(null);
 
   // DnD sensors
   const pointerSensor = useSensor(PointerSensor, {
@@ -424,15 +455,7 @@ export default function App() {
       setIsMyWorksheetsOpen(false);
     });
 
-  const handleNewWorksheet = () =>
-    guardLeave(async (discard) => {
-      await leaveCurrent(discard);
-      openWorksheet(createBlankWorksheet(worksheetRef.current.pageSize));
-      setBrowserSavedKey(null);
-      setManualSave('idle');
-      setIsMyWorksheetsOpen(false);
-      trackEvent('worksheet_new', {});
-    });
+  const handleNewWorksheet = () => setMakeChooser('new');
 
   // Closing the tab with unsaved work: the browser shows its own "Leave site?" warning.
   useEffect(() => {
@@ -540,6 +563,8 @@ export default function App() {
       });
     } else if (isSlotBlockDrag(data)) {
       setActiveDragItem({ type: 'slot-block', blockId: data.blockId });
+    } else if (data && (data.type === 'planner-activity' || data.type === 'planner-item')) {
+      setActiveDragItem({ type: data.type, blockId: '', label: data.label, picture: data.picture });
     }
   };
 
@@ -571,7 +596,8 @@ export default function App() {
     return x < page.left || x > page.right || y < page.top || y > page.bottom;
   };
   const handleDragMove = (event: DragMoveEvent) => {
-    if (!isSlotBlockDrag(event.active.data.current)) return;
+    const moving = event.active.data.current;
+    if (!isSlotBlockDrag(moving) && moving?.type !== 'planner-item') return;
     const off = isOffPage(event);
     setDragOffPage((prev) => (prev === off ? prev : off));
   };
@@ -580,6 +606,21 @@ export default function App() {
     const { over, active } = event;
     setActiveDragItem(null);
     setDragOffPage(false);
+
+    // Planner activities: dropped on a planner page, they land where the pointer is
+    // (a time, a day, a spot in the list, or a side). A placed one dragged off the page
+    // is removed (Undo brings it back).
+    const pdata = active.data.current as { type?: string; activityId?: string; pageId?: string; itemId?: string } | undefined;
+    if (pdata?.type === 'planner-activity' || pdata?.type === 'planner-item') {
+      const target = over?.data.current as { type?: string; pageId?: string } | undefined;
+      if (target?.type === 'planner-target' && target.pageId) {
+        const point = pagePoint(event);
+        if (point) dropOnPlanner(target.pageId, point, pdata);
+      } else if (pdata.type === 'planner-item' && !over && isOffPage(event) && pdata.pageId && pdata.itemId) {
+        removePlannerItem(pdata.pageId, pdata.itemId);
+      }
+      return;
+    }
 
     // Placed block let go off the page: remove it.
     if (!over) {
@@ -639,6 +680,152 @@ export default function App() {
 
       trackEvent('block_added', { blockId, size: overData.size });
     }
+  };
+
+
+  // ---------------------------------------------------------------- Planner pages
+  /** Change one planner page; every change goes through undo like the rest of the builder */
+  const updatePlanner = useCallback(
+    (pageId: string, fn: (p: PlannerData) => PlannerData) => {
+      updateWorksheet((prev) => ({
+        ...prev,
+        pages: prev.pages.map((pg) => (pg.id === pageId && pg.planner ? { ...pg, planner: fn(pg.planner) } : pg)),
+      }));
+    },
+    [updateWorksheet]
+  );
+
+  /** Where the pointer was let go, in page points on the open page */
+  const pagePoint = (event: DragEndEvent): { x: number; y: number } | null => {
+    const start = event.activatorEvent as PointerEvent | TouchEvent;
+    const pt = 'touches' in start ? start.touches[0] ?? start.changedTouches[0] : start;
+    const surface = document.querySelector('[data-page-surface]') as HTMLElement | null;
+    if (!pt || !surface) return null;
+    const rect = surface.getBoundingClientRect();
+    const scale = rect.width / surface.offsetWidth;
+    return { x: (pt.clientX + event.delta.x - rect.left) / scale, y: (pt.clientY + event.delta.y - rect.top) / scale };
+  };
+
+  const dropOnPlanner = (pageId: string, point: { x: number; y: number }, drag: { type?: string; activityId?: string; itemId?: string }) => {
+    const ws = worksheetRef.current;
+    const page = ws.pages.find((p) => p.id === pageId);
+    if (!page?.planner) return;
+    const planner = page.planner;
+    const moving = drag.type === 'planner-item' ? planner.items.find((i) => i.id === drag.itemId) : undefined;
+    const item = moving ?? (drag.activityId ? itemFromActivity(drag.activityId) : undefined);
+    if (!item) return;
+    const g = plannerGeometry(ws.pageSize, page.showDateName, planner);
+    const target = dropTarget(g, planner, point.x, point.y - GRAB_TOP, item.minutes ?? STEP);
+    updatePlanner(pageId, (p) => placeItem(p, item, target));
+    if (!moving) trackEvent('planner_activity_added', { activity: drag.activityId, kind: planner.kind });
+  };
+
+  const removePlannerItem = useCallback(
+    (pageId: string, itemId: string) => {
+      updatePlanner(pageId, (p) => ({ ...p, items: p.items.filter((i) => i.id !== itemId) }));
+      setPlannerSel((sel) => (sel?.itemId === itemId ? null : sel));
+    },
+    [updatePlanner]
+  );
+
+  /** Tap + on an activity: it goes where the view puts new things */
+  const handleAddActivity = useCallback(
+    (activityId: string) => {
+      const page = worksheetRef.current.pages[activePageIndex];
+      if (!page?.planner) return;
+      const selected = plannerSel && plannerSel.pageId === page.id ? page.planner.items.find((i) => i.id === plannerSel.itemId) : undefined;
+      updatePlanner(page.id, (p) => addItem(p, itemFromActivity(activityId), selected?.day));
+      setIsMobileSidebarOpen(false);
+      trackEvent('planner_activity_added', { activity: activityId, kind: page.planner.kind });
+    },
+    [activePageIndex, plannerSel, updatePlanner]
+  );
+
+  /** Make your own: a blank activity, opened straight away to type its name */
+  const handleAddCustomActivity = useCallback(() => {
+    const page = worksheetRef.current.pages[activePageIndex];
+    if (!page?.planner) return;
+    const item: PlannerItem = { id: newItemId(), label: 'My activity', picture: 'star', minutes: 30 };
+    updatePlanner(page.id, (p) => addItem(p, item));
+    setPlannerSel({ pageId: page.id, itemId: item.id });
+    setIsPlannerPanelOpen(true);
+    setIsMobileSidebarOpen(false);
+  }, [activePageIndex, updatePlanner]);
+
+  const handleChangePlannerKind = useCallback(
+    (pageId: string, kind: PlannerKind) => {
+      const page = worksheetRef.current.pages.find((p) => p.id === pageId);
+      if (!page?.planner || page.planner.kind === kind) return;
+      // A title still on the old view's default follows the switch ("My day" -> "My week")
+      const oldDefault = KIND_LABELS[page.planner.kind].title;
+      updateWorksheet((prev) => ({
+        ...prev,
+        pages: prev.pages.map((pg) =>
+          pg.id === pageId && pg.planner
+            ? { ...pg, title: pg.title === oldDefault ? KIND_LABELS[kind].title : pg.title, planner: switchKind(pg.planner, kind) }
+            : pg
+        ),
+      }));
+      trackEvent('planner_view_changed', { kind });
+    },
+    [updateWorksheet]
+  );
+
+  /** Move the selected activity up or down its list (checklist) or its day (week) */
+  const handleMovePlannerItem = useCallback(
+    (dir: -1 | 1) => {
+      if (!plannerSel) return;
+      updatePlanner(plannerSel.pageId, (p) => {
+        const items = [...p.items];
+        const idx = items.findIndex((i) => i.id === plannerSel.itemId);
+        if (idx === -1) return p;
+        const sameList = (i: PlannerItem) => p.kind !== 'week' || (i.day ?? 'mon') === (items[idx].day ?? 'mon');
+        let j = idx + dir;
+        while (j >= 0 && j < items.length && !sameList(items[j])) j += dir;
+        if (j < 0 || j >= items.length) return p;
+        [items[idx], items[j]] = [items[j], items[idx]];
+        return { ...p, items };
+      });
+    },
+    [plannerSel, updatePlanner]
+  );
+
+  // Selection never outlives the page it was on
+  useEffect(() => {
+    const page = worksheet.pages[activePageIndex];
+    if (plannerSel && (!page || page.id !== plannerSel.pageId)) setPlannerSel(null);
+    if (!page?.planner) setIsPlannerPanelOpen(false);
+  }, [activePageIndex, worksheet.pages, plannerSel]);
+
+  /** New document or new page, from "What are you making?" */
+  const handleMakeChoice = (choice: MakeChoice) => {
+    const mode = makeChooser;
+    setMakeChooser(null);
+    if (mode === 'add') {
+      const n = worksheetRef.current.pages.length + 1;
+      const newPage: Page =
+        choice === 'worksheet'
+          ? { id: `page_${Date.now()}`, title: `Page ${n}`, layout: '2-half', showDateName: true, slots: createSlotsForPreset('2-half') }
+          : createPlannerPage(choice, n);
+      updateWorksheet((prev) => ({ ...prev, pages: [...prev.pages, newPage] }));
+      setActivePageIndex(worksheetRef.current.pages.length - 1);
+      trackEvent('page_added', { pageCount: n, kind: choice });
+      return;
+    }
+    guardLeave(async (discard) => {
+      await leaveCurrent(discard);
+      const blank = createBlankWorksheet(worksheetRef.current.pageSize);
+      if (choice !== 'worksheet') {
+        const page = createPlannerPage(choice, 1);
+        blank.pages = [page];
+        blank.title = 'Untitled worksheet';
+      }
+      openWorksheet(blank);
+      setBrowserSavedKey(null);
+      setManualSave('idle');
+      setIsMyWorksheetsOpen(false);
+      trackEvent('worksheet_new', { kind: choice });
+    });
   };
 
   // Slot selection and opening settings
@@ -740,25 +927,8 @@ export default function App() {
     [selectedSlotRef, updateWorksheet]
   );
 
-  // Page management
-  const handleAddPage = useCallback(() => {
-    updateWorksheet((prev) => {
-      const newPageNumber = prev.pages.length + 1;
-      const newPage: Page = {
-        id: `page_${Date.now()}`,
-        title: `Page ${newPageNumber}`,
-        layout: '2-half',
-        showDateName: true,
-        slots: createSlotsForPreset('2-half'),
-      };
-      return {
-        ...prev,
-        pages: [...prev.pages, newPage],
-      };
-    });
-    setActivePageIndex(worksheet.pages.length);
-    trackEvent('page_added', { pageCount: worksheet.pages.length + 1 });
-  }, [updateWorksheet, worksheet.pages.length]);
+  // Page management: Add page asks what kind (worksheet or a planner)
+  const handleAddPage = useCallback(() => setMakeChooser('add'), []);
 
   const handleDeletePage = useCallback(
     (pageIdxToDelete: number) => {
@@ -1003,13 +1173,25 @@ export default function App() {
           {/* Main App Workspace: Sidebar + Canvas */}
           <div className="flex-1 flex min-h-0 relative">
             {/* Left Block Library */}
-            <Sidebar
-              onAddBlock={handleAddBlockToActivePage}
-              isOpenOnMobile={isMobileSidebarOpen}
-              onCloseMobile={() => setIsMobileSidebarOpen(false)}
-              slim={isSidebarSlim}
-              onToggleSlim={handleToggleSidebarSlim}
-            />
+            {activePage.planner ? (
+              <PlannerLibrary
+                kind={activePage.planner.kind}
+                onAddActivity={handleAddActivity}
+                onAddCustom={handleAddCustomActivity}
+                isOpenOnMobile={isMobileSidebarOpen}
+                onCloseMobile={() => setIsMobileSidebarOpen(false)}
+                slim={isSidebarSlim}
+                onToggleSlim={handleToggleSidebarSlim}
+              />
+            ) : (
+              <Sidebar
+                onAddBlock={handleAddBlockToActivePage}
+                isOpenOnMobile={isMobileSidebarOpen}
+                onCloseMobile={() => setIsMobileSidebarOpen(false)}
+                slim={isSidebarSlim}
+                onToggleSlim={handleToggleSidebarSlim}
+              />
+            )}
 
             {/* Pages panel: every page, top to bottom */}
             <PagesPanel
@@ -1043,7 +1225,48 @@ export default function App() {
               onChangePageTitle={handleChangePageTitle}
               onDeleteBlock={handleDeleteBlock}
               onOpenSettings={(pageId, slot) => handleOpenSettings(pageId, slot)}
+              selectedPlannerItemId={plannerSel?.itemId ?? null}
+              onSelectPlannerItem={(pageId, itemId) => {
+                setPlannerSel({ pageId, itemId });
+                setIsPlannerPanelOpen(true);
+              }}
+              onPlannerBackground={() => {
+                setPlannerSel(null);
+                setIsPlannerPanelOpen(false);
+              }}
+              onChangePlannerKind={handleChangePlannerKind}
+              onOpenPlannerSettings={() => {
+                setPlannerSel(null);
+                setIsPlannerPanelOpen(true);
+              }}
             />
+
+            {/* Planner settings (planner pages) */}
+            {activePage.planner && (
+              <PlannerDrawer
+                isOpen={isPlannerPanelOpen}
+                onClose={() => {
+                  setIsPlannerPanelOpen(false);
+                  setPlannerSel(null);
+                }}
+                planner={activePage.planner}
+                item={plannerSel ? activePage.planner.items.find((i) => i.id === plannerSel.itemId) ?? null : null}
+                onUpdateItem={(patch) =>
+                  plannerSel &&
+                  updatePlanner(plannerSel.pageId, (p) => ({ ...p, items: p.items.map((i) => (i.id === plannerSel.itemId ? { ...i, ...patch } : i)) }))
+                }
+                onMoveItem={handleMovePlannerItem}
+                onRemoveItem={() => plannerSel && removePlannerItem(plannerSel.pageId, plannerSel.itemId)}
+                onUpdatePlanner={(patch) => updatePlanner(activePage.id, (p) => normalize({ ...p, ...patch }))}
+                onChangeKind={(kind) => handleChangePlannerKind(activePage.id, kind)}
+                onClearAll={() => updatePlanner(activePage.id, (p) => ({ ...p, items: [] }))}
+                onResetExample={() => updatePlanner(activePage.id, (p) => ({ ...samplePlanner(p.kind) }))}
+                showDateName={activePage.showDateName}
+                onToggleDateName={(on) =>
+                  updateWorksheet((prev) => ({ ...prev, pages: prev.pages.map((pg) => (pg.id === activePage.id ? { ...pg, showDateName: on } : pg)) }))
+                }
+              />
+            )}
 
             {/* Block Settings Inspector Drawer */}
             <BlockSettingsDrawer
@@ -1071,6 +1294,15 @@ export default function App() {
 
         {/* Drag Overlay Ghost */}
         <DragOverlay modifiers={[followPointer]}>
+          {activeDragItem && (activeDragItem.type === 'planner-activity' || activeDragItem.type === 'planner-item') && (
+            <div className={`w-56 bg-white border-2 ${dragOffPage ? 'border-[#E52311]' : 'border-[#009BD9]'} rounded-xl p-2 shadow-2xl opacity-95 select-none pointer-events-none flex items-center gap-2.5`}>
+              {dragOffPage ? <Trash2 className="w-5 h-5 text-[#E52311] shrink-0 m-2.5" /> : <PictureThumb name={activeDragItem.picture ?? 'star'} size={40} />}
+              <div className="min-w-0">
+                <h4 className="text-sm font-extrabold text-[#2D2200] truncate">{dragOffPage ? 'Release to remove' : activeDragItem.label}</h4>
+                <p className="text-xs text-[#6B5838] truncate">{activeDragItem.type === 'planner-item' ? 'Move it, or drag off the page to remove' : 'Drop it on the planner'}</p>
+              </div>
+            </div>
+          )}
           {draggedBlockDef && dragOffPage && (
             <div className="w-64 bg-white border-2 border-[#E52311] rounded-xl p-3 shadow-2xl select-none pointer-events-none scale-105 flex items-center gap-3">
               <Trash2 className="w-5 h-5 text-[#E52311] shrink-0" />
@@ -1105,6 +1337,11 @@ export default function App() {
               setPendingRemove(null);
             }}
           />
+        )}
+
+        {/* What are you making? (New, Add page) */}
+        {makeChooser && (
+          <WhatAreYouMaking mode={makeChooser} pageSize={worksheet.pageSize} onChoose={handleMakeChoice} onClose={() => setMakeChooser(null)} />
         )}
 
         {/* Templates Gallery Modal */}

@@ -11,6 +11,7 @@ import { Worksheet, PageSizeId } from '../../types';
 import { trackEvent } from '../analytics';
 import { registerPdfFonts } from './pdfFonts';
 import { isUnnamed } from '../worksheetLibrary';
+import { pageDims } from '../../config/appConfig';
 
 /**
  * The file name for a worksheet: the name the grown-up gave it when saving, as typed
@@ -56,13 +57,17 @@ export async function exportWorksheetToPdf(
 
     await registerPdfFonts(pdf);
 
-    const pdfPageWidth = pdf.internal.pageSize.getWidth();
-    const pdfPageHeight = pdf.internal.pageSize.getHeight();
-
     for (let i = 0; i < worksheet.pages.length; i++) {
+      // Week plans and first–then boards are landscape pages
+      const landscape = pageDims(worksheet.pageSize, worksheet.pages[i]).landscape;
       if (i > 0) {
-        pdf.addPage(isA4 ? 'a4' : 'letter', 'portrait');
+        pdf.addPage(isA4 ? 'a4' : 'letter', landscape ? 'landscape' : 'portrait');
+      } else if (landscape) {
+        pdf.deletePage(1);
+        pdf.addPage(isA4 ? 'a4' : 'letter', 'landscape');
       }
+      const pdfPageWidth = pdf.internal.pageSize.getWidth();
+      const pdfPageHeight = pdf.internal.pageSize.getHeight();
 
       // Look up rendered SVG element in DOM
       const svgId = `print-svg-page-${worksheet.pages[i].id}`;

@@ -14,7 +14,7 @@
 import React, { memo, useEffect, useRef, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Page, PageSizeId } from '../types';
-import { PAGE_SPECS } from '../config/appConfig';
+import { pageDims } from '../config/appConfig';
 import { WorksheetPageSvg } from './WorksheetPageSvg';
 import { ArrowDown, ArrowUp, Copy, PanelLeftClose, PanelLeftOpen, Plus, Trash2 } from 'lucide-react';
 
@@ -58,7 +58,7 @@ const PageThumb = memo(function PageThumb({
   index: number;
   pageSize: PageSizeId;
 }) {
-  const spec = PAGE_SPECS[pageSize as keyof typeof PAGE_SPECS] || PAGE_SPECS.letter;
+  const spec = pageDims(pageSize, page);
   const scale = THUMB_WIDTH / spec.width;
   return (
     <div
