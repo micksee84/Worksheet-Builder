@@ -12,14 +12,11 @@ import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
+import { pickDistinct, picturesIn, themeSetting } from './pictureLibrary';
 import { createRandom, blockSeed } from '../utils/seededRandom';
 
-const SETS: Record<string, string[]> = {
-  // Pictures in each set have clearly different outlines, so every shadow has one match
-  animals: ['cat', 'fish', 'bird', 'whale', 'snake', 'crab'],
-  garden: ['flower', 'leaf', 'bee', 'butterfly', 'bug', 'tree'],
-  home: ['house', 'mug', 'hat', 'spoon', 'cake', 'ball'],
-};
+/** Older saved worksheets use "animals"; every theme from the picture library works too */
+const poolFor = (set: string | undefined) => (set === 'animals' ? picturesIn('mixed', (t) => t.k === 'animal') : picturesIn(set));
 
 /** A rounded square outline, with straight or gently wavy sides, as a path. */
 function cutOutline(x: number, y: number, w: number, h: number, wavy: boolean): string {
@@ -52,9 +49,9 @@ export const CutGlueRenderer: React.FC<BlockRenderProps> = ({ instance, size, wi
   const maxPieces = size === 'quarter' ? 3 : 4;
   const pieces = Math.min(maxPieces, Math.max(2, Number(s.pieces) || 3));
   const wavy = s.cutStyle === 'wavy';
-  const set = SETS[s.pictureSet] || SETS.animals;
   const rand = createRandom(blockSeed(instance.instanceId, s));
-  const chosen = rand.shuffle(set).slice(0, pieces);
+  // Every shadow must have exactly one match, so look-alike shadows never share a block
+  const chosen = pickDistinct(rand, poolFor(s.pictureSet), pieces);
   const glueOrder = rand.shuffle(chosen);
   // Make sure the shadows are not in the same order as the pieces
   if (glueOrder.every((p, i) => p === chosen[i])) glueOrder.push(glueOrder.shift() as string);
@@ -139,16 +136,11 @@ export const CutGlueBlockDefinition: BlockDefinition = {
         { label: 'Wavy (stretch)', value: 'wavy' },
       ],
     },
-    {
-      key: 'pictureSet',
-      label: 'Pictures',
-      type: 'select',
-      options: [
-        { label: 'Animals', value: 'animals' },
-        { label: 'In the garden', value: 'garden' },
-        { label: 'At home', value: 'home' },
-      ],
-    },
+    (() => {
+      const field = themeSetting('pictureSet');
+      const [mixed, ...themes] = field.options!;
+      return { ...field, options: [{ label: 'Animals (all)', value: 'animals' }, mixed, ...themes] };
+    })(),
     { key: 'variant', label: 'Mix it up', type: 'number', min: 1, max: 20, step: 1, helperText: 'Change this to get different pictures in a new order.' },
   ],
   defaultSettings: { pieces: 3, cutStyle: 'straight', pictureSet: 'animals', variant: 1 },

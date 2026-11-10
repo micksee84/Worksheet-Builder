@@ -12,25 +12,24 @@ import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
+import { rhymeFamily, rhymePairs } from './pictureLibrary';
 import { createRandom, blockSeed } from '../utils/seededRandom';
 
-export const RHYME_PAIRS: [string, string][] = [
-  ['cat', 'hat'],
-  ['bee', 'tree'],
-  ['moon', 'spoon'],
-  ['car', 'star'],
-  ['dog', 'log'],
-  ['bug', 'mug'],
-  ['cake', 'snake'],
-  ['fish', 'dish'],
-];
+/** Every drawn rhyming pair (cat and hat, goat and boat, sock and clock...) */
+export const RHYME_PAIRS: [string, string][] = rhymePairs();
 
 export const RhymeMatchRenderer: React.FC<BlockRenderProps> = ({ instance, size, width, height }) => {
   const s = instance.settings;
   const maxPairs = size === 'full' ? 5 : 3;
   const pairCount = Math.min(maxPairs, Math.max(2, Number(s.pairs) || 3));
   const rand = createRandom(blockSeed(instance.instanceId, s));
-  const pairs = rand.shuffle(RHYME_PAIRS).slice(0, pairCount);
+  // One pair per rhyme family, so there's only ever one right answer for each picture
+  const pairs: [string, string][] = [];
+  for (const pair of rand.shuffle(RHYME_PAIRS)) {
+    if (pairs.length >= pairCount) break;
+    if (pairs.some((p) => rhymeFamily(p[0]) === rhymeFamily(pair[0]))) continue;
+    pairs.push(rand.next() < 0.5 ? pair : [pair[1], pair[0]]);
+  }
   const left = pairs.map((p) => p[0]);
   let right = rand.shuffle(pairs.map((p) => p[1]));
   // Never leave a pair lined up straight across: that gives the answer away

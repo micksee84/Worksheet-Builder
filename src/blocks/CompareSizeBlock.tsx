@@ -14,15 +14,19 @@ import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
+import { pickDistinct, picturesIn, themeSetting } from './pictureLibrary';
 import { createRandom, blockSeed } from '../utils/seededRandom';
 
-const PICTURE_POOL = ['apple', 'fish', 'ball', 'house', 'cat', 'star', 'heart', 'flower', 'pig', 'egg'];
+
+const NO_SIZE = ['sun', 'moon', 'star', 'cloud', 'rain-cloud', 'rainbow', 'waves', 'puddle', 'fire', 'web', 'bubbles'];
 
 const QUESTIONS: Record<string, { text: string; short: string }> = {
   biggest: { text: 'Circle the biggest one in each row.', short: 'Circle the biggest.' },
   smallest: { text: 'Circle the smallest one in each row.', short: 'Circle the smallest.' },
   tallest: { text: 'Circle the tallest tower in each row.', short: 'Circle the tallest.' },
   longest: { text: 'Circle the longest crayon in each row.', short: 'Circle the longest.' },
+  'real-biggest': { text: 'Which is biggest in real life? Circle it.', short: 'Biggest in real life?' },
+  'real-smallest': { text: 'Which is smallest in real life? Circle it.', short: 'Smallest in real life?' },
 };
 
 /** A tower of stacked blocks, standing on the baseline (version 0.3: hand-drawn block) */
@@ -61,7 +65,19 @@ export const CompareSizeRenderer: React.FC<BlockRenderProps> = ({ instance, size
   const colW = usableW / itemCount;
   const maxItem = Math.min(colW * 0.86, rowH * 0.84);
 
-  const pictures = rand.shuffle(PICTURE_POOL);
+  const pictures = pickDistinct(rand, picturesIn(s.pictureTheme), rowCount);
+  const realLife = question.startsWith('real-');
+  // Real life: same size on the page, very different sizes in the world (tiny, middling, huge)
+  const realRows = Array.from({ length: realLife ? rowCount : 0 }, () => {
+    // Sky things (sun, clouds, stars...) have no size a child can picture, so they sit this one out
+    const sizeable = (n: string) => !NO_SIZE.includes(n);
+    const pool = (filter: (z: number) => boolean) => {
+      const inTheme = picturesIn(s.pictureTheme, (t, n) => filter(t.z) && sizeable(n));
+      return inTheme.length ? inTheme : picturesIn('mixed', (t, n) => filter(t.z) && sizeable(n));
+    };
+    const buckets = itemCount === 2 ? [pool((z) => z <= 2), pool((z) => z >= 4)] : [pool((z) => z <= 2), pool((z) => z === 3), pool((z) => z === 5)];
+    return rand.shuffle(buckets.map((b) => rand.pick(b)));
+  });
 
   return (
     <g className="compare-size-block">
@@ -76,6 +92,19 @@ export const CompareSizeRenderer: React.FC<BlockRenderProps> = ({ instance, size
         const rowTop = top + rowH * i;
         const cy = rowTop + rowH / 2;
         const order = rand.shuffle(scales);
+        if (realLife) {
+          const sz = Math.min(maxItem * 0.8, 84);
+          return (
+            <g key={i}>
+              {realRows[i].map((name, j) => (
+                <Picture key={j} name={name} cx={paddingX + colW * (j + 0.5)} cy={rowTop + rowH * 0.94 - sz / 2} size={sz} />
+              ))}
+              {i < rowCount - 1 && (
+                <line x1={paddingX} y1={rowTop + rowH} x2={width - paddingX} y2={rowTop + rowH} stroke="#B6B2A6" strokeWidth="1.5" />
+              )}
+            </g>
+          );
+        }
         return (
           <g key={i}>
             {order.map((scale, j) => {
@@ -132,8 +161,11 @@ export const CompareSizeBlockDefinition: BlockDefinition = {
         { label: 'Smallest', value: 'smallest' },
         { label: 'Tallest', value: 'tallest' },
         { label: 'Longest', value: 'longest' },
+        { label: 'Biggest in real life (thinking)', value: 'real-biggest' },
+        { label: 'Smallest in real life (thinking)', value: 'real-smallest' },
       ],
     },
+    { ...themeSetting(), helperText: 'For biggest, smallest and real life.' },
     {
       key: 'items',
       label: 'Things in each row',
@@ -146,6 +178,6 @@ export const CompareSizeBlockDefinition: BlockDefinition = {
     { key: 'rows', label: 'Number of rows', type: 'number', min: 1, max: 4, step: 1, helperText: 'Quarter and half spaces show up to 2.' },
     { key: 'variant', label: 'Mix it up', type: 'number', min: 1, max: 20, step: 1, helperText: 'Change this to get different pictures.' },
   ],
-  defaultSettings: { question: 'biggest', items: 3, rows: 2, variant: 1 },
+  defaultSettings: { question: 'biggest', items: 3, rows: 2, pictureTheme: 'mixed', variant: 1 },
   render: (props) => <CompareSizeRenderer {...props} />,
 };

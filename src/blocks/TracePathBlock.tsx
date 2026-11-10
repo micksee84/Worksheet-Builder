@@ -7,6 +7,8 @@
  */
 
 import React from 'react';
+import { TRIP_PAIRS, TRIP_KEYS, tripOptions } from './pictureLibrary';
+import { createRandom, blockSeed } from '../utils/seededRandom';
 import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
@@ -15,14 +17,9 @@ import { Picture } from './pictures';
 import { buildTraceShape, COMPLEXITY_OPTIONS, levelForRow, LineStyle, traceBandHalf } from './traceShapes';
 import { TraceDots } from './TraceDots';
 
-const PAIRS: Record<string, [string, string]> = {
-  'bee-flower': ['bee', 'flower'],
-  'bird-nest': ['bird', 'nest'],
-  'dog-bone': ['dog', 'bone'],
-  'cat-house': ['cat', 'house'],
-  'boat-fish': ['fish', 'boat'],
-};
-const PAIR_ORDER = Object.keys(PAIRS);
+const PAIRS = TRIP_PAIRS;
+// Mixed: a different trip on each row
+const PAIR_ORDER = TRIP_KEYS.filter((k) => k !== 'boat-fish');
 const MIXED_STYLES: LineStyle[] = ['straight', 'wave', 'zigzag', 'loops'];
 
 export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, width, height }) => {
@@ -31,6 +28,7 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
   const pathCount = Math.min(maxPaths, Math.max(1, Number(s.pathCount) || 2));
   const pathStyle: string = s.pathStyle || 'wave';
   const pairKey: string = s.pair || 'bee-flower';
+  const mixedOrder = createRandom(blockSeed(instance.instanceId, s)).shuffle(PAIR_ORDER);
 
   // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
   const sp = blockSpacing(size, height);
@@ -41,7 +39,7 @@ export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
 
   const rows = Array.from({ length: pathCount }, (_, i) => {
     const y = top + rowH * (i + 0.5);
-    const pair = pairKey === 'mixed' ? PAIRS[PAIR_ORDER[i % PAIR_ORDER.length]] : PAIRS[pairKey] || PAIRS['bee-flower'];
+    const pair = pairKey === 'mixed' ? PAIRS[mixedOrder[i % mixedOrder.length]] : PAIRS[pairKey] || PAIRS['bee-flower'];
     const style: LineStyle = pathStyle === 'mixed' ? MIXED_STYLES[i % MIXED_STYLES.length] : (pathStyle as LineStyle);
     const startX = paddingX + picSize + 12;
     const endX = width - paddingX - picSize - 12;
@@ -108,11 +106,7 @@ export const TracePathBlockDefinition: BlockDefinition = {
       label: 'Who goes where',
       type: 'select',
       options: [
-        { label: 'Bee to flower', value: 'bee-flower' },
-        { label: 'Bird to nest', value: 'bird-nest' },
-        { label: 'Dog to bone', value: 'dog-bone' },
-        { label: 'Cat to house', value: 'cat-house' },
-        { label: 'Fish to boat', value: 'boat-fish' },
+        ...tripOptions().filter((o) => o.value !== 'boat-fish'),
         { label: 'A different one each row', value: 'mixed' },
       ],
     },

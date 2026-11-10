@@ -13,14 +13,10 @@ import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
+import { TRIP_PAIRS, tripOptions } from './pictureLibrary';
 import { createRandom, blockSeed, SeededRandom } from '../utils/seededRandom';
 
-const PAIRS: Record<string, [string, string]> = {
-  'bee-flower': ['bee', 'flower'],
-  'bird-nest': ['bird', 'nest'],
-  'dog-bone': ['dog', 'bone'],
-  'cat-house': ['cat', 'house'],
-};
+const PAIRS = TRIP_PAIRS;
 
 interface MazeWalls {
   /** top[r][c]: wall on the top edge of cell (r, c). r runs 0..rows (rows = bottom edge) */
@@ -144,10 +140,7 @@ export const MazeBlockDefinition: BlockDefinition = {
       label: 'Who goes where',
       type: 'select',
       options: [
-        { label: 'Bee to flower', value: 'bee-flower' },
-        { label: 'Bird to nest', value: 'bird-nest' },
-        { label: 'Dog to bone', value: 'dog-bone' },
-        { label: 'Cat to house', value: 'cat-house' },
+        ...tripOptions().filter((o) => o.value !== 'boat-fish'),
       ],
     },
     { key: 'variant', label: 'Mix it up', type: 'number', min: 1, max: 20, step: 1, helperText: 'Change this to get a new maze.' },

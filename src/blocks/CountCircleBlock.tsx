@@ -8,7 +8,7 @@
 
 import React from 'react';
 import { BlockDefinition, BlockRenderProps } from '../types';
-import { KidShape, ShapeType } from './svgShapes';
+import { CountThing, COUNT_PICTURE_OPTIONS } from './svgShapes';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { createRandom, blockSeed } from '../utils/seededRandom';
 import { Instruction } from '../components/Instruction';
@@ -21,7 +21,8 @@ export const CountCircleRenderer: React.FC<BlockRenderProps> = ({
   height,
 }) => {
   const count = Math.min(10, Math.max(1, Number(instance.settings.count) || 4));
-  const shape: ShapeType = instance.settings.shape || 'apples';
+  const shape: string = instance.settings.shape || 'apples';
+  const thingSeed = `${instance.instanceId}|${instance.settings.shape}|${instance.settings.variant ?? ''}`;
 
   // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
   const sp = blockSpacing(size, height);
@@ -67,7 +68,7 @@ export const CountCircleRenderer: React.FC<BlockRenderProps> = ({
       {/* Objects to count */}
       <g className="objects-grid">
         {items.map((item) => (
-          <KidShape key={item.id} type={shape} cx={item.cx} cy={item.cy} size={itemSize} />
+          <CountThing key={item.id} thing={shape} seed={thingSeed} cx={item.cx} cy={item.cy} size={itemSize} />
         ))}
       </g>
 
@@ -150,6 +151,7 @@ export const CountCircleBlockDefinition: BlockDefinition = {
         { label: 'Hearts', value: 'hearts' },
         { label: 'Balloons', value: 'balloons' },
         { label: 'Flowers', value: 'flowers' },
+        ...COUNT_PICTURE_OPTIONS,
       ],
     },
     { key: 'variant', label: 'Mix it up', type: 'number', min: 1, max: 20, step: 1, helperText: 'Change this to move the right answer.' },

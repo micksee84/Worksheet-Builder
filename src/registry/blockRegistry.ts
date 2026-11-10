@@ -28,6 +28,9 @@ import { SpotDifferenceBlockDefinition } from '../blocks/SpotDifferenceBlock';
 import { MazeBlockDefinition } from '../blocks/MazeBlock';
 import { FeelingsBlockDefinition } from '../blocks/FeelingsBlock';
 import { SortItBlockDefinition } from '../blocks/SortItBlock';
+import { OddOneOutBlockDefinition } from '../blocks/OddOneOutBlock';
+import { ShadowMatchBlockDefinition } from '../blocks/ShadowMatchBlock';
+import { ClapSyllablesBlockDefinition } from '../blocks/ClapSyllablesBlock';
 
 // Central list of all available block definitions
 // Order here is the order in the library, within each development area.
@@ -41,6 +44,7 @@ export const REGISTERED_BLOCKS: BlockDefinition[] = [
   WordTracingBlockDefinition,
   BeginningSoundsBlockDefinition,
   RhymeMatchBlockDefinition,
+  ClapSyllablesBlockDefinition,
   // Early maths
   CountCircleBlockDefinition,
   QuickDotsBlockDefinition,
@@ -51,6 +55,8 @@ export const REGISTERED_BLOCKS: BlockDefinition[] = [
   // Thinking and problem solving
   SpotDifferenceBlockDefinition,
   MazeBlockDefinition,
+  OddOneOutBlockDefinition,
+  ShadowMatchBlockDefinition,
   // Social and emotional
   FeelingsBlockDefinition,
   // Science and our world

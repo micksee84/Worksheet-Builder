@@ -15,13 +15,23 @@ import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
 import { Picture } from './pictures';
 import { KidShape } from './svgShapes';
+import { pickDistinct, picturesIn, tooAlike } from './pictureLibrary';
+import { hasPictureArt } from './pictures';
 import { createRandom, blockSeed } from '../utils/seededRandom';
 
-const SCENES: Record<string, string[]> = {
-  garden: ['flower', 'bee', 'butterfly', 'tree', 'bug', 'leaf', 'sun', 'bird', 'nest'],
-  sea: ['fish', 'whale', 'crab', 'boat', 'waves', 'sun', 'cloud', 'bird', 'star'],
-  night: ['moon', 'star', 'owl', 'house', 'tree', 'cloud', 'cat', 'heart', 'kite'],
+const SCENES: Record<string, { label: string; pool: string[] }> = {
+  garden: { label: 'In the garden', pool: picturesIn('garden', (t, n) => !['rain-cloud', 'puddle', 'mountain', 'rock', 'log'].includes(n)) },
+  sea: { label: 'By the sea', pool: picturesIn('ocean').concat(['boat', 'sun', 'cloud', 'sandcastle', 'sand-pail']) },
+  night: { label: 'At night', pool: ['moon', 'star', 'owl', 'house', 'tree', 'cloud', 'cat', 'bat', 'kite', 'mouse', 'lamp', 'bed'] },
+  farm: { label: 'On the farm', pool: picturesIn('farm').concat(['tree', 'sun', 'cloud', 'egg']) },
+  wild: { label: 'Wild animals', pool: picturesIn('wild').concat(['tree', 'sun']) },
+  woodland: { label: 'In the woods', pool: picturesIn('woodland', (t, n) => n !== 'dog' && n !== 'cat').concat(['tree', 'acorn', 'leaf', 'mountain']) },
+  home: { label: 'At home', pool: picturesIn('home', (t, n) => n !== 'house') },
+  food: { label: 'Picnic food', pool: picturesIn('food') },
+  toys: { label: 'Playtime', pool: picturesIn('toys') },
+  go: { label: 'Things that go', pool: picturesIn('go').concat(['cloud', 'tree']) },
 };
+for (const scene of Object.values(SCENES)) scene.pool = scene.pool.filter(hasPictureArt);
 
 interface SceneItem {
   name: string;
@@ -35,13 +45,14 @@ type Change = 'missing' | 'swapped' | 'resized';
 export const SpotDifferenceRenderer: React.FC<BlockRenderProps> = ({ instance, size, width, height }) => {
   const s = instance.settings;
   const differences = [2, 3, 5].includes(Number(s.differences)) ? Number(s.differences) : 3;
-  const pool = SCENES[s.scene] || SCENES.garden;
+  const pool = (SCENES[s.scene] || SCENES.garden).pool;
   const rand = createRandom(blockSeed(instance.instanceId, s));
 
   // Lay items out on a loose 3 x 3 grid with a little wobble, so nothing overlaps
   const itemCount = Math.max(differences + 3, 7);
   const cellsAll = rand.shuffle(Array.from({ length: 9 }, (_, i) => i)).slice(0, itemCount);
-  const names = rand.shuffle(pool);
+  // No two look-alikes in one scene, or a swap could be impossible to spot
+  const names = pickDistinct(rand, pool, itemCount);
   const items: SceneItem[] = cellsAll.map((cell, i) => ({
     name: names[i % names.length],
     x: ((cell % 3) + 0.5 + (rand.next() - 0.5) * 0.22) / 3,
@@ -57,7 +68,7 @@ export const SpotDifferenceRenderer: React.FC<BlockRenderProps> = ({ instance, s
   const swaps = new Map<number, string>();
   const swapFor = (name: string) => {
     const used = new Set([...items.map((it) => it.name), ...swaps.values()]);
-    const fresh = pool.filter((n) => !used.has(n));
+    const fresh = pool.filter((n) => !used.has(n) && !tooAlike(n, name));
     // Fall back to any other picture in the scene if every one is already on the page
     return fresh.length ? rand.pick(fresh) : rand.pick(pool.filter((n) => n !== name));
   };
@@ -143,11 +154,7 @@ export const SpotDifferenceBlockDefinition: BlockDefinition = {
       key: 'scene',
       label: 'Scene',
       type: 'select',
-      options: [
-        { label: 'In the garden', value: 'garden' },
-        { label: 'By the sea', value: 'sea' },
-        { label: 'At night', value: 'night' },
-      ],
+      options: Object.entries(SCENES).map(([value, scene]) => ({ label: scene.label, value })),
     },
     { key: 'variant', label: 'Mix it up', type: 'number', min: 1, max: 20, step: 1, helperText: 'Change this to get a new picture.' },
   ],

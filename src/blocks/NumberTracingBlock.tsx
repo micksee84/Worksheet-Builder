@@ -13,7 +13,7 @@ import { HandwritingGuideLines } from '../components/HandwritingGuideLines';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing, HALF_SPACE } from '../utils/spacing';
-import { KidShape, ShapeType } from './svgShapes';
+import { CountThing, COUNT_PICTURE_OPTIONS } from './svgShapes';
 import { handwrittenWidth, HandwrittenText } from '../components/HandwrittenText';
 
 export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
@@ -23,7 +23,8 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
   height,
 }) => {
   const num = Math.min(10, Math.max(0, Number.isFinite(Number(instance.settings.number)) ? Number(instance.settings.number) : 5));
-  const shape: ShapeType = instance.settings.shape || 'stars';
+  const shape: string = instance.settings.shape || 'stars';
+  const thingSeed = `${instance.instanceId}|${instance.settings.shape}|${instance.settings.variant ?? ''}`;
 
   // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
   const sp = blockSpacing(size, height);
@@ -100,7 +101,7 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
           </text>
         ) : (
           shapes.map((s) => (
-            <KidShape key={s.id} type={shape} cx={s.cx} cy={s.cy} size={itemSize} />
+            <CountThing key={s.id} thing={shape} seed={thingSeed} cx={s.cx} cy={s.cy} size={itemSize} />
           ))
         )}
       </g>
@@ -162,6 +163,7 @@ export const NumberTracingBlockDefinition: BlockDefinition = {
         { label: 'Balloons', value: 'balloons' },
         { label: 'Flowers', value: 'flowers' },
         { label: 'Circles', value: 'circles' },
+        ...COUNT_PICTURE_OPTIONS,
       ],
     },
   ],

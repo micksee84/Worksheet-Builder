@@ -30,7 +30,7 @@ interface PlaceholderProps {
 /** The template grid in a 100 x 100 frame. */
 export const ArtPlaceholder: React.FC<PlaceholderProps> = ({ label, line }) => {
   const w = Math.max(0.6, line);
-  const tiny = line > 5; // printed under about 25pt: just the outline, circle and cross
+  const tiny = line > 2.4; // printed under about 30pt: just the outline, circle and cross
   const g = { fill: 'none', stroke: GRID, strokeWidth: w };
   return (
     <g className="art-placeholder">

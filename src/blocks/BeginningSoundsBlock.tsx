@@ -12,32 +12,36 @@ import { BlockDefinition, BlockRenderProps } from '../types';
 import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
-import { Picture, PICTURES } from './pictures';
+import { Picture, PICTURES, hasPictureArt } from './pictures';
 import { createRandom, blockSeed } from '../utils/seededRandom';
 
 const LETTER_SETS: Record<string, string[]> = {
   'b-d-m-s': ['b', 'd', 'm', 's'],
   'c-f-h-l': ['c', 'f', 'h', 'l'],
   'p-v-w-n': ['p', 'v', 'w', 'n', 'm'],
-  vowels: ['a', 'e'],
-  mixed: ['b', 'c', 'd', 'f', 'h', 'l', 'm', 's', 'w', 'p', 'a', 'e'],
+  'g-j-k-r': ['g', 'j', 'k', 'r'],
+  't-y-z-q': ['t', 'y', 'z', 'q'],
+  vowels: ['a', 'e', 'i', 'o'],
+  // Every letter with at least two drawn pictures (filtered below)
+  mixed: 'abcdefghijklmnopqrstuvwxyz'.split(''),
 };
 // Letters that sound alike to young ears: never offer both as choices
 const CONFUSABLE: Record<string, string> = { c: 'k', k: 'c' };
 const DISTRACTOR_POOL = ['b', 'c', 'd', 'f', 'h', 'l', 'm', 'n', 'p', 's', 't', 'w'];
 
+/** Drawn pictures only: placeholders never show up as a puzzle */
 function picturesStartingWith(sound: string): string[] {
   return Object.entries(PICTURES)
-    .filter(([, p]) => p.sound === sound)
+    .filter(([name, p]) => p.sound === sound && hasPictureArt(name) && name !== 'icecream')
     .map(([name]) => name);
 }
 
 export const BeginningSoundsRenderer: React.FC<BlockRenderProps> = ({ instance, size, width, height }) => {
   const s = instance.settings;
-  const mode: 'letters' | 'pictures' = s.mode === 'pictures' ? 'pictures' : 'letters';
+  const mode: 'letters' | 'pictures' | 'write' = s.mode === 'pictures' || s.mode === 'write' ? s.mode : 'letters';
   const maxRows = size === 'quarter' ? 3 : size === 'half' ? 3 : 6;
   const rowCount = Math.min(maxRows, Math.max(1, Number(s.rows) || 3));
-  const letters = (LETTER_SETS[s.letterSet] || LETTER_SETS.mixed).filter((l) => picturesStartingWith(l).length > 0);
+  const letters = (LETTER_SETS[s.letterSet] || LETTER_SETS.mixed).filter((l) => picturesStartingWith(l).length > 1);
   const rand = createRandom(blockSeed(instance.instanceId, s));
 
   // Pick a different sound for each row where possible
@@ -57,7 +61,7 @@ export const BeginningSoundsRenderer: React.FC<BlockRenderProps> = ({ instance, 
     const others = rand
       .shuffle(
         Object.entries(PICTURES)
-          .filter(([, p]) => p.sound && p.sound !== sound && p.sound !== CONFUSABLE[sound])
+          .filter(([name, p]) => p.sound && p.sound !== sound && p.sound !== CONFUSABLE[sound] && hasPictureArt(name))
           .map(([name]) => name)
       )
       .slice(0, 2);
@@ -83,7 +87,11 @@ export const BeginningSoundsRenderer: React.FC<BlockRenderProps> = ({ instance, 
         cue="talk"
         size={size}
         text={
-          mode === 'letters'
+          mode === 'write'
+            ? size === 'quarter'
+              ? 'Write the first sound.'
+              : 'Say the name. Write the sound it starts with.'
+            : mode === 'letters'
             ? size === 'quarter'
               ? 'Circle the first sound.'
               : 'Say the name. Circle the sound it starts with.'
@@ -106,7 +114,15 @@ export const BeginningSoundsRenderer: React.FC<BlockRenderProps> = ({ instance, 
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-            {row.choices.map((choice, j) => {
+            {mode === 'write' && (
+              <g>
+                {/* One writing box: baseline and a dashed midline, like the handwriting rows */}
+                <rect x={choicesLeft} y={cy - rowH * 0.36} width={Math.min(choicesWidth, rowH * 0.9)} height={rowH * 0.72} rx="12" fill="#FFFFFF" stroke="#2D2200" strokeWidth="2.25" />
+                <line x1={choicesLeft + 8} y1={cy} x2={choicesLeft + Math.min(choicesWidth, rowH * 0.9) - 8} y2={cy} stroke="#DDD9C4" strokeWidth="1.5" strokeDasharray="5 4" />
+                <line x1={choicesLeft + 8} y1={cy + rowH * 0.22} x2={choicesLeft + Math.min(choicesWidth, rowH * 0.9) - 8} y2={cy + rowH * 0.22} stroke="#2D2200" strokeWidth="1.5" />
+              </g>
+            )}
+            {mode !== 'write' && row.choices.map((choice, j) => {
               const cx = choicesLeft + choiceStep * (j + 0.5);
               return mode === 'letters' ? (
                 <text
@@ -152,6 +168,7 @@ export const BeginningSoundsBlockDefinition: BlockDefinition = {
       options: [
         { label: 'Letters', value: 'letters' },
         { label: 'Pictures only (easier, no letters)', value: 'pictures' },
+        { label: 'Write the letter (stretch)', value: 'write' },
       ],
     },
     {
@@ -163,7 +180,9 @@ export const BeginningSoundsBlockDefinition: BlockDefinition = {
         { label: 'b, d, m, s', value: 'b-d-m-s' },
         { label: 'c, f, h, l', value: 'c-f-h-l' },
         { label: 'm, n, p, v, w', value: 'p-v-w-n' },
-        { label: 'Short a and e', value: 'vowels' },
+        { label: 'g, j, k, r', value: 'g-j-k-r' },
+        { label: 't, y, z, q', value: 't-y-z-q' },
+        { label: 'Short a, e, i, o', value: 'vowels' },
       ],
     },
     { key: 'rows', label: 'Number of pictures', type: 'number', min: 1, max: 6, step: 1, helperText: 'Quarter and half spaces show up to 3.' },
