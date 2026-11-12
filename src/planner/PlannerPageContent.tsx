@@ -10,7 +10,7 @@
 
 import React from 'react';
 import { PageSizeId, PlannerData, PlannerItem } from '../types';
-import { Picture } from '../blocks/pictures';
+import { PlannerGraphic } from './plannerIcons';
 import { FRAME_STROKE } from '../utils/spacing';
 import { plannerGeometry, ItemBox } from './plannerLayout';
 import { hourLabel, STEP, timeLabel } from './plannerModel';
@@ -42,7 +42,7 @@ function RowCard({ it, b, p, big = false }: { it: PlannerItem; b: ItemBox; p: Pl
   return (
     <g>
       <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={Math.min(10, b.h / 3)} fill="#FFFFFF" stroke={INK} strokeWidth={1.5} />
-      <Picture name={it.picture} cx={b.x + pad + pic / 2} cy={cy} size={pic} />
+      <PlannerGraphic picture={it.picture} cx={b.x + pad + pic / 2} cy={cy} size={pic} />
       <text x={textX} y={twoLines ? cy - 2 : cy + size * 0.36} fill={INK} fontSize={size} fontWeight={800} fontFamily={FONT}>
         {it.label}
       </text>
@@ -74,7 +74,7 @@ function StackCard({ it, b, p }: { it: PlannerItem; b: ItemBox; p: PlannerData }
     return (
       <g>
         <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={Math.min(8, b.h / 3)} fill="#FFFFFF" stroke={INK} strokeWidth={1.25} />
-        <Picture name={it.picture} cx={b.x + 3 + pic / 2} cy={b.y + b.h / 2} size={pic} />
+        <PlannerGraphic picture={it.picture} cx={b.x + 3 + pic / 2} cy={b.y + b.h / 2} size={pic} />
         <text x={textX} y={b.y + b.h / 2 + 3} fill={INK} fontSize={fit(it.label, b.x + b.w - textX - tick - 6, 9, 5.5)} fontWeight={800} fontFamily={FONT}>
           {it.label}
         </text>
@@ -88,7 +88,7 @@ function StackCard({ it, b, p }: { it: PlannerItem; b: ItemBox; p: PlannerData }
   return (
     <g>
       <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={8} fill="#FFFFFF" stroke={INK} strokeWidth={1.5} />
-      <Picture name={it.picture} cx={b.x + b.w / 2} cy={b.y + 4 + pic / 2} size={pic} />
+      <PlannerGraphic picture={it.picture} cx={b.x + b.w / 2} cy={b.y + 4 + pic / 2} size={pic} />
       <text
         x={b.x + b.w / 2 - tick / 2}
         y={b.y + b.h - 6}
@@ -195,7 +195,7 @@ export const PlannerPageContent: React.FC<{ planner: PlannerData; pageSize: Page
             </text>
             {it ? (
               <>
-                <Picture name={it.picture} cx={pn.x + pn.w / 2} cy={pn.y + 70 + pic / 2} size={pic} />
+                <PlannerGraphic picture={it.picture} cx={pn.x + pn.w / 2} cy={pn.y + 70 + pic / 2} size={pic} />
                 <text x={pn.x + pn.w / 2} y={pn.y + pn.h - 28} textAnchor="middle" fill={INK} fontSize={fit(it.label, pn.w - 40, 28)} fontWeight={800} fontFamily={FONT}>
                   {it.label}
                 </text>

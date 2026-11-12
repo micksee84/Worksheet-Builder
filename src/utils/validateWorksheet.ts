@@ -7,6 +7,7 @@
  */
 
 import type { PlannerData, PlannerItem } from '../types';
+import { LEGACY_TO_ICON, PLANNER_ICONS } from '../planner/plannerIcons';
 import { Worksheet, Page, Slot, PageLayoutPreset, BlockInstance } from '../types';
 import { PAGE_SPECS, CHARACTERS } from '../config/appConfig';
 import { LAYOUT_PRESETS, createSlotsForPreset } from './layoutPresets';
@@ -118,7 +119,15 @@ function validatePlanner(raw: unknown): PlannerData | null {
     .map((it: Record<string, any>) => ({
       id: it.id,
       label: cleanString(it.label, 'Activity').slice(0, 40),
-      picture: typeof it.picture === 'string' ? it.picture : 'star',
+      // Planners saved before the icon set switch their pictures to the matching icon
+      picture:
+        typeof it.picture !== 'string'
+          ? 'ph:Star'
+          : it.picture.startsWith('ph:')
+          ? (PLANNER_ICONS[it.picture.slice(3)] ? it.picture : 'ph:Star')
+          : LEGACY_TO_ICON[it.picture]
+          ? `ph:${LEGACY_TO_ICON[it.picture]}`
+          : it.picture,
       ...(typeof it.start === 'number' ? { start: num(it.start, 0, 24 * 60, 0) } : {}),
       ...(typeof it.minutes === 'number' ? { minutes: num(it.minutes, 30, 12 * 60, 30) } : {}),
       ...(DAY_KEYS.has(it.day) ? { day: it.day } : {}),

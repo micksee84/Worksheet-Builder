@@ -745,7 +745,7 @@ export default function App() {
   const handleAddCustomActivity = useCallback(() => {
     const page = worksheetRef.current.pages[activePageIndex];
     if (!page?.planner) return;
-    const item: PlannerItem = { id: newItemId(), label: 'My activity', picture: 'star', minutes: 30 };
+    const item: PlannerItem = { id: newItemId(), label: 'My activity', picture: 'ph:Star', minutes: 30 };
     updatePlanner(page.id, (p) => addItem(p, item));
     setPlannerSel({ pageId: page.id, itemId: item.id });
     setIsPlannerPanelOpen(true);
@@ -1296,7 +1296,7 @@ export default function App() {
         <DragOverlay modifiers={[followPointer]}>
           {activeDragItem && (activeDragItem.type === 'planner-activity' || activeDragItem.type === 'planner-item') && (
             <div className={`w-56 bg-white border-2 ${dragOffPage ? 'border-[#E52311]' : 'border-[#009BD9]'} rounded-xl p-2 shadow-2xl opacity-95 select-none pointer-events-none flex items-center gap-2.5`}>
-              {dragOffPage ? <Trash2 className="w-5 h-5 text-[#E52311] shrink-0 m-2.5" /> : <PictureThumb name={activeDragItem.picture ?? 'star'} size={40} />}
+              {dragOffPage ? <Trash2 className="w-5 h-5 text-[#E52311] shrink-0 m-2.5" /> : <PictureThumb picture={activeDragItem.picture ?? 'ph:Star'} size={40} />}
               <div className="min-w-0">
                 <h4 className="text-sm font-extrabold text-[#2D2200] truncate">{dragOffPage ? 'Release to remove' : activeDragItem.label}</h4>
                 <p className="text-xs text-[#6B5838] truncate">{activeDragItem.type === 'planner-item' ? 'Move it, or drag off the page to remove' : 'Drop it on the planner'}</p>

@@ -10,18 +10,13 @@
 import React, { useMemo, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Plus, Search, X, PanelLeftClose, PanelLeftOpen, Pencil } from '../components/icons';
-import { Picture } from '../blocks/pictures';
+import { GraphicThumb } from './plannerIcons';
 import { ACTIVITIES, ACTIVITY_GROUPS, PlannerActivity } from './activities';
 import { PlannerKind } from '../types';
 
 const minutesLabel = (m: number) => (m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`);
 
-/** A picture drawn into its own small SVG, for cards and pickers */
-export const PictureThumb: React.FC<{ name: string; size?: number }> = ({ name, size = 40 }) => (
-  <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true" className="shrink-0">
-    <Picture name={name} cx={50} cy={50} size={100} />
-  </svg>
-);
+export { GraphicThumb as PictureThumb } from './plannerIcons';
 
 const ActivityCard: React.FC<{ activity: PlannerActivity; onAdd: (id: string) => void; slim: boolean; showLength: boolean }> = ({
   activity,
@@ -42,7 +37,7 @@ const ActivityCard: React.FC<{ activity: PlannerActivity; onAdd: (id: string) =>
       className={`group flex items-center gap-2.5 bg-white border border-[#E2DEC9] rounded-xl hover:border-[#2D2200] hover:shadow-[2px_2px_0_#2D2200] transition-all select-none ${slim ? 'p-2 lg:p-1.5' : 'p-2'}`}
     >
       <div className={`${slim ? 'lg:hidden' : ''}`}>
-        <PictureThumb name={activity.picture} size={40} />
+        <GraphicThumb picture={activity.picture} size={40} />
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-extrabold text-[#2D2200] truncate">{activity.label}</p>
@@ -74,7 +69,7 @@ export const PlannerLibrary: React.FC<{
   const [query, setQuery] = useState('');
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return q ? ACTIVITIES.filter((a) => a.label.toLowerCase().includes(q) || a.picture.includes(q)) : ACTIVITIES;
+    return q ? ACTIVITIES.filter((a) => a.label.toLowerCase().includes(q) || a.picture.toLowerCase().includes(q)) : ACTIVITIES;
   }, [query]);
   const hideWhenSlim = slim ? 'lg:hidden' : '';
 
@@ -152,7 +147,7 @@ export const PlannerLibrary: React.FC<{
             </span>
             <span className="min-w-0">
               <span className="block text-sm font-extrabold text-[#2D2200]">Make your own</span>
-              <span className={`block text-[11px] text-[#6B5838] ${hideWhenSlim}`}>Your words, any picture</span>
+              <span className={`block text-[11px] text-[#6B5838] ${hideWhenSlim}`}>Your words, any icon</span>
             </span>
           </button>
 

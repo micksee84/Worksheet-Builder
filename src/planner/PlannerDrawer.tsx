@@ -11,11 +11,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Trash2, Settings, ArrowUp, ArrowDown, Search, RotateCcw } from '../components/icons';
 import { PlannerData, PlannerItem, PlannerKind } from '../types';
-import { PICTURES, hasPictureArt } from '../blocks/pictures';
-import { DRAWN, labelOf } from '../blocks/pictureLibrary';
-import { PictureThumb } from './PlannerLibrary';
+import { GraphicThumb, ICON_NAMES, PLANNER_ICONS } from './plannerIcons';
 import { daysShown, hourLabel, KIND_LABELS, STEP, timeLabel } from './plannerModel';
-import { PLANNER_ONLY_PICTURES } from './activities';
 
 const field = 'w-full px-3.5 py-2.5 text-sm font-medium text-[#2D2200] bg-white border border-[#E2DEC9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#009BD9] transition-all';
 const Label: React.FC<{ children: React.ReactNode; hint?: string }> = ({ children, hint }) => (
@@ -34,39 +31,39 @@ const Toggle: React.FC<{ checked: boolean; onChange: (v: boolean) => void; label
   </label>
 );
 
-/** Every picture to choose from: the drawn library, plus the planner pictures still to draw */
-const ALL_PICTURES = [...DRAWN, ...Object.keys(PLANNER_ONLY_PICTURES)];
-
-const PicturePicker: React.FC<{ value: string; onChange: (name: string) => void }> = ({ value, onChange }) => {
+/** The icon picker: all planner icons, searchable by the words people use ("teeth", "tv") */
+const IconPicker: React.FC<{ value: string; onChange: (picture: string) => void }> = ({ value, onChange }) => {
   const [q, setQ] = useState('');
   const list = useMemo(() => {
     const term = q.trim().toLowerCase();
-    const found = term ? ALL_PICTURES.filter((n) => n.includes(term) || labelOf(n).includes(term)) : ALL_PICTURES;
-    return found.slice(0, term ? 60 : 40);
+    return term
+      ? ICON_NAMES.filter((n) => n.toLowerCase().includes(term) || PLANNER_ICONS[n].words.includes(term))
+      : ICON_NAMES;
   }, [q]);
   return (
     <div className="space-y-2">
       <div className="relative">
         <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#A39C8E]" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a picture (cat, bus, apple...)" className={`${field} pl-9 py-2 text-xs`} />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find an icon (teeth, bath, park...)" className={`${field} pl-9 py-2 text-xs`} />
       </div>
-      <div className="grid grid-cols-5 gap-1.5 max-h-56 overflow-y-auto p-0.5">
+      <div className="grid grid-cols-6 gap-1.5 max-h-60 overflow-y-auto p-0.5">
         {list.map((n) => (
           <button
             key={n}
             type="button"
-            onClick={() => onChange(n)}
-            title={`${PICTURES[n]?.label ?? labelOf(n)}${hasPictureArt(n) ? '' : ' (still to draw)'}`}
-            aria-pressed={value === n}
+            onClick={() => onChange(`ph:${n}`)}
+            title={PLANNER_ICONS[n].words.split(' ')[0]}
+            aria-label={PLANNER_ICONS[n].words.split(' ')[0]}
+            aria-pressed={value === `ph:${n}`}
             className={`aspect-square rounded-lg bg-white border flex items-center justify-center ${
-              value === n ? 'border-[3px] border-[#009BD9]' : 'border-[#E2DEC9] hover:border-[#2D2200]'
+              value === `ph:${n}` ? 'border-[3px] border-[#009BD9] bg-[#009BD9]/5' : 'border-[#E2DEC9] hover:border-[#2D2200]'
             }`}
           >
-            <PictureThumb name={n} size={44} />
+            <GraphicThumb picture={`ph:${n}`} size={30} />
           </button>
         ))}
+        {list.length === 0 && <p className="col-span-6 text-xs text-[#6B5838] py-4 text-center">No icon for that yet. Try another word.</p>}
       </div>
-      {!q && <p className="text-[11px] text-[#6B5838]">Showing 40 of {ALL_PICTURES.length}. Search to find the rest.</p>}
     </div>
   );
 };
@@ -219,8 +216,8 @@ export const PlannerDrawer: React.FC<{
             )}
 
             <div className="space-y-1.5">
-              <Label hint="Pictures marked still to draw print as a labelled placeholder for now.">Picture</Label>
-              <PicturePicker value={item.picture} onChange={(picture) => onUpdateItem({ picture })} />
+              <Label>Icon</Label>
+              <IconPicker value={item.picture} onChange={(picture) => onUpdateItem({ picture })} />
             </div>
           </>
         ) : (
