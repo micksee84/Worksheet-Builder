@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { X, FolderOpen, Plus, Trash2, FileText, Pencil } from 'lucide-react';
+import { X, FolderOpen, Plus, Trash2, FileText, Pencil } from './icons';
 import {
   LibrarySource,
   SavedWorksheetSummary,

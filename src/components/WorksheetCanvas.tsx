@@ -29,7 +29,7 @@ import {
   Settings2,
   LayoutGrid,
   FileText,
-} from 'lucide-react';
+} from './icons';
 
 interface WorksheetCanvasProps {
   pages: Page[];

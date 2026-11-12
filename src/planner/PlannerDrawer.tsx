@@ -9,7 +9,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Trash2, Settings, ArrowUp, ArrowDown, Search, RotateCcw } from 'lucide-react';
+import { X, Trash2, Settings, ArrowUp, ArrowDown, Search, RotateCcw } from '../components/icons';
 import { PlannerData, PlannerItem, PlannerKind } from '../types';
 import { PICTURES, hasPictureArt } from '../blocks/pictures';
 import { DRAWN, labelOf } from '../blocks/pictureLibrary';

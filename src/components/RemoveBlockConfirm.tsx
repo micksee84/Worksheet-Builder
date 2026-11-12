@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2 } from './icons';
 
 interface RemoveBlockConfirmProps {
   name: string;

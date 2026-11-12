@@ -7,7 +7,7 @@
 import React from 'react';
 import { getAllTemplates, TemplateItem } from '../templates';
 import { Worksheet } from '../types';
-import { X, Sparkles, BookOpen, ArrowRight } from 'lucide-react';
+import { X, Sparkles, BookOpen, ArrowRight } from './icons';
 
 interface TemplateGalleryModalProps {
   isOpen: boolean;

@@ -7,7 +7,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Save } from 'lucide-react';
+import { Save } from './icons';
 
 interface SaveWorksheetDialogProps {
   initialName: string;

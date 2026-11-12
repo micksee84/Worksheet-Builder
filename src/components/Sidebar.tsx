@@ -14,7 +14,7 @@ import React, { useState, useMemo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { getAllBlocks } from '../registry/blockRegistry';
 import { BlockDefinition, BlockCategory } from '../types';
-import { Search, Plus, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Search, Plus, X, PanelLeftClose, PanelLeftOpen } from './icons';
 
 interface SidebarProps {
   onAddBlock: (blockId: string) => void;

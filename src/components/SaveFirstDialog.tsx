@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Save } from 'lucide-react';
+import { Save } from './icons';
 
 interface SaveFirstDialogProps {
   name: string;

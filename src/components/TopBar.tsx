@@ -28,7 +28,7 @@ import {
   Pencil,
   ChevronDown,
   FilePlus2,
-} from 'lucide-react';
+} from './icons';
 import type { SyncStatus } from '../auth/useAccountSync';
 
 export interface TopBarAccount {

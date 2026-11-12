@@ -62,7 +62,7 @@ import { Sidebar } from './components/Sidebar';
 import { WorksheetCanvas } from './components/WorksheetCanvas';
 import { PagesPanel } from './components/PagesPanel';
 import { dropKind, firstFreeSlot, isSlotBlockDrag, moveBlock, SlotBlockDrag } from './utils/blockMoves';
-import { Trash2 } from 'lucide-react';
+import { Trash2 } from './components/icons';
 import { RemoveBlockConfirm } from './components/RemoveBlockConfirm';
 import { SaveWorksheetDialog } from './components/SaveWorksheetDialog';
 import { deleteFromLibrary, isInBrowserLibrary, isUnnamed, LibrarySource, loadFromLibrary, saveToLibrary } from './utils/worksheetLibrary';

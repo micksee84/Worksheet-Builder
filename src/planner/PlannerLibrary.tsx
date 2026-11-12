@@ -9,7 +9,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Plus, Search, X, PanelLeftClose, PanelLeftOpen, Pencil } from 'lucide-react';
+import { Plus, Search, X, PanelLeftClose, PanelLeftOpen, Pencil } from '../components/icons';
 import { Picture } from '../blocks/pictures';
 import { ACTIVITIES, ACTIVITY_GROUPS, PlannerActivity } from './activities';
 import { PlannerKind } from '../types';

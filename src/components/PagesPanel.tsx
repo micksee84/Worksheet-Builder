@@ -16,7 +16,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { Page, PageSizeId } from '../types';
 import { pageDims } from '../config/appConfig';
 import { WorksheetPageSvg } from './WorksheetPageSvg';
-import { ArrowDown, ArrowUp, Copy, PanelLeftClose, PanelLeftOpen, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Copy, PanelLeftClose, PanelLeftOpen, Plus, Trash2 } from './icons';
 
 interface PagesPanelProps {
   pages: Page[];

@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useMemo } from 'react';
-import { X } from 'lucide-react';
+import { X } from '../components/icons';
 import { Page, PageSizeId, PlannerKind } from '../types';
 import { pageDims } from '../config/appConfig';
 import { WorksheetPageSvg } from '../components/WorksheetPageSvg';

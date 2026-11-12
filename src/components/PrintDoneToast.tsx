@@ -7,7 +7,7 @@
  */
 
 import React, { useEffect } from 'react';
-import { BookOpen, Download, Printer, X } from 'lucide-react';
+import { BookOpen, Download, Printer, X } from './icons';
 
 export type PrintDoneKind = 'print' | 'pdf';
 

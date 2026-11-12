@@ -10,7 +10,7 @@
 import React, { useEffect, useRef } from 'react';
 import { BlockInstance, BlockDefinition, CharacterCorner, Slot } from '../types';
 import { CHARACTERS, CharacterId, FEATURES, assetUrl } from '../config/appConfig';
-import { X, Trash2, Settings, Smile } from 'lucide-react';
+import { X, Trash2, Settings, Smile } from './icons';
 
 interface BlockSettingsDrawerProps {
   isOpen: boolean;
