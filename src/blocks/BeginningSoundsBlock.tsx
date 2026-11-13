@@ -39,8 +39,8 @@ function picturesStartingWith(sound: string): string[] {
 export const BeginningSoundsRenderer: React.FC<BlockRenderProps> = ({ instance, size, width, height }) => {
   const s = instance.settings;
   const mode: 'letters' | 'pictures' | 'write' = s.mode === 'pictures' || s.mode === 'write' ? s.mode : 'letters';
-  const maxRows = size === 'quarter' ? 3 : size === 'half' ? 3 : 6;
-  const rowCount = Math.min(maxRows, Math.max(1, Number(s.rows) || 3));
+  // Up to 3 in a quarter or half space; a full space shows twice as many
+  const rowCount = Math.min(3, Math.max(1, Number(s.rows) || 3)) * (size === 'full' ? 2 : 1);
   const letters = (LETTER_SETS[s.letterSet] || LETTER_SETS.mixed).filter((l) => picturesStartingWith(l).length > 1);
   const rand = createRandom(blockSeed(instance.instanceId, s));
 
@@ -185,7 +185,7 @@ export const BeginningSoundsBlockDefinition: BlockDefinition = {
         { label: 'Short a, e, i, o', value: 'vowels' },
       ],
     },
-    { key: 'rows', label: 'Number of pictures', type: 'number', min: 1, max: 6, step: 1, helperText: 'Quarter and half spaces show up to 3.' },
+    { key: 'rows', label: 'Number of pictures', type: 'number', min: 1, max: 3, step: 1, helperText: 'Full spaces show twice as many.' },
     { key: 'variant', label: 'Mix it up', type: 'number', min: 1, max: 20, step: 1, helperText: 'Change this to get different pictures.' },
   ],
   defaultSettings: { mode: 'letters', letterSet: 'mixed', rows: 3, variant: 1 },

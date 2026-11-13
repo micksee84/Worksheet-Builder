@@ -48,8 +48,8 @@ const TRICKY: [string, string][] = [
 
 export const OddOneOutRenderer: React.FC<BlockRenderProps> = ({ instance, size, width, height }) => {
   const s = instance.settings;
-  const maxRows = size === 'full' ? 4 : 2;
-  const rowCount = Math.min(maxRows, Math.max(1, Number(s.rows) || 2));
+  // Up to 2 rows in a quarter or half space; a full space shows twice as many
+  const rowCount = Math.min(2, Math.max(1, Number(s.rows) || 2)) * (size === 'full' ? 2 : 1);
   const rand = createRandom(blockSeed(instance.instanceId, s));
   const pairs = rand.shuffle(s.level === 'tricky' ? TRICKY : EASY);
 
@@ -113,7 +113,7 @@ export const OddOneOutBlockDefinition: BlockDefinition = {
         { label: 'Tricky (think about it)', value: 'tricky' },
       ],
     },
-    { key: 'rows', label: 'Number of rows', type: 'number', min: 1, max: 4, step: 1, helperText: 'Quarter and half spaces show up to 2.' },
+    { key: 'rows', label: 'Number of rows', type: 'number', min: 1, max: 2, step: 1, helperText: 'Full spaces show twice as many.' },
     { key: 'variant', label: 'Mix it up', type: 'number', min: 1, max: 20, step: 1, helperText: 'Change this to get different pictures.' },
   ],
   defaultSettings: { level: 'easy', rows: 2, variant: 1 },

@@ -43,7 +43,7 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
   // Big numerals in Sunshine Print: a solid one to copy and a dotted one to trace.
   // Height fills the band above the practice line; "10" gets a little smaller.
   const numText = String(num);
-  const bigH = Math.min(topSectionHeight * 0.82, isQuarter ? 60 : 84) * (numText.length > 1 ? 0.85 : 1);
+  const bigH = Math.min(topSectionHeight * 0.82, isQuarter ? 60 : size === 'half' ? 84 : 170) * (numText.length > 1 ? 0.85 : 1);
   const numeralWidth = handwrittenWidth(numText, bigH);
   const numeralGap = Math.max(18, bigH * 0.35);
   const bigTop = sp.contentTop + (topSectionHeight - bigH) / 2;
@@ -60,7 +60,7 @@ export const NumberTracingRenderer: React.FC<BlockRenderProps> = ({
 
   const cols = Math.min(5, Math.max(2, Math.ceil(num / 2)));
   const rows = Math.max(1, Math.ceil(num / cols));
-  const itemSize = Math.min(38, Math.max(18, (itemsAreaWidth / cols) * 0.7), (itemsAreaHeight / rows) * 0.8);
+  const itemSize = Math.min(size === 'full' ? 64 : 38, Math.max(18, (itemsAreaWidth / cols) * 0.7), (itemsAreaHeight / rows) * 0.8);
 
   const shapes = Array.from({ length: num }, (_, i) => {
     const colIdx = i % cols;

@@ -97,7 +97,8 @@ export const SortItRenderer: React.FC<BlockRenderProps> = ({ instance, size, wid
   const theme = THEMES[s.theme] || THEMES['sky-sea'];
   const rand = createRandom(blockSeed(instance.instanceId, s));
   const maxItems = size === 'quarter' ? 4 : 8;
-  const wanted = Math.min(maxItems, Math.max(2, Number(s.items) || 4));
+  // A full space shows twice as many pictures (up to 8)
+  const wanted = Math.min(maxItems, Math.max(2, Number(s.items) || 4) * (size === 'full' ? 2 : 1));
 
   // Take drawn pictures from each group in turn so no group is empty
   const headers = theme.groups.map(headerOf);
@@ -117,18 +118,19 @@ export const SortItRenderer: React.FC<BlockRenderProps> = ({ instance, size, wid
   const top = sp.contentTop;
   const usableW = width - paddingX * 2;
   const usableH = sp.contentBottom - top;
-  const perRow = items.length > 4 && size !== 'full' ? Math.ceil(items.length / 2) : items.length;
+  // More than 4 pictures go in two rows; a full space always has room for them
+  const perRow = items.length > 4 ? Math.ceil(items.length / 2) : items.length;
   const itemRows = Math.ceil(items.length / perRow);
   const itemsH = usableH * 0.5;
   const colW = usableW / perRow;
-  const picSize = Math.min(colW * 0.7, itemsH / itemRows - 18, 72);
+  const picSize = Math.min(colW * 0.7, itemsH / itemRows - 18, size === 'full' ? 96 : 72);
 
   const groupsTop = top + itemsH + 16;
   const groupH = top + usableH - groupsTop;
   const groupGap = 16;
   const groupCount = theme.groups.length;
   const groupW = (usableW - groupGap * (groupCount - 1)) / groupCount;
-  const headerPic = Math.min(groupH * 0.45, 56);
+  const headerPic = Math.min(groupH * 0.45, size === 'full' ? 80 : 56);
 
   return (
     <g className="sort-it-block">
@@ -192,7 +194,7 @@ export const SortItBlockDefinition: BlockDefinition = {
       type: 'select',
       options: Object.entries(THEMES).map(([value, t]) => ({ label: t.label, value })),
     },
-    { key: 'items', label: 'Number of pictures', type: 'number', min: 2, max: 8, step: 1, helperText: 'Quarter spaces show up to 4. Some themes have fewer pictures.' },
+    { key: 'items', label: 'Number of pictures', type: 'number', min: 2, max: 8, step: 1, helperText: 'Quarter spaces show up to 4; full spaces show twice as many. Some themes have fewer pictures.' },
     { key: 'variant', label: 'Mix it up', type: 'number', min: 1, max: 20, step: 1, helperText: 'Change this to shuffle the pictures.' },
   ],
   defaultSettings: { theme: 'sky-sea', items: 4, variant: 1 },

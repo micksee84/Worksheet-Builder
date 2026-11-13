@@ -30,8 +30,8 @@ export const PatternNextRenderer: React.FC<BlockRenderProps> = ({ instance, size
   const patternKey: string = s.pattern === 'mixed' ? 'mixed' : PATTERNS[s.pattern] ? s.pattern : 'AB';
   const usePictures = s.theme !== 'shapes';
   const picturePool = picturesIn(s.theme === 'pictures' ? 'mixed' : s.theme);
-  const maxRows = size === 'full' ? 5 : 3;
-  const rowCount = Math.min(maxRows, Math.max(1, Number(s.rows) || 3));
+  // Up to 3 rows in a quarter or half space; a full space shows twice as many
+  const rowCount = Math.min(3, Math.max(1, Number(s.rows) || 3)) * (size === 'full' ? 2 : 1);
   const rand = createRandom(blockSeed(instance.instanceId, s));
 
   const shown = size === 'quarter' ? 4 : 6;
@@ -136,7 +136,7 @@ export const PatternNextBlockDefinition: BlockDefinition = {
         { label: 'Counting shapes', value: 'shapes' },
       ],
     },
-    { key: 'rows', label: 'Number of rows', type: 'number', min: 1, max: 5, step: 1, helperText: 'Quarter and half spaces show up to 3.' },
+    { key: 'rows', label: 'Number of rows', type: 'number', min: 1, max: 3, step: 1, helperText: 'Full spaces show twice as many.' },
     { key: 'variant', label: 'Mix it up', type: 'number', min: 1, max: 20, step: 1, helperText: 'Change this to get different shapes.' },
   ],
   defaultSettings: { pattern: 'AB', theme: 'pictures', rows: 3, variant: 1 },

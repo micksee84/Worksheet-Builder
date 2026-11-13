@@ -50,8 +50,8 @@ export const CompareSizeRenderer: React.FC<BlockRenderProps> = ({ instance, size
   const s = instance.settings;
   const question: string = QUESTIONS[s.question] ? s.question : 'biggest';
   const itemCount = Number(s.items) === 2 ? 2 : 3;
-  const maxRows = size === 'full' ? 4 : 2;
-  const rowCount = Math.min(maxRows, Math.max(1, Number(s.rows) || 2));
+  // Up to 2 rows in a quarter or half space; a full space shows twice as many
+  const rowCount = Math.min(2, Math.max(1, Number(s.rows) || 2)) * (size === 'full' ? 2 : 1);
   const rand = createRandom(blockSeed(instance.instanceId, s));
   // Sizes as a share of the biggest. Two items: a clear difference. Three: closer together.
   const scales = itemCount === 2 ? [1, 0.5] : [1, 0.72, 0.46];
@@ -175,7 +175,7 @@ export const CompareSizeBlockDefinition: BlockDefinition = {
         { label: '3 (stretch)', value: 3 },
       ],
     },
-    { key: 'rows', label: 'Number of rows', type: 'number', min: 1, max: 4, step: 1, helperText: 'Quarter and half spaces show up to 2.' },
+    { key: 'rows', label: 'Number of rows', type: 'number', min: 1, max: 2, step: 1, helperText: 'Full spaces show twice as many.' },
     { key: 'variant', label: 'Mix it up', type: 'number', min: 1, max: 20, step: 1, helperText: 'Change this to get different pictures.' },
   ],
   defaultSettings: { question: 'biggest', items: 3, rows: 2, pictureTheme: 'mixed', variant: 1 },

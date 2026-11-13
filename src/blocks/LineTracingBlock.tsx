@@ -33,7 +33,8 @@ export const LineTracingRenderer: React.FC<BlockRenderProps> = ({
 }) => {
   const lineStyle: LineStyle = instance.settings.lineStyle || 'wave';
   const requestedLines = Number(instance.settings.lineCount) || (size === 'quarter' ? 3 : 4);
-  const lineCount = Math.min(6, Math.max(2, requestedLines));
+  // A full space shows twice the lines of a half space
+  const lineCount = Math.min(size === 'full' ? 8 : 6, Math.max(2, requestedLines) * (size === 'full' ? 2 : 1));
 
   // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
   const sp = blockSpacing(size, height);
@@ -111,7 +112,7 @@ export const LineTracingBlockDefinition: BlockDefinition = {
       min: 2,
       max: 6,
       step: 1,
-      helperText: 'How many tracing lines to display in this block.',
+      helperText: 'Full spaces show twice as many (up to 8).',
     },
     {
       key: 'complexity',

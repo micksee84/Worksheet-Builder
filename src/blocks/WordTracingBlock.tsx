@@ -24,10 +24,10 @@ export const WordTracingRenderer: React.FC<BlockRenderProps> = ({
   height,
 }) => {
   const rawText = (instance.settings.text || 'SUNSHINE').trim() || 'NAME';
-  const repeatCount = Math.min(
-    size === 'quarter' ? 2 : size === 'half' ? 3 : 5,
-    Math.max(1, Number(instance.settings.repeatCount) || (size === 'quarter' ? 2 : 3))
-  );
+  // Lines per quarter (2) or half (3) space; a full space shows twice as many
+  const repeatCount =
+    Math.min(size === 'quarter' ? 2 : 3, Math.max(1, Number(instance.settings.repeatCount) || (size === 'quarter' ? 2 : 3))) *
+    (size === 'full' ? 2 : 1);
 
   // Spacing comes from utils/spacing: 0.25 in from the frame on every side.
   const sp = blockSpacing(size, height);
@@ -130,9 +130,9 @@ export const WordTracingBlockDefinition: BlockDefinition = {
       label: 'Number of lines',
       type: 'number',
       min: 1,
-      max: 5,
+      max: 3,
       step: 1,
-      helperText: 'How many practice lines to fill.',
+      helperText: 'Quarter spaces show up to 2. Full spaces show twice as many.',
     },
     {
       key: 'showSolidModel',

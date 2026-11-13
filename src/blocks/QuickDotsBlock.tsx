@@ -38,8 +38,8 @@ export const QuickDotsRenderer: React.FC<BlockRenderProps> = ({ instance, size, 
   const s = instance.settings;
   const max = s.range === '1-6' ? 6 : 4;
   const scatter = s.layout === 'scatter';
-  const maxRows = size === 'full' ? 6 : 3;
-  const rowCount = Math.min(maxRows, Math.max(1, Number(s.rows) || 3));
+  // Up to 3 cards in a quarter or half space; a full space shows twice as many
+  const rowCount = Math.min(3, Math.max(1, Number(s.rows) || 3)) * (size === 'full' ? 2 : 1);
   const rand = createRandom(blockSeed(instance.instanceId, s));
 
   const numbers = Array.from({ length: max }, (_, i) => i + 1);
@@ -136,7 +136,7 @@ export const QuickDotsBlockDefinition: BlockDefinition = {
         { label: 'Scattered (stretch)', value: 'scatter' },
       ],
     },
-    { key: 'rows', label: 'Number of cards', type: 'number', min: 1, max: 6, step: 1, helperText: 'Quarter and half spaces show up to 3.' },
+    { key: 'rows', label: 'Number of cards', type: 'number', min: 1, max: 3, step: 1, helperText: 'Full spaces show twice as many.' },
     { key: 'variant', label: 'Mix it up', type: 'number', min: 1, max: 20, step: 1, helperText: 'Change this to get different numbers.' },
   ],
   defaultSettings: { range: '1-4', layout: 'dice', rows: 3, variant: 1 },

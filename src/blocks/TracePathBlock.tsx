@@ -24,8 +24,8 @@ const MIXED_STYLES: LineStyle[] = ['straight', 'wave', 'zigzag', 'loops'];
 
 export const TracePathRenderer: React.FC<BlockRenderProps> = ({ instance, size, width, height }) => {
   const s = instance.settings;
-  const maxPaths = size === 'quarter' ? 3 : size === 'half' ? 3 : 5;
-  const pathCount = Math.min(maxPaths, Math.max(1, Number(s.pathCount) || 2));
+  // Up to 3 paths in a quarter or half space; a full space shows twice as many
+  const pathCount = Math.min(3, Math.max(1, Number(s.pathCount) || 2)) * (size === 'full' ? 2 : 1);
   const pathStyle: string = s.pathStyle || 'wave';
   const pairKey: string = s.pair || 'bee-flower';
   const mixedOrder = createRandom(blockSeed(instance.instanceId, s)).shuffle(PAIR_ORDER);
@@ -99,7 +99,7 @@ export const TracePathBlockDefinition: BlockDefinition = {
       min: 1,
       max: 5,
       step: 1,
-      helperText: 'Quarter and half spaces show up to 3.',
+      helperText: 'Full spaces show twice as many.',
     },
     {
       key: 'pair',

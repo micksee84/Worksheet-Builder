@@ -47,7 +47,10 @@ function cutOutline(x: number, y: number, w: number, h: number, wavy: boolean): 
 export const CutGlueRenderer: React.FC<BlockRenderProps> = ({ instance, size, width, height }) => {
   const s = instance.settings;
   const maxPieces = size === 'quarter' ? 3 : 4;
-  const pieces = Math.min(maxPieces, Math.max(2, Number(s.pieces) || 3));
+  const perRow = Math.min(maxPieces, Math.max(2, Number(s.pieces) || 3));
+  // A full space shows two rows to cut at the top and two rows of shadows below
+  const rows = size === 'full' ? 2 : 1;
+  const pieces = perRow * rows;
   const wavy = s.cutStyle === 'wavy';
   const rand = createRandom(blockSeed(instance.instanceId, s));
   // Every shadow must have exactly one match, so look-alike shadows never share a block
@@ -63,11 +66,18 @@ export const CutGlueRenderer: React.FC<BlockRenderProps> = ({ instance, size, wi
   const gap = size === 'quarter' ? 10 : 16;
   const areaTop = sp.contentTop;
   const areaH = sp.contentBottom - areaTop;
-  const box = Math.min((usableW - gap * (pieces - 1)) / pieces, (areaH - 28) / 2);
-  const rowW = box * pieces + gap * (pieces - 1);
+  const divider = 28; // space for the line between the cut section and the glue section
+  const box = Math.min((usableW - gap * (perRow - 1)) / perRow, (areaH - 4 - divider - gap * (rows - 1) * 2) / (rows * 2));
+  const rowW = box * perRow + gap * (perRow - 1);
   const startX = paddingX + (usableW - rowW) / 2;
-  const cutY = areaTop + 4;
-  const glueY = cutY + box + 28;
+  // Leftover height is shared out between the rows, so nothing pools at the bottom
+  const spare = Math.max(0, areaH - 4 - divider - box * rows * 2 - gap * (rows - 1) * 2);
+  const rowGap = gap + spare / (rows * 2);
+  const cutY = areaTop + 4 + spare / (rows * 4);
+  const sectionH = box * rows + rowGap * (rows - 1);
+  const dividerY = cutY + sectionH + divider / 2 + spare / (rows * 4);
+  const glueY = dividerY + divider / 2 + spare / (rows * 4);
+  const at = (i: number, y0: number) => ({ x: startX + (i % perRow) * (box + gap), y: y0 + Math.floor(i / perRow) * (box + rowGap) });
 
   return (
     <g className="cut-glue-block">
@@ -81,25 +91,25 @@ export const CutGlueRenderer: React.FC<BlockRenderProps> = ({ instance, size, wi
 
       {/* Pieces to cut out */}
       {chosen.map((name, i) => {
-        const x = startX + i * (box + gap);
+        const { x, y } = at(i, cutY);
         return (
           <g key={`cut-${name}`}>
-            <path d={cutOutline(x, cutY, box, box, wavy)} fill="#FFFFFF" stroke="#9A9585" strokeWidth="2" strokeDasharray="7,5" strokeLinecap="round" />
-            <Picture name={name} cx={x + box / 2} cy={cutY + box / 2} size={box * 0.72} />
+            <path d={cutOutline(x, y, box, box, wavy)} fill="#FFFFFF" stroke="#9A9585" strokeWidth="2" strokeDasharray="7,5" strokeLinecap="round" />
+            <Picture name={name} cx={x + box / 2} cy={y + box / 2} size={box * 0.72} />
           </g>
         );
       })}
 
       {/* Divider between the cut row and the glue row */}
-      <line x1={paddingX} y1={cutY + box + 14} x2={width - paddingX} y2={cutY + box + 14} stroke="#B6B2A6" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1={paddingX} y1={dividerY} x2={width - paddingX} y2={dividerY} stroke="#B6B2A6" strokeWidth="1.5" strokeLinecap="round" />
 
       {/* Shadows to glue onto */}
       {glueOrder.map((name, i) => {
-        const x = startX + i * (box + gap);
+        const { x, y } = at(i, glueY);
         return (
           <g key={`glue-${name}`}>
-            <rect x={x} y={glueY} width={box} height={box} rx="12" ry="12" fill="#FFFFFF" stroke="#2D2200" strokeWidth="2.25" />
-            <Picture name={name} cx={x + box / 2} cy={glueY + box / 2} size={box * 0.72} mode="shadow" />
+            <rect x={x} y={y} width={box} height={box} rx="12" ry="12" fill="#FFFFFF" stroke="#2D2200" strokeWidth="2.25" />
+            <Picture name={name} cx={x + box / 2} cy={y + box / 2} size={box * 0.72} mode="shadow" />
           </g>
         );
       })}
@@ -120,12 +130,12 @@ export const CutGlueBlockDefinition: BlockDefinition = {
   settingsSchema: [
     {
       key: 'pieces',
-      label: 'Number of pictures',
+      label: 'Pictures per row',
       type: 'number',
       min: 2,
       max: 4,
       step: 1,
-      helperText: 'Quarter spaces show up to 3.',
+      helperText: 'Pictures in each row. Quarter spaces show up to 3; full spaces show two rows.',
     },
     {
       key: 'cutStyle',

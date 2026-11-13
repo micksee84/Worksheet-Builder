@@ -46,7 +46,7 @@ export const CountCircleRenderer: React.FC<BlockRenderProps> = ({
   const rows = Math.ceil(count / cols);
   const cellW = usableWidth / cols;
   const cellH = objectsAreaHeight / rows;
-  const itemSize = Math.min(size === 'quarter' ? 32 : 46, Math.min(cellW * 0.75, cellH * 0.75));
+  const itemSize = Math.min(size === 'quarter' ? 32 : size === 'half' ? 46 : 92, Math.min(cellW * 0.75, cellH * 0.75));
 
   const items = Array.from({ length: count }, (_, i) => {
     const col = i % cols;

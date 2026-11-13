@@ -19,8 +19,8 @@ import { createRandom, blockSeed } from '../utils/seededRandom';
 
 export const ShadowMatchRenderer: React.FC<BlockRenderProps> = ({ instance, size, width, height }) => {
   const s = instance.settings;
-  const maxPairs = size === 'full' ? 5 : 3;
-  const pairCount = Math.min(maxPairs, Math.max(2, Number(s.pairs) || 3));
+  // Up to 3 pairs in a quarter or half space; a full space shows twice as many
+  const pairCount = Math.min(3, Math.max(2, Number(s.pairs) || 3)) * (size === 'full' ? 2 : 1);
   const rand = createRandom(blockSeed(instance.instanceId, s));
   const left = pickDistinct(rand, picturesIn(s.pictureTheme), pairCount);
   let right = rand.shuffle(left);
@@ -79,7 +79,7 @@ export const ShadowMatchBlockDefinition: BlockDefinition = {
   allowedSizes: ['full', 'half', 'quarter'],
   settingsSchema: [
     themeSetting(),
-    { key: 'pairs', label: 'Number of pairs', type: 'number', min: 2, max: 5, step: 1, helperText: 'Quarter and half spaces show up to 3.' },
+    { key: 'pairs', label: 'Number of pairs', type: 'number', min: 2, max: 3, step: 1, helperText: 'Full spaces show twice as many.' },
     { key: 'variant', label: 'Mix it up', type: 'number', min: 1, max: 20, step: 1, helperText: 'Change this to get different pictures.' },
   ],
   defaultSettings: { pictureTheme: 'mixed', pairs: 3, variant: 1 },
