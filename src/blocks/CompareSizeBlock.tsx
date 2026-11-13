@@ -97,7 +97,7 @@ export const CompareSizeRenderer: React.FC<BlockRenderProps> = ({ instance, size
           return (
             <g key={i}>
               {realRows[i].map((name, j) => (
-                <Picture key={j} name={name} cx={paddingX + colW * (j + 0.5)} cy={rowTop + rowH * 0.94 - sz / 2} size={sz} />
+                <Picture key={j} name={name} cx={paddingX + colW * (j + 0.5)} cy={rowTop + rowH * 0.94 - sz / 2} size={sz} ground />
               ))}
               {i < rowCount - 1 && (
                 <line x1={paddingX} y1={rowTop + rowH} x2={width - paddingX} y2={rowTop + rowH} stroke="#B6B2A6" strokeWidth="1.5" />
@@ -130,7 +130,7 @@ export const CompareSizeRenderer: React.FC<BlockRenderProps> = ({ instance, size
               }
               // Biggest or smallest: the same picture at each size, sitting on a shared baseline
               const sz = maxItem * scale;
-              return <Picture key={j} name={pictures[i % pictures.length]} cx={cx} cy={rowTop + rowH * 0.94 - sz / 2} size={sz} />;
+              return <Picture key={j} name={pictures[i % pictures.length]} cx={cx} cy={rowTop + rowH * 0.94 - sz / 2} size={sz} ground />;
             })}
             {i < rowCount - 1 && (
               <line x1={paddingX} y1={rowTop + rowH} x2={width - paddingX} y2={rowTop + rowH} stroke="#B6B2A6" strokeWidth="1.5" />

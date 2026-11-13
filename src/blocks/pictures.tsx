@@ -13,7 +13,7 @@
  */
 
 import React from 'react';
-import { PICTURE_LINE, PICTURE_SHAPES } from './pictureArt';
+import { PICTURE_BOTTOM, PICTURE_LINE, PICTURE_SHAPES } from './pictureArt';
 import { ArtPlaceholder } from './placeholder';
 
 const INK = '#2D2200';
@@ -267,6 +267,8 @@ interface PictureProps {
   mode?: 'line' | 'shadow';
   /** Mirror left to right */
   flip?: boolean;
+  /** Stand the drawing on the bottom of its square (otherwise it sits centred) */
+  ground?: boolean;
 }
 
 /** Thinnest line a picture may print with (the Ink Style minimum). */
@@ -277,7 +279,7 @@ const MIN_LINE_PT = 1.5;
  * they are thickened evenly so none drops below the 1.5pt Ink Style minimum (a heavier
  * target clogs the detailed drawings, like the nest and the dish).
  */
-export const Picture: React.FC<PictureProps> = ({ name, cx, cy, size, mode = 'line', flip = false }) => {
+export const Picture: React.FC<PictureProps> = ({ name, cx, cy, size, mode = 'line', flip = false, ground = false }) => {
   const art = PICTURE_ART[name];
   const scale = size / 100;
   if (!art) {
@@ -294,8 +296,10 @@ export const Picture: React.FC<PictureProps> = ({ name, cx, cy, size, mode = 'li
       ? { F: TRACE, S: TRACE, W: minLine }
       : { F: PAPER, S: INK, W: minLine };
   const flipTransform = flip ? ' translate(100 0) scale(-1 1)' : '';
+  // Grounded: drop the drawing so its lowest point meets the bottom of the square
+  const drop = ground ? (100 - (PICTURE_BOTTOM[ALIASES[name] ?? name] ?? 100)) * scale : 0;
   return (
-    <g transform={`translate(${cx - size / 2} ${cy - size / 2}) scale(${scale})${flipTransform}`}>
+    <g transform={`translate(${cx - size / 2} ${cy - size / 2 + drop}) scale(${scale})${flipTransform}`}>
       {art(style)}
     </g>
   );
