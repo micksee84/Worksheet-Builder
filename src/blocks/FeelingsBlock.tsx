@@ -36,7 +36,7 @@ const LABELS: Record<Feeling, string> = {
 
 /** One feeling face, drawn in a 100 x 100 box. */
 export function Face({ feeling, cx, cy, size }: { feeling: Feeling; cx: number; cy: number; size: number }) {
-  // Awaiting redraw: template-grid placeholder
+  // Krea feelings face (handArtShapes.ts)
   return <HandArtBox id={'feeling-' + feeling} cx={cx} cy={cy} size={size} />;
 }
 

@@ -2,8 +2,8 @@
  * @license
  * Sunshine Brigade Worksheet Builder - Picture Library
  *
- * Artwork: Mick's redraws on the Small (Spot) template, stored as vector shapes in
- * pictureArt.ts. A picture with no redraw yet prints as the template-grid placeholder.
+ * Artwork: the Krea reference set (version 0.5), stored as vector shapes in
+ * pictureArt.ts. A picture with no drawing yet prints as the template-grid placeholder.
  * To change a picture, redraw it and re-export it under the same name; every block that
  * uses it updates.
  *

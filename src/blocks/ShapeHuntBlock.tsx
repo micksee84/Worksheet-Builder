@@ -25,7 +25,7 @@ const SHAPE_NAMES: Record<HuntShape, string> = {
 };
 
 export function shapePath(shape: HuntShape, cx: number, cy: number, r: number, _rot: number): React.ReactNode {
-  // Awaiting redraw: template-grid placeholder (frame: r 50 around the centre)
+  // Krea shape hunt drawing (frame: r 50 around the centre)
   return <HandArtBox id={'shape-' + shape} cx={cx} cy={cy} size={r * 2} />;
 }
 

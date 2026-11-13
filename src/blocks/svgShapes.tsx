@@ -10,7 +10,7 @@ import { Picture } from './pictures';
 import { picturesIn, THEMES } from './pictureLibrary';
 import { createRandom } from '../utils/seededRandom';
 
-/** Counting art slots (100-unit frame), awaiting their redraw. */
+/** Counting art slots (100-unit frame), drawn from the Krea set. */
 const HAND_ID: Record<string, string> = {
   stars: 'count-star',
   apples: 'count-apple',
@@ -30,7 +30,7 @@ interface RenderShapeProps {
 }
 
 export const KidShape: React.FC<RenderShapeProps> = ({ type, cx, cy, size }) => (
-  // Awaiting redraw: template-grid placeholder
+  // Krea counting shapes (handArtShapes.ts)
   <HandArtBox id={HAND_ID[type]} cx={cx} cy={cy} size={size} />
 );
 
