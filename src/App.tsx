@@ -705,18 +705,20 @@ export default function App() {
         const deckId = prev.pages.find((p) => p.id === pageId)?.cards?.id;
         if (!deckId) return prev;
         let k = 0;
-        return {
-          ...prev,
-          pages: prev.pages.map((pg) => {
+        const pages = prev.pages
+          .map((pg) => {
             if (pg.cards?.id !== deckId) return pg;
             const old = pg.cards;
             const next = { ...old, ...patch };
             next.from = k++ * cardsPerPage(next);
             const title = patch.set && pg.title === SET_INFO[old.set].title ? SET_INFO[patch.set].title : pg.title;
             return { ...pg, title, cards: next };
-          }),
-        };
+          })
+          // Fewer cards now: the deck's pages with nothing left on them go (its first page stays)
+          .filter((pg) => !pg.cards || pg.cards.id !== deckId || pg.cards.from === 0 || pg.cards.from < deckCards(pg.cards).length);
+        return { ...prev, pages };
       });
+      setActivePageIndex((i) => Math.min(i, worksheetRef.current.pages.length - 1));
     },
     [updateWorksheet]
   );
