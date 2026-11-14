@@ -293,7 +293,7 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
           letterSpacing="0.18"
           fontFamily="Nunito, sans-serif"
         >
-          Learn. Wonder. Shine.
+          sunshinebrigade.ca
         </text>
         <text
           x={innerWidth}
