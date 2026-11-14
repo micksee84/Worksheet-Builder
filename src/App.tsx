@@ -94,6 +94,7 @@ import {
   blockOf,
   STEP,
   switchKind,
+  tasksOf,
 } from './planner/plannerModel';
 import { getActivity } from './planner/activities';
 import { pageDims } from './config/appConfig';
@@ -267,7 +268,9 @@ export default function App() {
   // thumbnail, or nothing when off the page). Library cards keep the forgiving box overlap.
   const collisionDetection: CollisionDetection = useCallback((args) => {
     const underPointer = pointerWithin(args);
-    if (underPointer.length || isSlotBlockDrag(args.active.data.current)) return underPointer;
+    // Placed planner cards too, so letting go just off the page removes them, as with blocks.
+    const moving = args.active.data.current as { type?: string } | undefined;
+    if (underPointer.length || isSlotBlockDrag(moving) || moving?.type === 'planner-item') return underPointer;
     return rectIntersection(args);
   }, []);
 
@@ -565,7 +568,7 @@ export default function App() {
 
   // A placed block dragged off the page and let go asks before it is removed.
   const [dragOffPage, setDragOffPage] = useState(false);
-  const [pendingRemove, setPendingRemove] = useState<{ pageId: string; slotId: string; name: string } | null>(null);
+  const [pendingRemove, setPendingRemove] = useState<{ name: string; title?: string; remove: () => void } | null>(null);
   const isOffPage = (event: DragMoveEvent | DragEndEvent) => {
     if (event.over) return false; // over a slot or a page thumbnail
     const start = event.activatorEvent as PointerEvent | TouchEvent;
@@ -599,12 +602,23 @@ export default function App() {
         const point = pagePoint(event);
         if (point) dropOnPlanner(target.pageId, point, pdata);
       } else if (pdata.type === 'planner-item' && !over && isOffPage(event) && pdata.pageId && pdata.itemId) {
-        // A task pulled out of a block and let go off the page: just that task goes
-        if (pdata.taskId) {
-          const taskId = pdata.taskId;
-          const itemId = pdata.itemId;
-          updatePlanner(pdata.pageId, (p) => takeOut(p, itemId, taskId)?.planner ?? p);
-        } else removePlannerItem(pdata.pageId, pdata.itemId);
+        // Let go off the page: ask first, like a worksheet block. A task pulled out of a
+        // block takes just that task away.
+        const pageId = pdata.pageId;
+        const itemId = pdata.itemId;
+        const taskId = pdata.taskId;
+        const planner = worksheetRef.current.pages.find((pg) => pg.id === pageId)?.planner;
+        const item = planner?.items.find((i) => i.id === itemId);
+        const task = item && taskId ? tasksOf(item).find((t) => t.id === taskId) : undefined;
+        setPendingRemove(
+          taskId
+            ? {
+                title: 'Remove this task?',
+                name: task?.label || 'This task',
+                remove: () => updatePlanner(pageId, (p) => takeOut(p, itemId, taskId)?.planner ?? p),
+              }
+            : { name: item?.label || 'This activity', remove: () => removePlannerItem(pageId, itemId) }
+        );
       }
       return;
     }
@@ -613,10 +627,10 @@ export default function App() {
     if (!over) {
       const dragged = active.data.current;
       if (isSlotBlockDrag(dragged) && isOffPage(event)) {
+        const { sourcePageId, sourceSlotId } = dragged;
         setPendingRemove({
-          pageId: dragged.sourcePageId,
-          slotId: dragged.sourceSlotId,
           name: getBlockById(dragged.blockId)?.displayName || 'This activity',
+          remove: () => handleDeleteBlock(sourcePageId, sourceSlotId),
         });
       }
       return;
@@ -1358,9 +1372,10 @@ export default function App() {
         {pendingRemove && (
           <RemoveBlockConfirm
             name={pendingRemove.name}
+            title={pendingRemove.title}
             onNo={() => setPendingRemove(null)}
             onYes={() => {
-              handleDeleteBlock(pendingRemove.pageId, pendingRemove.slotId);
+              pendingRemove.remove();
               setPendingRemove(null);
             }}
           />

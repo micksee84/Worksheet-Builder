@@ -12,11 +12,13 @@ import { Trash2 } from './icons';
 
 interface RemoveBlockConfirmProps {
   name: string;
+  /** Heading; "Remove this block?" by default */
+  title?: string;
   onYes: () => void;
   onNo: () => void;
 }
 
-export const RemoveBlockConfirm: React.FC<RemoveBlockConfirmProps> = ({ name, onYes, onNo }) => {
+export const RemoveBlockConfirm: React.FC<RemoveBlockConfirmProps> = ({ name, title = 'Remove this block?', onYes, onNo }) => {
   const noRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export const RemoveBlockConfirm: React.FC<RemoveBlockConfirmProps> = ({ name, on
           </div>
           <div className="min-w-0">
             <h2 id="remove-block-title" className="text-lg font-extrabold text-[#2D2200]">
-              Remove this block?
+              {title}
             </h2>
             <p id="remove-block-text" className="text-sm text-[#6B5838] mt-1">
               {name} will be taken off the page.
