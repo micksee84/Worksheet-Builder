@@ -49,7 +49,8 @@ interface TopBarProps {
   onCopyShareLink: () => void;
   onDownloadPdf: () => void;
   onPrintNative: () => void;
-  onToggleMobileSidebar: () => void;
+  /** Leave out when the page has no activities panel (checklists) */
+  onToggleMobileSidebar?: () => void;
   isExportingPdf: boolean;
   /** Present when a grown-up is signed in. */
   account?: TopBarAccount | null;
@@ -108,6 +109,7 @@ export const TopBar: React.FC<TopBarProps> = ({
     <header className="h-[60px] bg-white border-b-[3px] border-[#2D2200] px-3 min-[480px]:px-4 md:px-6 flex items-center justify-between gap-2 min-[480px]:gap-3 shrink-0 relative z-30 select-none">
       {/* ---------------- Left: brand, then working on the file */}
       <div className="flex items-center gap-2 min-[480px]:gap-3 min-w-0">
+        {onToggleMobileSidebar && (
         <button
           onClick={onToggleMobileSidebar}
           className="lg:hidden tb-btn tb-btn-icon"
@@ -116,6 +118,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         >
           <Menu className="w-5 h-5" aria-hidden="true" />
         </button>
+        )}
 
         {/* Brand: name in Nunito (the builder uses Nunito throughout). No sun icon. */}
         <h1 className="m-0 flex items-center gap-3 shrink-0 font-normal">

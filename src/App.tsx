@@ -1139,6 +1139,9 @@ export default function App() {
 
   const draggedBlockDef = activeDragItem ? getBlockById(activeDragItem.blockId) : null;
 
+  // Checklists are typed straight onto the page, so they have no activities panel
+  const isChecklist = activePage?.planner?.kind === 'checklist' && activePage.planner.kindChosen !== false;
+
   return (
     <DndContext
       sensors={sensors}
@@ -1170,7 +1173,7 @@ export default function App() {
             onCopyShareLink={handleCopyShareLink}
             onDownloadPdf={handleDownloadPdf}
             onPrintNative={handlePrintNative}
-            onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+            onToggleMobileSidebar={isChecklist ? undefined : () => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
             isExportingPdf={isExportingPdf}
             account={
               accountSync.active && user
@@ -1185,8 +1188,8 @@ export default function App() {
 
           {/* Main App Workspace: Sidebar + Canvas */}
           <div className="flex-1 flex min-h-0 relative">
-            {/* Left Block Library */}
-            {activePage.planner ? (
+            {/* Left Block Library. Checklists have none: items are typed straight onto the page. */}
+            {isChecklist ? null : activePage.planner ? (
               <PlannerLibrary
                 kind={activePage.planner.kind}
                 onAddActivity={handleAddActivity}
