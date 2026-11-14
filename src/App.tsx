@@ -1197,6 +1197,9 @@ export default function App() {
                 setIsPlannerPanelOpen(false);
               }}
               onChangePlannerKind={handleChangePlannerKind}
+              onResizePlannerItem={(pageId, itemId, minutes) =>
+                updatePlanner(pageId, (p) => ({ ...p, items: p.items.map((i) => (i.id === itemId ? { ...i, minutes } : i)) }))
+              }
               onOpenPlannerSettings={() => {
                 setPlannerSel(null);
                 setIsPlannerPanelOpen(true);

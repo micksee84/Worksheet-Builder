@@ -168,6 +168,8 @@ export const timeLabel = (minutes: number) => {
   const h12 = h % 12 === 0 ? 12 : h % 12;
   return `${h12}:${m.toString().padStart(2, '0')}`;
 };
+/** An activity's length: 30 min, 1 h, 1 h 30 */
+export const lengthLabel = (m: number) => (m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h ${m % 60}` : `${m / 60} h`);
 export const hourLabel = (h: number) => `${h % 12 === 0 ? 12 : h % 12} ${h < 12 || h === 24 ? 'am' : 'pm'}`;
 
 /** Add an activity where a tap on + should put it */

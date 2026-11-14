@@ -53,6 +53,8 @@ interface WorksheetCanvasProps {
   selectedPlannerItemId?: string | null;
   onSelectPlannerItem?: (pageId: string, itemId: string) => void;
   onPlannerBackground?: (pageId: string) => void;
+  /** Sets a planner activity's length (dragging the bottom edge of its card) */
+  onResizePlannerItem?: (pageId: string, itemId: string, minutes: number) => void;
   onChangePlannerKind?: (pageId: string, kind: PlannerKind) => void;
   onOpenPlannerSettings?: () => void;
 }
@@ -249,6 +251,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
   selectedPlannerItemId = null,
   onSelectPlannerItem,
   onPlannerBackground,
+  onResizePlannerItem,
   onChangePlannerKind,
   onOpenPlannerSettings,
 }) => {
@@ -880,6 +883,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
               onSelectItem={(itemId) => onSelectPlannerItem?.(activePage.id, itemId)}
               onBackground={() => onPlannerBackground?.(activePage.id)}
               onChooseKind={(kind) => onChangePlannerKind?.(activePage.id, kind)}
+              onResizeItem={(itemId, minutes) => onResizePlannerItem?.(activePage.id, itemId, minutes)}
             />
           )}
 

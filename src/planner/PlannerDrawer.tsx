@@ -12,7 +12,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Trash2, Settings, ArrowUp, ArrowDown, Search, RotateCcw } from '../components/icons';
 import { PlannerData, PlannerItem, PlannerKind } from '../types';
 import { GraphicThumb, ICON_NAMES, PLANNER_ICONS } from './plannerIcons';
-import { DAY_PARTS, daysShown, hourLabel, KIND_LABELS, STEP, timeLabel } from './plannerModel';
+import { DAY_PARTS, daysShown, hourLabel, KIND_LABELS, lengthLabel, STEP, timeLabel } from './plannerModel';
 
 const field = 'w-full px-3.5 py-2.5 text-sm font-medium text-[#2D2200] bg-white border border-[#E2DEC9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#009BD9] transition-all';
 const Label: React.FC<{ children: React.ReactNode; hint?: string }> = ({ children, hint }) => (
@@ -124,7 +124,8 @@ export const PlannerDrawer: React.FC<{
   const hours = Array.from({ length: 25 }, (_, h) => h);
   const times: number[] = [];
   for (let t = planner.startHour * 60; t < planner.endHour * 60; t += STEP) times.push(t);
-  const lengths = [30, 60, 90, 120, 150, 180, 240];
+  // Every half hour up to 6 hours, plus whatever a dragged card was set to
+  const lengths = Array.from(new Set([...Array.from({ length: 12 }, (_, i) => (i + 1) * 30), item?.minutes ?? STEP])).sort((a, b) => a - b);
 
   return (
     <div
@@ -167,10 +168,23 @@ export const PlannerDrawer: React.FC<{
                   <Label>How long</Label>
                   <select value={item.minutes ?? STEP} onChange={(e) => onUpdateItem({ minutes: Number(e.target.value) })} className={`${field} cursor-pointer`}>
                     {lengths.map((m) => (
-                      <option key={m} value={m}>{m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h 30` : `${m / 60} h`}</option>
+                      <option key={m} value={m}>{lengthLabel(m)}</option>
                     ))}
                   </select>
                 </div>
+                <p className="col-span-2 text-[11px] text-[#6B5838] -mt-1">Or drag the bottom edge of the card on the page.</p>
+              </div>
+            )}
+
+            {kind === 'week' && (
+              <div className="space-y-1.5">
+                <Label>How long</Label>
+                <select value={item.minutes ?? STEP} onChange={(e) => onUpdateItem({ minutes: Number(e.target.value) })} className={`${field} cursor-pointer`}>
+                  {lengths.map((m) => (
+                    <option key={m} value={m}>{lengthLabel(m)}</option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-[#6B5838]">Or drag the bottom edge of the card on the page.</p>
               </div>
             )}
 
@@ -289,6 +303,9 @@ export const PlannerDrawer: React.FC<{
             )}
             {kind === 'week' && (
               <Toggle checked={planner.weekBands !== false} onChange={(weekBands) => onUpdatePlanner({ weekBands })} label="Parts of the day" hint="Morning, afternoon and evening down the side." />
+            )}
+            {kind === 'week' && (
+              <Toggle checked={planner.showTimes} onChange={(showTimes) => onUpdatePlanner({ showTimes })} label="Show how long" hint="A small tag on each card, like 1 h." />
             )}
             {kind !== 'first-then' && (
               <Toggle checked={planner.showTicks} onChange={(showTicks) => onUpdatePlanner({ showTicks })} label="Tick boxes" hint="A box beside each activity to tick when it's done." />

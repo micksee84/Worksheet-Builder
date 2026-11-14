@@ -12,12 +12,15 @@ import React, { useRef, useState } from 'react';
 import { DragMoveEvent, useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
 import { Page, PageSizeId, PlannerItem, PlannerKind } from '../types';
 import { plannerGeometry, dropTarget, Box } from './plannerLayout';
-import { createPlannerPage, KIND_LABELS, placeItem, samplePlanner, STEP } from './plannerModel';
+import { createPlannerPage, KIND_LABELS, lengthLabel, placeItem, samplePlanner, STEP, timeLabel } from './plannerModel';
 import { Mini } from './WhatAreYouMaking';
 import { getActivity } from './activities';
 
 /** How far below the pointer a dragged card's top sits, in page points */
 export const GRAB_TOP = 8;
+
+/** How far the handle moves for each half hour on the week view, in page points */
+const WEEK_STEP_PT = 16;
 
 const ItemHandle: React.FC<{
   pageId: string;
@@ -25,11 +28,26 @@ const ItemHandle: React.FC<{
   box: Box;
   selected: boolean;
   onSelect: () => void;
-}> = ({ pageId, item, box, selected, onSelect }) => {
+  /** Day timeline: the height of half an hour; week: undefined */
+  rowH?: number;
+  /** The longest this activity can be (day: until the day ends) */
+  maxMinutes: number;
+  onResize?: (minutes: number) => void;
+}> = ({ pageId, item, box, selected, onSelect, rowH, maxMinutes, onResize }) => {
   const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
     id: `planner-item-${pageId}-${item.id}`,
     data: { type: 'planner-item', pageId, itemId: item.id, label: item.label, picture: item.picture },
   });
+  // Resizing: the length while the bottom edge is dragged, before it's let go
+  const [draft, setDraft] = useState<number | null>(null);
+  const start = useRef<{ y: number; minutes: number; scale: number } | null>(null);
+  const minutes = item.minutes ?? STEP;
+  const shown = draft ?? minutes;
+  const live = draft !== null;
+  // On the day timeline the card grows with its length; on the week it keeps its size
+  const h = live && rowH ? Math.max(rowH - 3, (shown / STEP) * rowH - 3) : box.h;
+  const label =
+    rowH && item.start !== undefined ? `${timeLabel(item.start)}–${timeLabel(item.start + shown)} · ${lengthLabel(shown)}` : lengthLabel(shown);
   return (
     <div
       ref={setNodeRef}
@@ -41,15 +59,84 @@ const ItemHandle: React.FC<{
         e.stopPropagation();
         onSelect();
       }}
-      style={{ position: 'absolute', left: box.x, top: box.y, width: box.w, height: box.h }}
-      className={`rounded-lg cursor-grab active:cursor-grabbing transition-colors ${
+      style={{ position: 'absolute', left: box.x, top: box.y, width: box.w, height: h }}
+      className={`group rounded-lg cursor-grab active:cursor-grabbing transition-colors ${
         isDragging
           ? 'bg-white/70 border-2 border-dashed border-[#A39C8E]'
+          : live
+          ? 'border-[3px] border-dashed border-[#009BD9] bg-[#009BD9]/10'
           : selected
           ? 'border-[3px] border-[#009BD9] bg-[#009BD9]/5'
           : 'hover:border-2 hover:border-[#009BD9]/60'
       }`}
-    />
+    >
+      {onResize && !isDragging && (
+        <>
+          {/* Bottom edge: drag to make the activity longer or shorter, in half hours */}
+          <div
+            role="slider"
+            aria-label={`How long ${item.label} takes`}
+            aria-valuetext={lengthLabel(shown)}
+            aria-valuemin={STEP}
+            aria-valuemax={maxMinutes}
+            aria-valuenow={shown}
+            title="Drag to change how long it takes"
+            className={`absolute left-1/2 -translate-x-1/2 -bottom-[7px] h-[14px] w-[44px] max-w-[80%] flex items-center justify-center cursor-ns-resize touch-none ${
+              selected || live ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => {
+              // Keep the card itself from starting a move
+              e.stopPropagation();
+              e.preventDefault();
+              const root = (e.currentTarget.closest('[data-planner-overlay]') as HTMLElement | null) ?? e.currentTarget;
+              const scale = root.getBoundingClientRect().width / (root.offsetWidth || 1);
+              start.current = { y: e.clientY, minutes, scale };
+              try {
+                e.currentTarget.setPointerCapture(e.pointerId);
+              } catch {
+                /* no live pointer to capture */
+              }
+              setDraft(minutes);
+            }}
+            onPointerMove={(e) => {
+              const s = start.current;
+              if (!s) return;
+              const dy = (e.clientY - s.y) / s.scale;
+              const steps = Math.round(dy / (rowH ?? WEEK_STEP_PT));
+              setDraft(Math.max(STEP, Math.min(maxMinutes, s.minutes + steps * STEP)));
+            }}
+            onPointerUp={(e) => {
+              const s = start.current;
+              start.current = null;
+              try {
+                e.currentTarget.releasePointerCapture(e.pointerId);
+              } catch {
+                /* already released */
+              }
+              if (s && draft !== null && draft !== s.minutes) onResize(draft);
+              setDraft(null);
+            }}
+            onPointerCancel={() => {
+              start.current = null;
+              setDraft(null);
+            }}
+          >
+            <span className="block h-[5px] w-full rounded-full bg-[#009BD9] border border-white shadow" />
+          </div>
+          {/* How long, beside the card while it's resized */}
+          {live && (
+            <span
+              className={`absolute bottom-0 whitespace-nowrap px-2 py-0.5 rounded-full bg-[#009BD9] text-white text-[10px] font-extrabold shadow pointer-events-none ${
+                rowH ? 'right-2 translate-y-1/2' : 'left-full ml-1'
+              }`}
+            >
+              {label}
+            </span>
+          )}
+        </>
+      )}
+    </div>
   );
 };
 
@@ -61,7 +148,9 @@ export const PlannerOverlay: React.FC<{
   onBackground: () => void;
   /** Picks the planner's type from the start screen */
   onChooseKind?: (kind: PlannerKind) => void;
-}> = ({ page, pageSize, selectedItemId, onSelectItem, onBackground, onChooseKind }) => {
+  /** Sets an activity's length (the drag handle on the card) */
+  onResizeItem?: (itemId: string, minutes: number) => void;
+}> = ({ page, pageSize, selectedItemId, onSelectItem, onBackground, onChooseKind, onResizeItem }) => {
   const planner = page.planner!;
   const g = plannerGeometry(pageSize, page.showDateName, planner);
   const { setNodeRef } = useDroppable({ id: `planner-drop-${page.id}`, data: { type: 'planner-target', pageId: page.id } });
@@ -112,6 +201,7 @@ export const PlannerOverlay: React.FC<{
         surface.current = el;
       }}
       className="absolute inset-0"
+      data-planner-overlay=""
       onClick={onBackground}
     >
       {g.items.map((b) => {
@@ -125,6 +215,11 @@ export const PlannerOverlay: React.FC<{
             box={b}
             selected={selectedItemId === b.id}
             onSelect={() => onSelectItem(b.id)}
+            rowH={planner.kind === 'day' ? g.rowH : undefined}
+            maxMinutes={planner.kind === 'day' ? planner.endHour * 60 - (item.start ?? planner.startHour * 60) : 12 * 60}
+            onResize={
+              onResizeItem && (planner.kind === 'day' || planner.kind === 'week') ? (m) => onResizeItem(b.id, m) : undefined
+            }
           />
         );
       })}

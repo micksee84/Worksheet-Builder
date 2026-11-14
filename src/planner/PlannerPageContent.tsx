@@ -13,7 +13,7 @@ import { PageSizeId, PlannerData, PlannerItem } from '../types';
 import { PlannerGraphic } from './plannerIcons';
 import { FRAME_STROKE } from '../utils/spacing';
 import { plannerGeometry, ItemBox } from './plannerLayout';
-import { hourLabel, STEP, timeLabel } from './plannerModel';
+import { hourLabel, lengthLabel, STEP, timeLabel } from './plannerModel';
 
 const INK = '#2D2200';
 const GUIDE = '#DDD9C4';
@@ -67,24 +67,33 @@ function RowCard({ it, b, p, big = false }: { it: PlannerItem; b: ItemBox; p: Pl
 /** A small card for the week view: picture on top, words underneath */
 function StackCard({ it, b, p }: { it: PlannerItem; b: ItemBox; p: PlannerData }) {
   // A busy day: short cards, so the picture sits beside the words instead
+  // How long it takes, as a small tag (Show how long)
+  const len = p.showTimes ? lengthLabel(it.minutes ?? STEP) : '';
   if (b.h < 50) {
     const pic = Math.max(8, b.h - 6);
     const tick = p.showTicks ? Math.min(10, b.h - 8) : 0;
+    const tagW = len ? len.length * 3.6 + 4 : 0;
     const textX = b.x + 4 + pic + 4;
     return (
       <g>
         <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={Math.min(8, b.h / 3)} fill="#FFFFFF" stroke={INK} strokeWidth={1.25} />
         <PlannerGraphic picture={it.picture} cx={b.x + 3 + pic / 2} cy={b.y + b.h / 2} size={pic} />
-        <text x={textX} y={b.y + b.h / 2 + 3} fill={INK} fontSize={fit(it.label, b.x + b.w - textX - tick - 6, 9, 5.5)} fontWeight={800} fontFamily={FONT}>
+        <text x={textX} y={b.y + b.h / 2 + 3} fill={INK} fontSize={fit(it.label, b.x + b.w - textX - tick - tagW - 6, 9, 5.5)} fontWeight={800} fontFamily={FONT}>
           {it.label}
         </text>
+        {len && (
+          <text x={b.x + b.w - (tick ? tick + 6 : 4)} y={b.y + b.h / 2 + 2.5} textAnchor="end" fill={INK} fontSize={6.5} fontWeight={700} fontFamily={FONT}>
+            {len}
+          </text>
+        )}
         {tick > 0 && <Tick x={b.x + b.w - tick - 3} y={b.y + b.h / 2 - tick / 2} size={tick} />}
       </g>
     );
   }
   const labelH = 13;
   const tick = p.showTicks ? 11 : 0;
-  const pic = Math.max(10, Math.min(b.h - labelH - 8, b.w - 12));
+  const tagH = len ? 9 : 0; // the length sits between the picture and the words
+  const pic = Math.max(10, Math.min(b.h - labelH - tagH - 8, b.w - 12));
   return (
     <g>
       <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={8} fill="#FFFFFF" stroke={INK} strokeWidth={1.5} />
@@ -101,6 +110,11 @@ function StackCard({ it, b, p }: { it: PlannerItem; b: ItemBox; p: PlannerData }
         {it.label}
       </text>
       {tick > 0 && <Tick x={b.x + b.w - tick - 4} y={b.y + 4} size={tick} />}
+      {len && (
+        <text x={b.x + b.w / 2} y={b.y + b.h - 6 - labelH + 1} textAnchor="middle" fill={INK} fontSize={7.5} fontWeight={700} fontFamily={FONT}>
+          {len}
+        </text>
+      )}
     </g>
   );
 }
