@@ -156,8 +156,36 @@ export const PlannerPageContent: React.FC<{ planner: PlannerData; pageSize: Page
             <text x={c.x + c.w / 2} y={c.y + 20} textAnchor="middle" fill={INK} fontSize={fit(c.label, c.w - 10, 13)} fontWeight={900} fontFamily={FONT}>
               {c.label}
             </text>
+            {/* Parts of the day: guide lines between the bands */}
+            {g.bands?.slice(1).map((b) => (
+              <line key={b.part} x1={c.x + 4} y1={b.y} x2={c.x + c.w - 4} y2={b.y} stroke={GUIDE} strokeWidth={1.25} strokeDasharray="4 4" />
+            ))}
           </g>
         ))}
+        {/* The rail: an icon and the part's name, read top to bottom */}
+        {g.bands?.map((b) => {
+          const r = g.rail!;
+          const cx = r.x + r.w / 2;
+          const cy = b.y + b.h / 2;
+          return (
+            <g key={b.part}>
+              <PlannerGraphic picture={b.icon} cx={cx} cy={b.y + 18} size={22} />
+              <text
+                x={cx}
+                y={cy + 8}
+                transform={`rotate(-90 ${cx} ${cy + 8})`}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill={INK}
+                fontSize={12}
+                fontWeight={900}
+                fontFamily={FONT}
+              >
+                {b.label}
+              </text>
+            </g>
+          );
+        })}
         {g.items.map((b) => byId.get(b.id) && <StackCard key={b.id} it={byId.get(b.id)!} b={b} p={p} />)}
       </g>
     );

@@ -98,6 +98,9 @@ export interface Page {
 export type PlannerKind = 'day' | 'week' | 'checklist' | 'first-then';
 export type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 
+/** The week view's bands, down the side */
+export type DayPart = 'morning' | 'afternoon' | 'evening';
+
 export interface PlannerItem {
   id: string;
   label: string;
@@ -109,6 +112,8 @@ export interface PlannerItem {
   minutes?: number;
   /** Week view: which day; items keep their order in the list */
   day?: DayKey;
+  /** Week view with parts of the day: which band (morning if unset) */
+  part?: DayPart;
   /** First–then: which side */
   side?: 'first' | 'then';
 }
@@ -124,6 +129,8 @@ export interface PlannerData {
   items: PlannerItem[];
   /** False on a new planner until the grown-up picks its type on the start screen */
   kindChosen?: boolean;
+  /** Week view: morning / afternoon / evening bands (on unless set to false) */
+  weekBands?: boolean;
 }
 
 export interface Worksheet {

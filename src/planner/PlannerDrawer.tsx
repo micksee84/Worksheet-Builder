@@ -12,7 +12,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Trash2, Settings, ArrowUp, ArrowDown, Search, RotateCcw } from '../components/icons';
 import { PlannerData, PlannerItem, PlannerKind } from '../types';
 import { GraphicThumb, ICON_NAMES, PLANNER_ICONS } from './plannerIcons';
-import { daysShown, hourLabel, KIND_LABELS, STEP, timeLabel } from './plannerModel';
+import { DAY_PARTS, daysShown, hourLabel, KIND_LABELS, STEP, timeLabel } from './plannerModel';
 
 const field = 'w-full px-3.5 py-2.5 text-sm font-medium text-[#2D2200] bg-white border border-[#E2DEC9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#009BD9] transition-all';
 const Label: React.FC<{ children: React.ReactNode; hint?: string }> = ({ children, hint }) => (
@@ -185,6 +185,25 @@ export const PlannerDrawer: React.FC<{
               </div>
             )}
 
+            {kind === 'week' && planner.weekBands !== false && (
+              <div className="space-y-1.5">
+                <Label>Part of the day</Label>
+                <div className="flex gap-2">
+                  {DAY_PARTS.map((pt) => (
+                    <button
+                      key={pt.key}
+                      type="button"
+                      onClick={() => onUpdateItem({ part: pt.key })}
+                      aria-pressed={(item.part ?? 'morning') === pt.key}
+                      className={`flex-1 py-2 text-xs font-bold rounded-lg border ${(item.part ?? 'morning') === pt.key ? 'bg-[#2D2200] text-white border-[#2D2200]' : 'bg-white text-[#2D2200] border-[#E2DEC9] hover:border-[#2D2200]'}`}
+                    >
+                      {pt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {kind === 'first-then' && (
               <div className="space-y-1.5">
                 <Label>Side</Label>
@@ -267,6 +286,9 @@ export const PlannerDrawer: React.FC<{
             )}
             {kind === 'week' && (
               <Toggle checked={planner.weekdaysOnly} onChange={(weekdaysOnly) => onUpdatePlanner({ weekdaysOnly })} label="Weekdays only" hint="Monday to Friday, with more room for each day." />
+            )}
+            {kind === 'week' && (
+              <Toggle checked={planner.weekBands !== false} onChange={(weekBands) => onUpdatePlanner({ weekBands })} label="Parts of the day" hint="Morning, afternoon and evening down the side." />
             )}
             {kind !== 'first-then' && (
               <Toggle checked={planner.showTicks} onChange={(showTicks) => onUpdatePlanner({ showTicks })} label="Tick boxes" hint="A box beside each activity to tick when it's done." />

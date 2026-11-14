@@ -132,6 +132,7 @@ function validatePlanner(raw: unknown): PlannerData | null {
       ...(typeof it.minutes === 'number' ? { minutes: num(it.minutes, 30, 12 * 60, 30) } : {}),
       ...(DAY_KEYS.has(it.day) ? { day: it.day } : {}),
       ...(it.side === 'first' || it.side === 'then' ? { side: it.side } : {}),
+      ...(it.part === 'morning' || it.part === 'afternoon' || it.part === 'evening' ? { part: it.part } : {}),
     }));
   return {
     kind: raw.kind,
@@ -143,6 +144,7 @@ function validatePlanner(raw: unknown): PlannerData | null {
     items,
     // Planners saved before the start screen count as chosen
     kindChosen: raw.kindChosen !== false,
+    weekBands: raw.weekBands !== false,
   };
 }
 

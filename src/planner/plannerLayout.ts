@@ -8,10 +8,10 @@
  * position, a list position or a side.
  */
 
-import { DayKey, PageSizeId, PlannerData } from '../types';
+import { DayKey, DayPart, PageSizeId, PlannerData } from '../types';
 import { pageDims } from '../config/appConfig';
 import { pageLayout } from '../utils/spacing';
-import { daysShown, PlannerDrop, STEP, visibleItems } from './plannerModel';
+import { bandsOn, DAY_PARTS, daysShown, PlannerDrop, STEP, visibleItems } from './plannerModel';
 
 export interface Box { x: number; y: number; w: number; h: number }
 export interface ItemBox extends Box { id: string; day?: DayKey; lane?: number; lanes?: number }
@@ -25,6 +25,9 @@ export interface PlannerGeometry {
   /** Week: one column per day, and the band their names sit in */
   columns?: (Box & { day: DayKey; label: string })[];
   headerH?: number;
+  /** Week with parts of the day: the side rail and the bands across the days */
+  rail?: Box;
+  bands?: (Box & { part: DayPart; label: string; icon: string })[];
   /** Checklist rows / first–then panels */
   rowBoxes?: Box[];
   panels?: (Box & { side: 'first' | 'then' })[];
@@ -32,6 +35,7 @@ export interface PlannerGeometry {
 }
 
 const TIME_COL = 46;
+const RAIL = 30; // the week view's parts-of-the-day rail
 const GAP = 6;
 
 export function plannerGeometry(pageSize: PageSizeId, showDateName: boolean, p: PlannerData): PlannerGeometry {
@@ -84,9 +88,30 @@ export function plannerGeometry(pageSize: PageSizeId, showDateName: boolean, p: 
   if (p.kind === 'week') {
     const days = daysShown(p);
     const headerH = 30;
-    const colW = (area.w - GAP * (days.length - 1)) / days.length;
-    const columns = days.map((d, i) => ({ x: area.x + i * (colW + GAP), y: area.y, w: colW, h: area.h, day: d.key, label: d.label }));
+    const banded = bandsOn(p);
+    // Parts of the day: a rail down the left, shared by every day
+    const railW = banded ? RAIL : 0;
+    const left = area.x + (banded ? railW + GAP : 0);
+    const width = area.w - (banded ? railW + GAP : 0);
+    const colW = (width - GAP * (days.length - 1)) / days.length;
+    const columns = days.map((d, i) => ({ x: left + i * (colW + GAP), y: area.y, w: colW, h: area.h, day: d.key, label: d.label }));
     const items: ItemBox[] = [];
+    if (banded) {
+      const bodyTop = area.y + headerH;
+      const bandH = (area.h - headerH) / DAY_PARTS.length;
+      const bands = DAY_PARTS.map((pt, i) => ({ x: area.x, y: bodyTop + i * bandH, w: area.w, h: bandH, part: pt.key, label: pt.label, icon: pt.icon }));
+      // Every cell shares one card size, set by the busiest day-and-part
+      const most = Math.max(1, ...columns.flatMap((c) => DAY_PARTS.map((pt) => visibleItems(p, c.day, pt.key).length)));
+      const cardH = Math.min(84, (bandH - GAP * (most + 1)) / most);
+      for (const col of columns) {
+        for (const band of bands) {
+          visibleItems(p, col.day, band.part).forEach((it, j) => {
+            items.push({ id: it.id, day: col.day, x: col.x + 5, y: band.y + GAP + j * (cardH + GAP), w: col.w - 10, h: cardH });
+          });
+        }
+      }
+      return { area, columns, headerH, items, rail: { x: area.x, y: bodyTop, w: railW, h: area.h - headerH }, bands };
+    }
     const most = Math.max(1, ...columns.map((c) => visibleItems(p, c.day).length));
     const listH = area.h - headerH - GAP * 2;
     const cardH = Math.min(84, (listH - GAP * (most - 1)) / most);
@@ -132,6 +157,13 @@ export function dropTarget(g: PlannerGeometry, p: PlannerData, x: number, y: num
   if (p.kind === 'week') {
     const cols = g.columns!;
     const col = cols.reduce((best, c) => (Math.abs(c.x + c.w / 2 - x) < Math.abs(best.x + best.w / 2 - x) ? c : best), cols[0]);
+    if (g.bands) {
+      // The band under the pointer, then the spot among that band's cards
+      const band = g.bands.reduce((best, b) => (Math.abs(b.y + b.h / 2 - y) < Math.abs(best.y + best.h / 2 - y) ? b : best), g.bands[0]);
+      const inCell = g.items.filter((b) => b.day === col.day && b.y >= band.y && b.y < band.y + band.h);
+      const index = inCell.filter((b) => b.y + b.h / 2 < y).length;
+      return { kind: 'week', day: col.day, index, part: band.part };
+    }
     const inCol = g.items.filter((b) => b.day === col.day);
     const index = inCol.filter((b) => b.y + b.h / 2 < y).length;
     return { kind: 'week', day: col.day, index };

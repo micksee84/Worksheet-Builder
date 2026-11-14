@@ -738,7 +738,10 @@ export default function App() {
         const items = [...p.items];
         const idx = items.findIndex((i) => i.id === plannerSel.itemId);
         if (idx === -1) return p;
-        const sameList = (i: PlannerItem) => p.kind !== 'week' || (i.day ?? 'mon') === (items[idx].day ?? 'mon');
+        // Week: move within the same day (and the same part of the day, when shown)
+        const sameList = (i: PlannerItem) =>
+          p.kind !== 'week' ||
+          ((i.day ?? 'mon') === (items[idx].day ?? 'mon') && (p.weekBands === false || (i.part ?? 'morning') === (items[idx].part ?? 'morning')));
         let j = idx + dir;
         while (j >= 0 && j < items.length && !sameList(items[j])) j += dir;
         if (j < 0 || j >= items.length) return p;

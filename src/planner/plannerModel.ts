@@ -7,7 +7,7 @@
  * reads the fields it needs and fills sensible defaults for the rest.
  */
 
-import { DayKey, Page, PlannerData, PlannerItem, PlannerKind } from '../types';
+import { DayKey, Page, PlannerData, PlannerItem, PlannerKind, DayPart } from '../types';
 import { ACTIVITIES, getActivity } from './activities';
 
 export const WEEK: { key: DayKey; label: string; short: string }[] = [
@@ -28,6 +28,15 @@ export const KIND_LABELS: Record<PlannerKind, { label: string; title: string; bl
 };
 
 export const STEP = 30; // minutes
+
+/** The week view's parts of the day, top to bottom, with their side icons */
+export const DAY_PARTS: { key: DayPart; label: string; icon: string }[] = [
+  { key: 'morning', label: 'Morning', icon: 'ph:SunHorizon' },
+  { key: 'afternoon', label: 'Afternoon', icon: 'ph:Sun' },
+  { key: 'evening', label: 'Evening', icon: 'ph:Moon' },
+];
+export const bandsOn = (p: PlannerData) => p.kind === 'week' && p.weekBands !== false;
+export const partOf = (i: PlannerItem): DayPart => i.part ?? 'morning';
 
 let counter = 0;
 export const newItemId = () => `pi_${Date.now().toString(36)}_${(counter++).toString(36)}`;
@@ -67,13 +76,13 @@ export function samplePlanner(kind: PlannerKind): PlannerData {
       return {
         ...base,
         items: [
-          a('school', { day: 'mon' }), a('art', { day: 'mon' }),
-          a('school', { day: 'tue' }), a('music', { day: 'tue' }),
-          a('school', { day: 'wed' }), a('swimming', { day: 'wed' }),
-          a('school', { day: 'thu' }), a('reading', { day: 'thu' }),
-          a('school', { day: 'fri' }), a('treat', { day: 'fri' }),
-          a('playground', { day: 'sat' }), a('bike', { day: 'sat' }),
-          a('pets', { day: 'sun' }), a('story', { day: 'sun' }),
+          a('school', { day: 'mon' }), a('art', { day: 'mon', part: 'afternoon' }), a('story', { day: 'mon', part: 'evening' }),
+          a('school', { day: 'tue' }), a('music', { day: 'tue', part: 'afternoon' }),
+          a('school', { day: 'wed' }), a('swimming', { day: 'wed', part: 'afternoon' }), a('bath', { day: 'wed', part: 'evening' }),
+          a('school', { day: 'thu' }), a('reading', { day: 'thu', part: 'afternoon' }),
+          a('school', { day: 'fri' }), a('treat', { day: 'fri', part: 'evening' }),
+          a('playground', { day: 'sat' }), a('bike', { day: 'sat', part: 'afternoon' }),
+          a('pets', { day: 'sun' }), a('story', { day: 'sun', part: 'evening' }),
         ],
       };
     case 'checklist':
@@ -140,12 +149,12 @@ export function switchKind(p: PlannerData, kind: PlannerKind): PlannerData {
 }
 
 /** Items a view actually draws, in drawing order */
-export function visibleItems(p: PlannerData, day?: DayKey): PlannerItem[] {
+export function visibleItems(p: PlannerData, day?: DayKey, part?: DayPart): PlannerItem[] {
   switch (p.kind) {
     case 'day':
       return [...p.items].sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
     case 'week':
-      return p.items.filter((i) => (i.day ?? 'mon') === day);
+      return p.items.filter((i) => (i.day ?? 'mon') === day && (!part || partOf(i) === part));
     case 'checklist':
       return p.items;
     case 'first-then':
@@ -184,7 +193,7 @@ export function addItem(p: PlannerData, item: PlannerItem, preferDay?: DayKey): 
 /** Where a drop lands, worked out by the layout (see plannerLayout.dropTarget) */
 export type PlannerDrop =
   | { kind: 'day'; start: number }
-  | { kind: 'week'; day: DayKey; index: number }
+  | { kind: 'week'; day: DayKey; index: number; part?: DayPart }
   | { kind: 'checklist'; index: number }
   | { kind: 'first-then'; side: 'first' | 'then' };
 
@@ -200,9 +209,10 @@ export function placeItem(p: PlannerData, item: PlannerItem, drop: PlannerDrop):
       break;
     }
     case 'week': {
-      const sameDay = items.filter((i) => (i.day ?? 'mon') === drop.day);
+      // With bands, the index counts within that day's part of the day
+      const sameDay = items.filter((i) => (i.day ?? 'mon') === drop.day && (!drop.part || partOf(i) === drop.part));
       const before = sameDay[drop.index];
-      const placed = { ...item, day: drop.day };
+      const placed = { ...item, day: drop.day, ...(drop.part ? { part: drop.part } : {}) };
       if (before) items.splice(items.indexOf(before), 0, placed);
       else items.push(placed);
       break;
