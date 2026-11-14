@@ -39,7 +39,7 @@ export function itemFromActivity(activityId: string, extra: Partial<PlannerItem>
 
 const at = (h: number, m = 0) => h * 60 + m;
 
-/** The example each kind of planner starts with, so a new page is never blank */
+/** An example of each kind of planner: shown in "What are you making?" and by Reset example */
 export function samplePlanner(kind: PlannerKind): PlannerData {
   const base = { kind, startHour: 7, endHour: 20, showTimes: true, weekdaysOnly: false, showTicks: kind === 'checklist' };
   const a = itemFromActivity;
@@ -94,7 +94,8 @@ export function createPlannerPage(kind: PlannerKind, pageNumber: number): Page {
     layout: '1-full',
     slots: [],
     showDateName: false,
-    planner: samplePlanner(kind),
+    // Starts empty: the grown-up adds the activities
+    planner: { ...samplePlanner(kind), items: [] },
   };
 }
 

@@ -107,46 +107,6 @@ function createBlankWorksheet(pageSize: Worksheet['pageSize'] = 'letter'): Works
   };
 }
 
-// Initial default blank/starter worksheet
-function createInitialWorksheet(): Worksheet {
-  return {
-    id: `ws_${Date.now()}`,
-    title: 'Sunshine Learning Fun',
-    pageSize: 'letter',
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    pages: [
-      {
-        id: 'page_1',
-        title: 'Lines and letters',
-        layout: '2-half',
-        showDateName: true,
-        slots: [
-          {
-            id: 'slot-1',
-            size: 'half',
-            label: 'Top Half',
-            block: createBlockInstance('line-tracing', { lineStyle: 'wave', lineCount: 4 }, {
-              id: 'buddy',
-              corner: 'top-right',
-            }),
-          },
-          {
-            id: 'slot-2',
-            size: 'half',
-            label: 'Bottom Half',
-            block: createBlockInstance('letter-tracing', { letter: 'A', caseMode: 'both' }, {
-              id: 'finn',
-              corner: 'top-right',
-            }),
-          },
-        ],
-      },
-    ],
-  };
-}
-
-
 /**
  * Keeps the drag card under the mouse. By default the overlay starts at the top-left of
  * whatever was picked up, so a block grabbed from the middle of a big slot trails far
@@ -168,8 +128,7 @@ const followPointer: Modifier = ({ activatorEvent, draggingNodeRect, transform }
 export default function App() {
   const { user, signOut } = useAuth();
 
-  // True when nothing was saved in this browser and no share link was opened,
-  // so a signed-in grown-up gets their latest worksheet from their account instead.
+  // True when the builder opened on a blank page (no share link, nothing open in this tab)
   const startedFreshRef = useRef(false);
 
   // Main worksheet state
@@ -177,12 +136,12 @@ export default function App() {
     // 1. Try URL hash first
     const fromHash = decodeWorksheetFromHash();
     if (fromHash) return fromHash;
-    // 2. Try localStorage next
+    // 2. Then the worksheet already open in this tab (a refresh)
     const fromStorage = loadWorksheetFromStorage();
     if (fromStorage) return fromStorage;
-    // 3. Fallback to initial
+    // 3. Otherwise every start is a blank page
     startedFreshRef.current = true;
-    return createInitialWorksheet();
+    return createBlankWorksheet();
   });
 
   // Undo / Redo history
