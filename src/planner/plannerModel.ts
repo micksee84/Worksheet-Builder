@@ -27,16 +27,26 @@ export const KIND_LABELS: Record<PlannerKind, { label: string; title: string; bl
   'first-then': { label: 'First–then', title: 'First, then', blurb: 'One thing to do first, then the reward. Big pictures.' },
 };
 
-export const STEP = 30; // minutes
+/** The planner's time unit: every start time and length moves in 15-minute steps */
+export const STEP = 15; // minutes
+/** The longest an activity can be, and the tallest its card gets */
+export const MAX_MINUTES = 180;
+/** Round a length to the time unit, between 15 minutes and 3 hours */
+export const clampLength = (m: number | undefined) => Math.max(STEP, Math.min(MAX_MINUTES, Math.round((m ?? 30) / STEP) * STEP));
 
-/** The week view's parts of the day, top to bottom, with their side icons */
-export const DAY_PARTS: { key: DayPart; label: string; icon: string }[] = [
-  { key: 'morning', label: 'Morning', icon: 'ph:SunHorizon' },
-  { key: 'afternoon', label: 'Afternoon', icon: 'ph:Sun' },
-  { key: 'evening', label: 'Evening', icon: 'ph:Moon' },
+/**
+ * Parts of the day, marked on the time rail of the day and week views with a small icon
+ * where each begins (black and white, so it suits the Ink Style). `from` is the hour.
+ */
+export const DAY_PARTS: { key: DayPart; label: string; icon: string; from: number }[] = [
+  { key: 'morning', label: 'Morning', icon: 'ph:SunHorizon', from: 0 },
+  { key: 'afternoon', label: 'Afternoon', icon: 'ph:Sun', from: 12 },
+  { key: 'evening', label: 'Evening', icon: 'ph:Moon', from: 17 },
 ];
-export const bandsOn = (p: PlannerData) => p.kind === 'week' && p.weekBands !== false;
-export const partOf = (i: PlannerItem): DayPart => i.part ?? 'morning';
+/** Week plans saved with morning / afternoon / evening bands start their activities at these hours */
+const PART_START: Record<DayPart, number> = { morning: 9 * 60, afternoon: 13 * 60, evening: 18 * 60 };
+/** True for the views laid out on a timeline */
+export const timed = (p: PlannerData) => p.kind === 'day' || p.kind === 'week';
 
 let counter = 0;
 export const newItemId = () => `pi_${Date.now().toString(36)}_${(counter++).toString(36)}`;
@@ -76,13 +86,13 @@ export function samplePlanner(kind: PlannerKind): PlannerData {
       return {
         ...base,
         items: [
-          a('school', { day: 'mon' }), a('art', { day: 'mon', part: 'afternoon' }), a('story', { day: 'mon', part: 'evening' }),
-          a('school', { day: 'tue' }), a('music', { day: 'tue', part: 'afternoon' }),
-          a('school', { day: 'wed' }), a('swimming', { day: 'wed', part: 'afternoon' }), a('bath', { day: 'wed', part: 'evening' }),
-          a('school', { day: 'thu' }), a('reading', { day: 'thu', part: 'afternoon' }),
-          a('school', { day: 'fri' }), a('treat', { day: 'fri', part: 'evening' }),
-          a('playground', { day: 'sat' }), a('bike', { day: 'sat', part: 'afternoon' }),
-          a('pets', { day: 'sun' }), a('story', { day: 'sun', part: 'evening' }),
+          a('school', { day: 'mon', start: at(9) }), a('art', { day: 'mon', start: at(13) }), a('story', { day: 'mon', start: at(19) }),
+          a('school', { day: 'tue', start: at(9) }), a('music', { day: 'tue', start: at(14) }),
+          a('school', { day: 'wed', start: at(9) }), a('swimming', { day: 'wed', start: at(15) }), a('bath', { day: 'wed', start: at(18, 30) }),
+          a('school', { day: 'thu', start: at(9) }), a('reading', { day: 'thu', start: at(13, 30) }),
+          a('school', { day: 'fri', start: at(9) }), a('treat', { day: 'fri', start: at(16) }),
+          a('playground', { day: 'sat', start: at(10) }), a('bike', { day: 'sat', start: at(14) }),
+          a('pets', { day: 'sun', start: at(9) }), a('story', { day: 'sun', start: at(19) }),
         ],
       };
     case 'checklist':
@@ -117,16 +127,23 @@ export const daysShown = (p: PlannerData) => (p.weekdaysOnly ? WEEK.slice(0, 5) 
  */
 export function normalize(p: PlannerData): PlannerData {
   let items = p.items;
-  if (p.kind === 'day') {
-    let next = p.startHour * 60;
+  if (p.kind === 'day' || p.kind === 'week') {
+    // Every activity gets a length in 15-minute steps (at most 3 hours) and a start time.
+    // One without a time follows on from the one before it on the same day; a week
+    // activity saved with a part of the day starts in that part.
+    const next: Record<string, number> = {};
     items = items.map((it) => {
-      const minutes = Math.max(STEP, Math.round((it.minutes ?? STEP) / STEP) * STEP);
-      const start = it.start ?? next;
-      next = Math.max(next, start + minutes);
-      return it.start === start && it.minutes === minutes ? it : { ...it, start, minutes };
+      const day = p.kind === 'week' ? it.day ?? 'mon' : 'all';
+      const minutes = clampLength(it.minutes);
+      const from = it.part ? Math.max(PART_START[it.part], next[day] ?? 0) : next[day] ?? p.startHour * 60;
+      const raw = it.start ?? from;
+      const start = Math.max(p.startHour * 60, Math.min(Math.round(raw / STEP) * STEP, p.endHour * 60 - minutes));
+      next[day] = Math.max(next[day] ?? p.startHour * 60, start + minutes);
+      const done = it.start === start && it.minutes === minutes && (p.kind === 'day' || it.day === day) && !it.part;
+      if (done) return it;
+      const { part: _part, ...rest } = it;
+      return { ...rest, start, minutes, ...(p.kind === 'week' ? { day: day as DayKey } : {}) };
     });
-  } else if (p.kind === 'week') {
-    items = items.map((it) => (it.day ? it : { ...it, day: 'mon' }));
   } else if (p.kind === 'first-then') {
     const hasFirst = items.some((i) => i.side === 'first');
     const hasThen = items.some((i) => i.side === 'then');
@@ -149,12 +166,12 @@ export function switchKind(p: PlannerData, kind: PlannerKind): PlannerData {
 }
 
 /** Items a view actually draws, in drawing order */
-export function visibleItems(p: PlannerData, day?: DayKey, part?: DayPart): PlannerItem[] {
+export function visibleItems(p: PlannerData, day?: DayKey): PlannerItem[] {
   switch (p.kind) {
     case 'day':
       return [...p.items].sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
     case 'week':
-      return p.items.filter((i) => (i.day ?? 'mon') === day && (!part || partOf(i) === part));
+      return p.items.filter((i) => (i.day ?? 'mon') === day).sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
     case 'checklist':
       return p.items;
     case 'first-then':
@@ -175,12 +192,13 @@ export const hourLabel = (h: number) => `${h % 12 === 0 ? 12 : h % 12} ${h < 12 
 /** Add an activity where a tap on + should put it */
 export function addItem(p: PlannerData, item: PlannerItem, preferDay?: DayKey): PlannerData {
   const items = [...p.items];
-  if (p.kind === 'day') {
-    const end = Math.max(p.startHour * 60, ...p.items.map((i) => (i.start ?? 0) + (i.minutes ?? STEP)));
-    const minutes = item.minutes ?? STEP;
-    item = { ...item, start: Math.min(end, p.endHour * 60 - minutes) };
-  } else if (p.kind === 'week') {
-    item = { ...item, day: preferDay ?? 'mon' };
+  if (p.kind === 'day' || p.kind === 'week') {
+    // After the last activity (that day, on the week)
+    const day = preferDay ?? 'mon';
+    const same = p.kind === 'week' ? p.items.filter((i) => (i.day ?? 'mon') === day) : p.items;
+    const end = Math.max(p.startHour * 60, ...same.map((i) => (i.start ?? 0) + (i.minutes ?? STEP)));
+    const minutes = clampLength(item.minutes);
+    item = { ...item, minutes, start: Math.min(end, p.endHour * 60 - minutes), ...(p.kind === 'week' ? { day } : {}) };
   } else if (p.kind === 'first-then') {
     const first = items.find((i) => i.side === 'first');
     const then = items.find((i) => i.side === 'then');
@@ -195,7 +213,7 @@ export function addItem(p: PlannerData, item: PlannerItem, preferDay?: DayKey): 
 /** Where a drop lands, worked out by the layout (see plannerLayout.dropTarget) */
 export type PlannerDrop =
   | { kind: 'day'; start: number }
-  | { kind: 'week'; day: DayKey; index: number; part?: DayPart }
+  | { kind: 'week'; day: DayKey; start: number }
   | { kind: 'checklist'; index: number }
   | { kind: 'first-then'; side: 'first' | 'then' };
 
@@ -204,19 +222,12 @@ export function placeItem(p: PlannerData, item: PlannerItem, drop: PlannerDrop):
   let items = p.items.filter((i) => i.id !== item.id);
   const existed = items.length !== p.items.length;
   switch (drop.kind) {
-    case 'day': {
-      const minutes = item.minutes ?? STEP;
-      const start = Math.max(p.startHour * 60, Math.min(drop.start, p.endHour * 60 - minutes));
-      items.push({ ...item, start });
-      break;
-    }
+    case 'day':
     case 'week': {
-      // With bands, the index counts within that day's part of the day
-      const sameDay = items.filter((i) => (i.day ?? 'mon') === drop.day && (!drop.part || partOf(i) === drop.part));
-      const before = sameDay[drop.index];
-      const placed = { ...item, day: drop.day, ...(drop.part ? { part: drop.part } : {}) };
-      if (before) items.splice(items.indexOf(before), 0, placed);
-      else items.push(placed);
+      const minutes = clampLength(item.minutes);
+      const start = Math.max(p.startHour * 60, Math.min(drop.start, p.endHour * 60 - minutes));
+      const { part: _part, ...rest } = item;
+      items.push({ ...rest, minutes, start, ...(drop.kind === 'week' ? { day: drop.day } : {}) });
       break;
     }
     case 'checklist': {

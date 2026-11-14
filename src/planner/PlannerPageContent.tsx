@@ -12,8 +12,8 @@ import React from 'react';
 import { PageSizeId, PlannerData, PlannerItem } from '../types';
 import { PlannerGraphic } from './plannerIcons';
 import { FRAME_STROKE } from '../utils/spacing';
-import { plannerGeometry, ItemBox } from './plannerLayout';
-import { hourLabel, lengthLabel, STEP, timeLabel } from './plannerModel';
+import { plannerGeometry, ItemBox, PlannerGeometry } from './plannerLayout';
+import { DAY_PARTS, hourLabel, lengthLabel, STEP, timeLabel } from './plannerModel';
 
 const INK = '#2D2200';
 const GUIDE = '#DDD9C4';
@@ -37,7 +37,7 @@ function RowCard({ it, b, p, big = false }: { it: PlannerItem; b: ItemBox; p: Pl
   const showTime = p.showTimes && p.kind === 'day' && it.start !== undefined;
   const time = showTime ? `${timeLabel(it.start!)}–${timeLabel(it.start! + (it.minutes ?? STEP))}` : '';
   const twoLines = showTime && b.h >= 34;
-  const size = fit(it.label, textW, big ? 24 : Math.min(15, b.h * 0.5));
+  const size = fit(it.label, textW, big ? 24 : Math.min(15, b.h * 0.62), 4);
   const cy = b.y + b.h / 2;
   return (
     <g>
@@ -52,7 +52,7 @@ function RowCard({ it, b, p, big = false }: { it: PlannerItem; b: ItemBox; p: Pl
           y={twoLines ? cy + 11 : cy + 3.5}
           textAnchor={twoLines ? 'start' : 'end'}
           fill={INK}
-          fontSize={9}
+          fontSize={Math.min(9, b.h * 0.62)}
           fontWeight={700}
           fontFamily={FONT}
         >
@@ -64,40 +64,66 @@ function RowCard({ it, b, p, big = false }: { it: PlannerItem; b: ItemBox; p: Pl
   );
 }
 
-/** A small card for the week view: picture on top, words underneath */
+/** A card for the week view, sized by its length: picture over words when there's room,
+ * picture beside words when short, and just the picture on a 15-minute sliver. */
 function StackCard({ it, b, p }: { it: PlannerItem; b: ItemBox; p: PlannerData }) {
-  // A busy day: short cards, so the picture sits beside the words instead
-  // How long it takes, as a small tag (Show how long)
-  const len = p.showTimes ? lengthLabel(it.minutes ?? STEP) : '';
-  if (b.h < 50) {
-    const pic = Math.max(8, b.h - 6);
-    const tick = p.showTicks ? Math.min(10, b.h - 8) : 0;
-    const tagW = len ? len.length * 3.6 + 4 : 0;
-    const textX = b.x + 4 + pic + 4;
+  const len = p.showTimes ? `${timeLabel(it.start ?? 0)} · ${lengthLabel(it.minutes ?? STEP)}` : '';
+  const rx = Math.min(8, b.h / 3);
+  const frame = <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={rx} fill="#FFFFFF" stroke={INK} strokeWidth={b.h < 20 ? 1 : 1.25} />;
+  if (b.h < 20) {
+    // A sliver: the picture alone, with the words if they fit beside it
+    const pic = Math.max(6, b.h - 3);
+    const textX = b.x + 3 + pic + 3;
+    const size = fit(it.label, b.x + b.w - textX - 3, Math.min(8, b.h * 0.62), 4);
     return (
       <g>
-        <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={Math.min(8, b.h / 3)} fill="#FFFFFF" stroke={INK} strokeWidth={1.25} />
-        <PlannerGraphic picture={it.picture} cx={b.x + 3 + pic / 2} cy={b.y + b.h / 2} size={pic} />
-        <text x={textX} y={b.y + b.h / 2 + 3} fill={INK} fontSize={fit(it.label, b.x + b.w - textX - tick - tagW - 6, 9, 5.5)} fontWeight={800} fontFamily={FONT}>
+        {frame}
+        <PlannerGraphic picture={it.picture} cx={b.x + 2 + pic / 2} cy={b.y + b.h / 2} size={pic} />
+        {size >= 4.5 && (
+          <text x={textX} y={b.y + b.h / 2 + size * 0.36} fill={INK} fontSize={size} fontWeight={800} fontFamily={FONT}>
+            {it.label}
+          </text>
+        )}
+      </g>
+    );
+  }
+  if (b.h < 56) {
+    const pic = Math.max(8, Math.min(b.h - 6, 26));
+    const tick = p.showTicks ? Math.min(10, b.h - 8) : 0;
+    const textX = b.x + 4 + pic + 4;
+    const twoLines = len && b.h >= 30;
+    const size = fit(it.label, b.x + b.w - textX - tick - 4, 9, 5);
+    const cy = b.y + b.h / 2;
+    return (
+      <g>
+        {frame}
+        <PlannerGraphic picture={it.picture} cx={b.x + 3 + pic / 2} cy={cy} size={pic} />
+        <text x={textX} y={twoLines ? cy - 1 : cy + size * 0.36} fill={INK} fontSize={size} fontWeight={800} fontFamily={FONT}>
           {it.label}
         </text>
-        {len && (
-          <text x={b.x + b.w - (tick ? tick + 6 : 4)} y={b.y + b.h / 2 + 2.5} textAnchor="end" fill={INK} fontSize={6.5} fontWeight={700} fontFamily={FONT}>
+        {twoLines && (
+          <text x={textX} y={cy + 8} fill={INK} fontSize={6} fontWeight={700} fontFamily={FONT}>
             {len}
           </text>
         )}
-        {tick > 0 && <Tick x={b.x + b.w - tick - 3} y={b.y + b.h / 2 - tick / 2} size={tick} />}
+        {tick > 0 && <Tick x={b.x + b.w - tick - 3} y={cy - tick / 2} size={tick} />}
       </g>
     );
   }
   const labelH = 13;
+  const tagH = len ? 9 : 0; // the time sits between the picture and the words
   const tick = p.showTicks ? 11 : 0;
-  const tagH = len ? 9 : 0; // the length sits between the picture and the words
-  const pic = Math.max(10, Math.min(b.h - labelH - tagH - 8, b.w - 12));
+  const pic = Math.max(10, Math.min(b.h - labelH - tagH - 8, b.w - 12, 56));
+  const picY = b.y + (b.h - labelH - tagH - pic) / 2;
   return (
     <g>
-      <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={8} fill="#FFFFFF" stroke={INK} strokeWidth={1.5} />
-      <PlannerGraphic picture={it.picture} cx={b.x + b.w / 2} cy={b.y + 4 + pic / 2} size={pic} />
+      {frame}
+      <PlannerGraphic picture={it.picture} cx={b.x + b.w / 2} cy={picY + pic / 2} size={pic} />
+      {len && (
+        <text x={b.x + b.w / 2} y={b.y + b.h - 6 - labelH + 1} textAnchor="middle" fill={INK} fontSize={6.5} fontWeight={700} fontFamily={FONT}>
+          {len}
+        </text>
+      )}
       <text
         x={b.x + b.w / 2 - tick / 2}
         y={b.y + b.h - 6}
@@ -110,11 +136,53 @@ function StackCard({ it, b, p }: { it: PlannerItem; b: ItemBox; p: PlannerData }
         {it.label}
       </text>
       {tick > 0 && <Tick x={b.x + b.w - tick - 4} y={b.y + 4} size={tick} />}
-      {len && (
-        <text x={b.x + b.w / 2} y={b.y + b.h - 6 - labelH + 1} textAnchor="middle" fill={INK} fontSize={7.5} fontWeight={700} fontFamily={FONT}>
-          {len}
-        </text>
-      )}
+    </g>
+  );
+}
+
+/**
+ * The timeline both the day and the week sit on: an hour label down the left every hour,
+ * a solid guide line on the hour and a dashed one on the half hour across `spans`, and
+ * a sunrise, sun or moon where morning, afternoon and evening begin.
+ */
+function Timeline({ g, p, spans }: { g: PlannerGeometry; p: PlannerData; spans: { x: number; w: number }[] }) {
+  const rowH = g.rowH!;
+  const top = g.trackTop!;
+  const perHour = 60 / STEP;
+  const rows = (p.endHour - p.startHour) * perHour;
+  const col = g.timeCol!;
+  return (
+    <g>
+      {Array.from({ length: rows + 1 }, (_, r) => {
+        const onHour = r % perHour === 0;
+        const onHalf = r % (perHour / 2) === 0;
+        if (!onHalf) return null;
+        const y = top + r * rowH;
+        const hour = p.startHour + r / perHour;
+        const part = onHour && r < rows ? DAY_PARTS.find((pt) => pt.from === hour || (r === 0 && pt.from <= hour && hour < (DAY_PARTS[DAY_PARTS.indexOf(pt) + 1]?.from ?? 24))) : undefined;
+        return (
+          <g key={r}>
+            {spans.map((sp, i) => (
+              <line
+                key={i}
+                x1={onHour && i === 0 ? sp.x - 6 : sp.x}
+                y1={y}
+                x2={sp.x + sp.w}
+                y2={y}
+                stroke={GUIDE}
+                strokeWidth={onHour ? 1.25 : 0.75}
+                strokeDasharray={onHour ? undefined : '3 4'}
+              />
+            ))}
+            {onHour && r < rows && (
+              <text x={col.x} y={y + 10} fill={INK} fontSize={9.5} fontWeight={800} fontFamily={FONT}>
+                {hourLabel(hour)}
+              </text>
+            )}
+            {part && rowH * perHour >= 22 && <PlannerGraphic picture={part.icon} cx={col.x + 8} cy={y + 10 + Math.min(11, rowH * perHour * 0.45)} size={Math.min(14, rowH * perHour * 0.5)} />}
+          </g>
+        );
+      })}
     </g>
   );
 }
@@ -128,33 +196,10 @@ export const PlannerPageContent: React.FC<{ planner: PlannerData; pageSize: Page
   const byId = new Map(p.items.map((i) => [i.id, i]));
 
   if (p.kind === 'day') {
-    const rowH = g.rowH!;
-    const rows = (p.endHour - p.startHour) * (60 / STEP);
     const trackX = g.area.x + g.timeCol!.w;
     return (
       <g className="planner-day">
-        {Array.from({ length: rows + 1 }, (_, r) => {
-          const y = g.area.y + r * rowH;
-          const onHour = r % (60 / STEP) === 0;
-          return (
-            <g key={r}>
-              <line
-                x1={onHour ? trackX - 4 : trackX + 6}
-                y1={y}
-                x2={g.area.x + g.area.w}
-                y2={y}
-                stroke={GUIDE}
-                strokeWidth={onHour ? 1.25 : 0.75}
-                strokeDasharray={onHour ? undefined : '3 4'}
-              />
-              {onHour && r < rows && (
-                <text x={g.area.x} y={y + 11} fill={INK} fontSize={10} fontWeight={800} fontFamily={FONT}>
-                  {hourLabel(p.startHour + r / (60 / STEP))}
-                </text>
-              )}
-            </g>
-          );
-        })}
+        <Timeline g={g} p={p} spans={[{ x: trackX + 6, w: g.area.x + g.area.w - trackX - 6 }]} />
         {g.items.map((b) => byId.get(b.id) && <RowCard key={b.id} it={byId.get(b.id)!} b={b} p={p} />)}
       </g>
     );
@@ -165,41 +210,14 @@ export const PlannerPageContent: React.FC<{ planner: PlannerData; pageSize: Page
       <g className="planner-week">
         {g.columns!.map((c) => (
           <g key={c.day}>
-            <rect x={c.x} y={c.y} width={c.w} height={c.h} rx={12} fill="#FFFFFF" stroke={INK} strokeWidth={FRAME_STROKE} />
+            <rect x={c.x} y={c.y} width={c.w} height={c.h} rx={10} fill="#FFFFFF" stroke={INK} strokeWidth={FRAME_STROKE} />
             <line x1={c.x} y1={c.y + g.headerH!} x2={c.x + c.w} y2={c.y + g.headerH!} stroke={INK} strokeWidth={1.5} />
-            <text x={c.x + c.w / 2} y={c.y + 20} textAnchor="middle" fill={INK} fontSize={fit(c.label, c.w - 10, 13)} fontWeight={900} fontFamily={FONT}>
+            <text x={c.x + c.w / 2} y={c.y + 20} textAnchor="middle" fill={INK} fontSize={fit(c.label, c.w - 8, 12)} fontWeight={900} fontFamily={FONT}>
               {c.label}
             </text>
-            {/* Parts of the day: guide lines between the bands */}
-            {g.bands?.slice(1).map((b) => (
-              <line key={b.part} x1={c.x + 4} y1={b.y} x2={c.x + c.w - 4} y2={b.y} stroke={GUIDE} strokeWidth={1.25} strokeDasharray="4 4" />
-            ))}
           </g>
         ))}
-        {/* The rail: an icon and the part's name, read top to bottom */}
-        {g.bands?.map((b) => {
-          const r = g.rail!;
-          const cx = r.x + r.w / 2;
-          const cy = b.y + b.h / 2;
-          return (
-            <g key={b.part}>
-              <PlannerGraphic picture={b.icon} cx={cx} cy={b.y + 18} size={22} />
-              <text
-                x={cx}
-                y={cy + 8}
-                transform={`rotate(-90 ${cx} ${cy + 8})`}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill={INK}
-                fontSize={12}
-                fontWeight={900}
-                fontFamily={FONT}
-              >
-                {b.label}
-              </text>
-            </g>
-          );
-        })}
+        <Timeline g={g} p={p} spans={g.columns!.map((c) => ({ x: c.x + 2, w: c.w - 4 }))} />
         {g.items.map((b) => byId.get(b.id) && <StackCard key={b.id} it={byId.get(b.id)!} b={b} p={p} />)}
       </g>
     );

@@ -12,9 +12,9 @@ import { useDraggable } from '@dnd-kit/core';
 import { Plus, Search, X, PanelLeftClose, PanelLeftOpen, Pencil } from '../components/icons';
 import { GraphicThumb } from './plannerIcons';
 import { ACTIVITIES, ACTIVITY_GROUPS, PlannerActivity } from './activities';
+import { lengthLabel as minutesLabel } from './plannerModel';
 import { PlannerKind } from '../types';
 
-const minutesLabel = (m: number) => (m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`);
 
 export { GraphicThumb as PictureThumb } from './plannerIcons';
 
@@ -163,7 +163,7 @@ export const PlannerLibrary: React.FC<{
                 </div>
                 <div className={`space-y-2 ${slim ? 'lg:space-y-1.5' : ''}`}>
                   {list.map((a) => (
-                    <ActivityCard key={a.id} activity={a} onAdd={onAddActivity} slim={slim} showLength={kind === 'day' && a.group !== 'pack'} />
+                    <ActivityCard key={a.id} activity={a} onAdd={onAddActivity} slim={slim} showLength={(kind === 'day' || kind === 'week') && a.group !== 'pack'} />
                   ))}
                 </div>
               </div>

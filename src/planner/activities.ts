@@ -13,7 +13,7 @@ export interface PlannerActivity {
   label: string;
   picture: string;
   group: ActivityGroup;
-  /** Usual length in minutes (30-minute steps) */
+  /** Usual length in minutes (15-minute steps, up to 3 hours) */
   minutes: number;
 }
 
@@ -27,14 +27,14 @@ export const ACTIVITY_GROUPS: { id: ActivityGroup; label: string }[] = [
 ];
 
 export const ACTIVITIES: PlannerActivity[] = [
-  { id: 'wake-up', label: 'Wake up', picture: 'ph:Sun', group: 'morning', minutes: 30 },
-  { id: 'brush-teeth', label: 'Brush teeth', picture: 'ph:Tooth', group: 'morning', minutes: 30 },
-  { id: 'wash-face', label: 'Wash face', picture: 'ph:HandSoap', group: 'morning', minutes: 30 },
-  { id: 'get-dressed', label: 'Get dressed', picture: 'ph:TShirt', group: 'morning', minutes: 30 },
-  { id: 'make-bed', label: 'Make bed', picture: 'ph:Bed', group: 'morning', minutes: 30 },
+  { id: 'wake-up', label: 'Wake up', picture: 'ph:Sun', group: 'morning', minutes: 15 },
+  { id: 'brush-teeth', label: 'Brush teeth', picture: 'ph:Tooth', group: 'morning', minutes: 15 },
+  { id: 'wash-face', label: 'Wash face', picture: 'ph:HandSoap', group: 'morning', minutes: 15 },
+  { id: 'get-dressed', label: 'Get dressed', picture: 'ph:TShirt', group: 'morning', minutes: 15 },
+  { id: 'make-bed', label: 'Make bed', picture: 'ph:Bed', group: 'morning', minutes: 15 },
   { id: 'breakfast', label: 'Breakfast', picture: 'ph:BowlFood', group: 'morning', minutes: 30 },
-  { id: 'pack-bag', label: 'Pack backpack', picture: 'ph:Backpack', group: 'morning', minutes: 30 },
-  { id: 'shoes-on', label: 'Shoes on', picture: 'ph:Sneaker', group: 'morning', minutes: 30 },
+  { id: 'pack-bag', label: 'Pack backpack', picture: 'ph:Backpack', group: 'morning', minutes: 15 },
+  { id: 'shoes-on', label: 'Shoes on', picture: 'ph:Sneaker', group: 'morning', minutes: 15 },
 
   { id: 'school', label: 'School time', picture: 'ph:Student', group: 'learning', minutes: 180 },
   { id: 'reading', label: 'Reading books', picture: 'ph:BookOpen', group: 'learning', minutes: 30 },
@@ -44,12 +44,12 @@ export const ACTIVITIES: PlannerActivity[] = [
   { id: 'circle-time', label: 'Circle time', picture: 'ph:UsersThree', group: 'learning', minutes: 30 },
   { id: 'puzzles', label: 'Puzzles', picture: 'ph:PuzzlePiece', group: 'learning', minutes: 30 },
 
-  { id: 'snack', label: 'Snack', picture: 'ph:OrangeSlice', group: 'meals', minutes: 30 },
+  { id: 'snack', label: 'Snack', picture: 'ph:OrangeSlice', group: 'meals', minutes: 15 },
   { id: 'lunch', label: 'Lunch', picture: 'ph:Hamburger', group: 'meals', minutes: 30 },
   { id: 'treat', label: 'Treat', picture: 'ph:Cookie', group: 'meals', minutes: 30 },
   { id: 'dinner', label: 'Dinner', picture: 'ph:ForkKnife', group: 'meals', minutes: 60 },
-  { id: 'water', label: 'Drink water', picture: 'ph:Drop', group: 'meals', minutes: 30 },
-  { id: 'milk', label: 'Milk', picture: 'ph:Coffee', group: 'meals', minutes: 30 },
+  { id: 'water', label: 'Drink water', picture: 'ph:Drop', group: 'meals', minutes: 15 },
+  { id: 'milk', label: 'Milk', picture: 'ph:Coffee', group: 'meals', minutes: 15 },
 
   { id: 'outside', label: 'Outside play', picture: 'ph:Tree', group: 'play', minutes: 60 },
   { id: 'playground', label: 'Playground', picture: 'ph:Park', group: 'play', minutes: 60 },
@@ -59,13 +59,13 @@ export const ACTIVITIES: PlannerActivity[] = [
   { id: 'swimming', label: 'Swimming', picture: 'ph:SwimmingPool', group: 'play', minutes: 60 },
   { id: 'pets', label: 'Care for pets', picture: 'ph:Dog', group: 'play', minutes: 30 },
   { id: 'screen', label: 'Screen time', picture: 'ph:Television', group: 'play', minutes: 30 },
-  { id: 'tidy', label: 'Tidy up toys', picture: 'ph:Broom', group: 'play', minutes: 30 },
+  { id: 'tidy', label: 'Tidy up toys', picture: 'ph:Broom', group: 'play', minutes: 15 },
 
   { id: 'nap', label: 'Nap', picture: 'ph:MoonStars', group: 'winddown', minutes: 60 },
   { id: 'bath', label: 'Bath time', picture: 'ph:Bathtub', group: 'winddown', minutes: 30 },
-  { id: 'pyjamas', label: 'Pyjamas on', picture: 'ph:Hoodie', group: 'winddown', minutes: 30 },
+  { id: 'pyjamas', label: 'Pyjamas on', picture: 'ph:Hoodie', group: 'winddown', minutes: 15 },
   { id: 'story', label: 'Story time', picture: 'ph:Book', group: 'winddown', minutes: 30 },
-  { id: 'teeth-night', label: 'Brush teeth', picture: 'ph:Tooth', group: 'winddown', minutes: 30 },
+  { id: 'teeth-night', label: 'Brush teeth', picture: 'ph:Tooth', group: 'winddown', minutes: 15 },
   { id: 'bedtime', label: 'Bedtime', picture: 'ph:Bed', group: 'winddown', minutes: 30 },
 
   // Things to pack: for packing lists the child ticks off with a grown-up

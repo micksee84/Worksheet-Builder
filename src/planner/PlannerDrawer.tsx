@@ -12,7 +12,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Trash2, Settings, ArrowUp, ArrowDown, Search, RotateCcw } from '../components/icons';
 import { PlannerData, PlannerItem, PlannerKind } from '../types';
 import { GraphicThumb, ICON_NAMES, PLANNER_ICONS } from './plannerIcons';
-import { DAY_PARTS, daysShown, hourLabel, KIND_LABELS, lengthLabel, STEP, timeLabel } from './plannerModel';
+import { daysShown, hourLabel, KIND_LABELS, lengthLabel, MAX_MINUTES, STEP, timeLabel } from './plannerModel';
 
 const field = 'w-full px-3.5 py-2.5 text-sm font-medium text-[#2D2200] bg-white border border-[#E2DEC9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#009BD9] transition-all';
 const Label: React.FC<{ children: React.ReactNode; hint?: string }> = ({ children, hint }) => (
@@ -124,8 +124,8 @@ export const PlannerDrawer: React.FC<{
   const hours = Array.from({ length: 25 }, (_, h) => h);
   const times: number[] = [];
   for (let t = planner.startHour * 60; t < planner.endHour * 60; t += STEP) times.push(t);
-  // Every half hour up to 6 hours, plus whatever a dragged card was set to
-  const lengths = Array.from(new Set([...Array.from({ length: 12 }, (_, i) => (i + 1) * 30), item?.minutes ?? STEP])).sort((a, b) => a - b);
+  // Every 15 minutes, up to 3 hours
+  const lengths = Array.from({ length: MAX_MINUTES / STEP }, (_, i) => (i + 1) * STEP);
 
   return (
     <div
@@ -154,7 +154,7 @@ export const PlannerDrawer: React.FC<{
               <input value={item.label} maxLength={40} onChange={(e) => onUpdateItem({ label: e.target.value })} className={field} placeholder="e.g. Brush teeth" />
             </div>
 
-            {kind === 'day' && (
+            {(kind === 'day' || kind === 'week') && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Starts at</Label>
@@ -178,43 +178,12 @@ export const PlannerDrawer: React.FC<{
 
             {kind === 'week' && (
               <div className="space-y-1.5">
-                <Label>How long</Label>
-                <select value={item.minutes ?? STEP} onChange={(e) => onUpdateItem({ minutes: Number(e.target.value) })} className={`${field} cursor-pointer`}>
-                  {lengths.map((m) => (
-                    <option key={m} value={m}>{lengthLabel(m)}</option>
-                  ))}
-                </select>
-                <p className="text-[11px] text-[#6B5838]">Or drag the bottom edge of the card on the page.</p>
-              </div>
-            )}
-
-            {kind === 'week' && (
-              <div className="space-y-1.5">
                 <Label>Day</Label>
                 <select value={item.day ?? 'mon'} onChange={(e) => onUpdateItem({ day: e.target.value as PlannerItem['day'] })} className={`${field} cursor-pointer`}>
                   {daysShown(planner).map((d) => (
                     <option key={d.key} value={d.key}>{d.label}</option>
                   ))}
                 </select>
-              </div>
-            )}
-
-            {kind === 'week' && planner.weekBands !== false && (
-              <div className="space-y-1.5">
-                <Label>Part of the day</Label>
-                <div className="flex gap-2">
-                  {DAY_PARTS.map((pt) => (
-                    <button
-                      key={pt.key}
-                      type="button"
-                      onClick={() => onUpdateItem({ part: pt.key })}
-                      aria-pressed={(item.part ?? 'morning') === pt.key}
-                      className={`flex-1 py-2 text-xs font-bold rounded-lg border ${(item.part ?? 'morning') === pt.key ? 'bg-[#2D2200] text-white border-[#2D2200]' : 'bg-white text-[#2D2200] border-[#E2DEC9] hover:border-[#2D2200]'}`}
-                    >
-                      {pt.label}
-                    </button>
-                  ))}
-                </div>
               </div>
             )}
 
@@ -237,7 +206,7 @@ export const PlannerDrawer: React.FC<{
               </div>
             )}
 
-            {(kind === 'checklist' || kind === 'week') && (
+            {kind === 'checklist' && (
               <div className="flex gap-2">
                 <button type="button" onClick={() => onMoveItem(-1)} className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-[#2D2200] bg-white border border-[#E2DEC9] rounded-lg hover:border-[#2D2200]">
                   <ArrowUp className="w-3.5 h-3.5" /> Move up
@@ -279,7 +248,7 @@ export const PlannerDrawer: React.FC<{
               </div>
             </div>
 
-            {kind === 'day' && (
+            {(kind === 'day' || kind === 'week') && (
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
@@ -295,18 +264,13 @@ export const PlannerDrawer: React.FC<{
                     </select>
                   </div>
                 </div>
-                <Toggle checked={planner.showTimes} onChange={(showTimes) => onUpdatePlanner({ showTimes })} label="Show times on activities" hint="Like 7:30–8:00. Hours always show down the side." />
+                <Toggle checked={planner.showTimes} onChange={(showTimes) => onUpdatePlanner({ showTimes })} label="Show times on activities" hint={kind === 'week' ? 'Like 9:00 · 1 h, on cards with room.' : 'Like 7:30–8:00. Hours always show down the side.'} />
               </>
             )}
             {kind === 'week' && (
               <Toggle checked={planner.weekdaysOnly} onChange={(weekdaysOnly) => onUpdatePlanner({ weekdaysOnly })} label="Weekdays only" hint="Monday to Friday, with more room for each day." />
             )}
-            {kind === 'week' && (
-              <Toggle checked={planner.weekBands !== false} onChange={(weekBands) => onUpdatePlanner({ weekBands })} label="Parts of the day" hint="Morning, afternoon and evening down the side." />
-            )}
-            {kind === 'week' && (
-              <Toggle checked={planner.showTimes} onChange={(showTimes) => onUpdatePlanner({ showTimes })} label="Show how long" hint="A small tag on each card, like 1 h." />
-            )}
+
             {kind !== 'first-then' && (
               <Toggle checked={planner.showTicks} onChange={(showTicks) => onUpdatePlanner({ showTicks })} label="Tick boxes" hint="A box beside each activity to tick when it's done." />
             )}

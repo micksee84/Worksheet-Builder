@@ -106,13 +106,14 @@ export interface PlannerItem {
   label: string;
   /** Picture library name */
   picture: string;
-  /** Day view: start time, minutes after midnight */
+  /** Day and week views: start time, minutes after midnight */
   start?: number;
-  /** Day view: how long, in minutes (30-minute steps) */
+  /** Day and week views: how long, in minutes (15-minute steps, at most 3 hours) */
   minutes?: number;
   /** Week view: which day; items keep their order in the list */
   day?: DayKey;
-  /** Week view with parts of the day: which band (morning if unset) */
+  /** Week plans saved with morning / afternoon / evening bands: which one. Opening the
+   *  plan turns it into a start time in that part of the day. */
   part?: DayPart;
   /** First–then: which side */
   side?: 'first' | 'then';
@@ -129,8 +130,6 @@ export interface PlannerData {
   items: PlannerItem[];
   /** False on a new planner until the grown-up picks its type on the start screen */
   kindChosen?: boolean;
-  /** Week view: morning / afternoon / evening bands (on unless set to false) */
-  weekBands?: boolean;
 }
 
 export interface Worksheet {

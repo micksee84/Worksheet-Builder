@@ -8,6 +8,7 @@
 
 import type { PlannerData, PlannerItem } from '../types';
 import { LEGACY_TO_ICON, PLANNER_ICONS } from '../planner/plannerIcons';
+import { MAX_MINUTES, normalize, STEP } from '../planner/plannerModel';
 import { Worksheet, Page, Slot, PageLayoutPreset, BlockInstance } from '../types';
 import { PAGE_SPECS, CHARACTERS } from '../config/appConfig';
 import { LAYOUT_PRESETS, createSlotsForPreset } from './layoutPresets';
@@ -129,12 +130,14 @@ function validatePlanner(raw: unknown): PlannerData | null {
           ? `ph:${LEGACY_TO_ICON[it.picture]}`
           : it.picture,
       ...(typeof it.start === 'number' ? { start: num(it.start, 0, 24 * 60, 0) } : {}),
-      ...(typeof it.minutes === 'number' ? { minutes: num(it.minutes, 30, 12 * 60, 30) } : {}),
+      // Lengths are 15 minutes to 3 hours (older saves could be longer)
+      ...(typeof it.minutes === 'number' ? { minutes: num(it.minutes, STEP, MAX_MINUTES, 30) } : {}),
       ...(DAY_KEYS.has(it.day) ? { day: it.day } : {}),
       ...(it.side === 'first' || it.side === 'then' ? { side: it.side } : {}),
       ...(it.part === 'morning' || it.part === 'afternoon' || it.part === 'evening' ? { part: it.part } : {}),
     }));
-  return {
+  // normalize: lengths in 15-minute steps, and every day or week activity given a time
+  return normalize({
     kind: raw.kind,
     startHour,
     endHour,
@@ -144,8 +147,7 @@ function validatePlanner(raw: unknown): PlannerData | null {
     items,
     // Planners saved before the start screen count as chosen
     kindChosen: raw.kindChosen !== false,
-    weekBands: raw.weekBands !== false,
-  };
+  });
 }
 
 /**

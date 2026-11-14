@@ -12,15 +12,12 @@ import React, { useRef, useState } from 'react';
 import { DragMoveEvent, useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
 import { Page, PageSizeId, PlannerItem, PlannerKind } from '../types';
 import { plannerGeometry, dropTarget, Box } from './plannerLayout';
-import { createPlannerPage, KIND_LABELS, lengthLabel, placeItem, samplePlanner, STEP, timeLabel } from './plannerModel';
+import { createPlannerPage, KIND_LABELS, lengthLabel, MAX_MINUTES, placeItem, samplePlanner, STEP, timeLabel } from './plannerModel';
 import { Mini } from './WhatAreYouMaking';
 import { getActivity } from './activities';
 
 /** How far below the pointer a dragged card's top sits, in page points */
 export const GRAB_TOP = 8;
-
-/** How far the handle moves for each half hour on the week view, in page points */
-const WEEK_STEP_PT = 16;
 
 const ItemHandle: React.FC<{
   pageId: string;
@@ -28,12 +25,14 @@ const ItemHandle: React.FC<{
   box: Box;
   selected: boolean;
   onSelect: () => void;
-  /** Day timeline: the height of half an hour; week: undefined */
-  rowH?: number;
+  /** The timeline's height for 15 minutes */
+  rowH: number;
+  /** Day cards run to the page edge, so their label sits inside the card */
+  labelInside?: boolean;
   /** The longest this activity can be (day: until the day ends) */
   maxMinutes: number;
   onResize?: (minutes: number) => void;
-}> = ({ pageId, item, box, selected, onSelect, rowH, maxMinutes, onResize }) => {
+}> = ({ pageId, item, box, selected, onSelect, rowH, labelInside, maxMinutes, onResize }) => {
   const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
     id: `planner-item-${pageId}-${item.id}`,
     data: { type: 'planner-item', pageId, itemId: item.id, label: item.label, picture: item.picture },
@@ -44,10 +43,9 @@ const ItemHandle: React.FC<{
   const minutes = item.minutes ?? STEP;
   const shown = draft ?? minutes;
   const live = draft !== null;
-  // On the day timeline the card grows with its length; on the week it keeps its size
-  const h = live && rowH ? Math.max(rowH - 3, (shown / STEP) * rowH - 3) : box.h;
-  const label =
-    rowH && item.start !== undefined ? `${timeLabel(item.start)}–${timeLabel(item.start + shown)} · ${lengthLabel(shown)}` : lengthLabel(shown);
+  // The card grows and shrinks with its length, 15 minutes at a time
+  const h = live ? Math.max(rowH - 2, (shown / STEP) * rowH - 2) : box.h;
+  const label = item.start !== undefined ? `${timeLabel(item.start)}–${timeLabel(item.start + shown)} · ${lengthLabel(shown)}` : lengthLabel(shown);
   return (
     <div
       ref={setNodeRef}
@@ -103,7 +101,7 @@ const ItemHandle: React.FC<{
               const s = start.current;
               if (!s) return;
               const dy = (e.clientY - s.y) / s.scale;
-              const steps = Math.round(dy / (rowH ?? WEEK_STEP_PT));
+              const steps = Math.round(dy / rowH);
               setDraft(Math.max(STEP, Math.min(maxMinutes, s.minutes + steps * STEP)));
             }}
             onPointerUp={(e) => {
@@ -127,8 +125,8 @@ const ItemHandle: React.FC<{
           {/* How long, beside the card while it's resized */}
           {live && (
             <span
-              className={`absolute bottom-0 whitespace-nowrap px-2 py-0.5 rounded-full bg-[#009BD9] text-white text-[10px] font-extrabold shadow pointer-events-none ${
-                rowH ? 'right-2 translate-y-1/2' : 'left-full ml-1'
+              className={`absolute bottom-0 translate-y-1/2 whitespace-nowrap px-2 py-0.5 rounded-full bg-[#009BD9] text-white text-[10px] font-extrabold shadow pointer-events-none z-10 ${
+                labelInside ? 'right-2' : 'left-full ml-1'
               }`}
             >
               {label}
@@ -215,8 +213,9 @@ export const PlannerOverlay: React.FC<{
             box={b}
             selected={selectedItemId === b.id}
             onSelect={() => onSelectItem(b.id)}
-            rowH={planner.kind === 'day' ? g.rowH : undefined}
-            maxMinutes={planner.kind === 'day' ? planner.endHour * 60 - (item.start ?? planner.startHour * 60) : 12 * 60}
+            rowH={g.rowH ?? 1}
+            labelInside={planner.kind === 'day'}
+            maxMinutes={Math.min(MAX_MINUTES, planner.endHour * 60 - (item.start ?? planner.startHour * 60))}
             onResize={
               onResizeItem && (planner.kind === 'day' || planner.kind === 'week') ? (m) => onResizeItem(b.id, m) : undefined
             }
