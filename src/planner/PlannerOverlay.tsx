@@ -85,7 +85,10 @@ const ItemHandle: React.FC<{
   onResize?: (minutes: number) => void;
   /** Daily routine blocks: each task's place inside the card, relative to the page */
   cells?: Box[];
-}> = ({ pageId, item, box, selected, onSelect, heightFor, labelInside, maxMinutes, onResize, cells }) => {
+  /** Checklists: where the icon is (relative to the card), clicked to change it */
+  iconBox?: Box;
+  onIconClick?: () => void;
+}> = ({ pageId, item, box, selected, onSelect, heightFor, labelInside, maxMinutes, onResize, cells, iconBox, onIconClick }) => {
   const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
     id: `planner-item-${pageId}-${item.id}`,
     data: { type: 'planner-item', pageId, itemId: item.id, label: item.label, picture: item.picture },
@@ -123,6 +126,20 @@ const ItemHandle: React.FC<{
           : 'hover:border-2 hover:border-[#009BD9]/60'
       }`}
     >
+      {/* Checklists: the icon is its own button, to change it (the card still drags from it) */}
+      {iconBox && onIconClick && !isDragging && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onIconClick();
+          }}
+          title="Change the icon"
+          aria-label={`Change the icon for ${item.label}`}
+          style={{ position: 'absolute', left: iconBox.x, top: iconBox.y, width: iconBox.w, height: iconBox.h }}
+          className="rounded-lg hover:outline hover:outline-2 hover:outline-[#009BD9] hover:bg-[#009BD9]/10 cursor-pointer"
+        />
+      )}
       {/* A selected block: say what its tasks can do */}
       {selected && !isDragging && !live && cells && cells.length > 1 && (
         <span className="absolute right-1 -top-[22px] whitespace-nowrap px-2 py-0.5 rounded-full bg-[#2D2200] text-white text-[10px] font-bold shadow pointer-events-none z-10">
@@ -228,7 +245,13 @@ export const PlannerOverlay: React.FC<{
 }> = ({ page, pageSize, selectedItemId, onSelectItem, onBackground, onChooseKind, onResizeItem, onEdit }) => {
   const planner = page.planner!;
   // Checklists: the row being typed into
-  const [editing, setEditing] = useState<string | null>(null);
+  const [editing, setEditingState] = useState<string | null>(null);
+  // Opened by clicking a row's icon: the icon picker shows straight away
+  const [withIcons, setWithIcons] = useState(false);
+  const setEditing: React.Dispatch<React.SetStateAction<string | null>> = (v) => {
+    setWithIcons(false);
+    setEditingState(v);
+  };
   const typing = planner.kind === 'checklist' && !!onEdit;
   const editingItem = typing && editing ? planner.items.find((i) => i.id === editing) : undefined;
   const editActions = (id: string): RowEditorActions => {
@@ -343,7 +366,20 @@ export const PlannerOverlay: React.FC<{
         const item = planner.items.find((i) => i.id === b.id);
         if (!item) return null;
         if (editingItem?.id === item.id)
-          return <ChecklistRowEditor key={`edit-${b.id}`} item={item} box={b} areaBottom={g.area.y + g.area.h} actions={editActions(item.id)} />;
+          return (
+            <ChecklistRowEditor
+              key={`edit-${b.id}`}
+              item={item}
+              box={b}
+              areaBottom={g.area.y + g.area.h}
+              actions={editActions(item.id)}
+              startWithIcons={withIcons}
+            />
+          );
+        // Checklist rows: where the icon sits (as PlannerPageContent draws it), to click and change
+        const pad = Math.min(6, b.h * 0.12);
+        const pic = Math.max(10, Math.min(b.h - pad * 2, 72));
+        const iconBox = typing && !item.heading ? { x: pad - 3, y: b.h / 2 - pic / 2 - 3, w: pic + 6, h: pic + 6 } : undefined;
         return (
           <ItemHandle
             key={b.id}
@@ -352,6 +388,11 @@ export const PlannerOverlay: React.FC<{
             box={b}
             selected={selectedItemId === b.id}
             onSelect={() => (typing ? setEditing(b.id) : onSelectItem(b.id))}
+            iconBox={iconBox}
+            onIconClick={() => {
+              setEditingState(b.id);
+              setWithIcons(true);
+            }}
             heightFor={g.heightFor ?? (() => b.h)}
             labelInside={planner.kind === 'day'}
             maxMinutes={Math.min(MAX_MINUTES, planner.endHour * 60 - (item.start ?? planner.startHour * 60))}

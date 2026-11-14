@@ -39,7 +39,7 @@ const Toggle: React.FC<{ checked: boolean; onChange: (v: boolean) => void; label
 );
 
 /** The icon picker: all planner icons, searchable by the words people use ("teeth", "tv") */
-export const IconPicker: React.FC<{ value: string; onChange: (picture: string) => void }> = ({ value, onChange }) => {
+export const IconPicker: React.FC<{ value: string; onChange: (picture: string) => void; autoFocus?: boolean }> = ({ value, onChange, autoFocus }) => {
   const [q, setQ] = useState('');
   const list = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -51,7 +51,7 @@ export const IconPicker: React.FC<{ value: string; onChange: (picture: string) =
     <div className="space-y-2">
       <div className="relative">
         <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#A39C8E]" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find an icon (teeth, bath, park...)" className={`${field} pl-9 py-2 text-xs`} />
+        <input autoFocus={autoFocus} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find an icon (teeth, bath, park...)" className={`${field} pl-9 py-2 text-xs`} />
       </div>
       <div className="grid grid-cols-6 gap-1.5 max-h-60 overflow-y-auto p-0.5">
         {list.map((n) => (

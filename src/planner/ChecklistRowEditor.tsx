@@ -5,8 +5,8 @@
  * Typing a checklist straight onto the page, like a to-do app. The row being edited turns
  * into a text box: Enter saves it and starts a new row under it, Backspace in an empty row
  * removes it, the arrow keys move up and down, Esc stops. The icon follows the words
- * ("socks" gives the sock) until one is picked by hand. The ... button opens the extras:
- * the icon, how many, and whether the row is a section heading.
+ * ("socks" gives the sock) until one is picked by hand. Clicking the icon opens the icon
+ * picker; the ... button opens the rest: how many, section heading, remove.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -39,16 +39,19 @@ export interface RowEditorActions {
   close: () => void;
 }
 
-export const ChecklistRowEditor: React.FC<{ item: PlannerItem; box: Box; areaBottom: number; actions: RowEditorActions }> = ({
-  item,
-  box,
-  areaBottom,
-  actions,
-}) => {
+export const ChecklistRowEditor: React.FC<{
+  item: PlannerItem;
+  box: Box;
+  areaBottom: number;
+  actions: RowEditorActions;
+  /** Open with the icon picker showing (the icon was clicked) */
+  startWithIcons?: boolean;
+}> = ({ item, box, areaBottom, actions, startWithIcons }) => {
   const [text, setText] = useState(item.label);
   // The icon follows the words until someone picks one (new rows, and rows still on the blank star)
   const [auto, setAuto] = useState(!item.label || item.picture === BLANK_PICTURE);
-  const [open, setOpen] = useState(false);
+  // Which panel is open under the row: the icon picker, or the other settings
+  const [open, setOpen] = useState<null | 'icon' | 'more'>(startWithIcons ? 'icon' : null);
   // Set once this row hands over (Enter, arrows, Esc): its blur when it goes must not save again
   const left = useRef(false);
   const input = useRef<HTMLInputElement>(null);
@@ -57,9 +60,11 @@ export const ChecklistRowEditor: React.FC<{ item: PlannerItem; box: Box; areaBot
   const patch = (): Partial<PlannerItem> => ({ label: text.trim(), picture });
 
   useEffect(() => {
+    // Straight to the icons: their search box takes the focus instead
+    if (startWithIcons) return;
     input.current?.focus();
     input.current?.select();
-  }, [item.id]);
+  }, [item.id, startWithIcons]);
 
   const finish = () => {
     if (left.current) return;
@@ -93,10 +98,11 @@ export const ChecklistRowEditor: React.FC<{ item: PlannerItem; box: Box; areaBot
       {!heading && (
         <button
           type="button"
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => setOpen((o) => (o === 'icon' ? null : 'icon'))}
           title="Change the icon"
           aria-label="Change the icon"
-          className="shrink-0 rounded-lg hover:bg-[#009BD9]/10 flex items-center justify-center"
+          aria-expanded={open === 'icon'}
+          className={`shrink-0 rounded-lg flex items-center justify-center ${open === 'icon' ? 'outline outline-2 outline-[#009BD9] bg-[#009BD9]/10' : 'hover:outline hover:outline-2 hover:outline-[#009BD9]/60 hover:bg-[#009BD9]/5'}`}
           style={{ width: pic + 6, height: pic + 6 }}
         >
           <GraphicThumb picture={picture} size={pic} />
@@ -143,16 +149,43 @@ export const ChecklistRowEditor: React.FC<{ item: PlannerItem; box: Box; areaBot
       )}
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
-        title="More: icon, how many, heading"
+        onClick={() => setOpen((o) => (o === 'more' ? null : 'more'))}
+        title="More: how many, section heading, remove"
         aria-label="More options for this row"
-        aria-expanded={open}
-        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${open ? 'bg-[#2D2200] text-white' : 'text-[#6B5838] hover:bg-[#FAF8F0]'}`}
+        aria-expanded={open === 'more'}
+        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${open === 'more' ? 'bg-[#2D2200] text-white' : 'text-[#6B5838] hover:bg-[#FAF8F0]'}`}
       >
         <MoreHorizontal className="w-5 h-5" />
       </button>
 
-      {open && (
+      {open === 'icon' && !heading && (
+        <div
+          tabIndex={-1}
+          className="absolute left-0 w-[300px] outline-none bg-white border-2 border-[#2D2200] rounded-2xl shadow-[4px_4px_0_#2D2200] p-3 text-left"
+          style={popUp ? { bottom: h + 6 } : { top: h + 6 }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              setOpen(null);
+              input.current?.focus();
+            }
+          }}
+        >
+          <IconPicker
+            autoFocus
+            value={picture}
+            onChange={(pic) => {
+              // Picked: back to the words
+              setAuto(false);
+              actions.save({ label: text.trim() || item.label, picture: pic });
+              setOpen(null);
+              input.current?.focus();
+            }}
+          />
+        </div>
+      )}
+
+      {open === 'more' && (
         <div
           tabIndex={-1}
           className="absolute right-0 w-[300px] outline-none bg-white border-2 border-[#2D2200] rounded-2xl shadow-[4px_4px_0_#2D2200] p-3 space-y-3 text-left"
@@ -171,45 +204,33 @@ export const ChecklistRowEditor: React.FC<{ item: PlannerItem; box: Box; areaBot
             />
           </label>
           {!heading && (
-            <>
-              <div className="flex items-center justify-between gap-3">
-                <span>
-                  <span className="block text-sm font-bold text-[#2D2200]">How many</span>
-                  <span className="block text-xs text-[#6B5838]">Prints as "Socks ×3"</span>
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    aria-label="One fewer"
-                    disabled={(item.count ?? 1) <= 1}
-                    onClick={() => actions.save({ ...patch(), count: Math.max(1, (item.count ?? 1) - 1) })}
-                    className="w-8 h-8 rounded-lg border border-[#E2DEC9] flex items-center justify-center disabled:opacity-40 hover:border-[#2D2200]"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="w-8 text-center text-sm font-extrabold tabular-nums text-[#2D2200]">{item.count ?? 1}</span>
-                  <button
-                    type="button"
-                    aria-label="One more"
-                    disabled={(item.count ?? 1) >= 20}
-                    onClick={() => actions.save({ ...patch(), count: Math.min(20, (item.count ?? 1) + 1) })}
-                    className="w-8 h-8 rounded-lg border border-[#E2DEC9] flex items-center justify-center disabled:opacity-40 hover:border-[#2D2200]"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
+            <div className="flex items-center justify-between gap-3">
+              <span>
+                <span className="block text-sm font-bold text-[#2D2200]">How many</span>
+                <span className="block text-xs text-[#6B5838]">Prints as "Socks ×3"</span>
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label="One fewer"
+                  disabled={(item.count ?? 1) <= 1}
+                  onClick={() => actions.save({ ...patch(), count: Math.max(1, (item.count ?? 1) - 1) })}
+                  className="w-8 h-8 rounded-lg border border-[#E2DEC9] flex items-center justify-center disabled:opacity-40 hover:border-[#2D2200]"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <span className="w-8 text-center text-sm font-extrabold tabular-nums text-[#2D2200]">{item.count ?? 1}</span>
+                <button
+                  type="button"
+                  aria-label="One more"
+                  disabled={(item.count ?? 1) >= 20}
+                  onClick={() => actions.save({ ...patch(), count: Math.min(20, (item.count ?? 1) + 1) })}
+                  className="w-8 h-8 rounded-lg border border-[#E2DEC9] flex items-center justify-center disabled:opacity-40 hover:border-[#2D2200]"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
               </div>
-              <div className="space-y-1.5">
-                <span className="block text-sm font-bold text-[#2D2200]">Icon</span>
-                <IconPicker
-                  value={picture}
-                  onChange={(pic) => {
-                    setAuto(false);
-                    actions.save({ label: text.trim(), picture: pic });
-                  }}
-                />
-              </div>
-            </>
+            </div>
           )}
           <button
             type="button"
