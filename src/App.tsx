@@ -96,6 +96,7 @@ import {
 } from './planner/plannerModel';
 import { getActivity } from './planner/activities';
 import { pageDims } from './config/appConfig';
+import { pointerNow } from './utils/pointerTracker';
 
 /** A blank worksheet for New: one page, two empty halves. Keeps the current paper size. */
 function createBlankWorksheet(pageSize: Worksheet['pageSize'] = 'letter'): Worksheet {
@@ -551,8 +552,8 @@ export default function App() {
     const start = event.activatorEvent as PointerEvent | TouchEvent;
     const point = 'touches' in start ? start.touches[0] ?? start.changedTouches[0] : start;
     if (!point) return false;
-    const x = point.clientX + event.delta.x;
-    const y = point.clientY + event.delta.y;
+    const now = pointerNow() ?? { x: point.clientX + event.delta.x, y: point.clientY + event.delta.y };
+    const { x, y } = now;
     const page = document.querySelector('[data-worksheet-page]')?.getBoundingClientRect();
     if (!page) return false;
     return x < page.left || x > page.right || y < page.top || y > page.bottom;
@@ -664,13 +665,15 @@ export default function App() {
 
   /** Where the pointer was let go, in page points on the open page */
   const pagePoint = (event: DragEndEvent): { x: number; y: number } | null => {
+    // Where the pointer actually is (start + delta can be off by the drag's start distance)
     const start = event.activatorEvent as PointerEvent | TouchEvent;
     const pt = 'touches' in start ? start.touches[0] ?? start.changedTouches[0] : start;
+    const now = pointerNow() ?? (pt ? { x: pt.clientX + event.delta.x, y: pt.clientY + event.delta.y } : null);
     const surface = document.querySelector('[data-page-surface]') as HTMLElement | null;
-    if (!pt || !surface) return null;
+    if (!now || !surface) return null;
     const rect = surface.getBoundingClientRect();
     const scale = rect.width / surface.offsetWidth;
-    return { x: (pt.clientX + event.delta.x - rect.left) / scale, y: (pt.clientY + event.delta.y - rect.top) / scale };
+    return { x: (now.x - rect.left) / scale, y: (now.y - rect.top) / scale };
   };
 
   const dropOnPlanner = (pageId: string, point: { x: number; y: number }, drag: { type?: string; activityId?: string; itemId?: string; taskId?: string }) => {

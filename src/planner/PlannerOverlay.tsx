@@ -15,6 +15,7 @@ import { blockCells, plannerGeometry, dropTarget, Box } from './plannerLayout';
 import { createPlannerPage, KIND_LABELS, lengthLabel, MAX_MINUTES, placeItem, samplePlanner, STEP, takeOut, tasksOf, timeLabel } from './plannerModel';
 import { Mini } from './WhatAreYouMaking';
 import { getActivity } from './activities';
+import { pointerNow } from '../utils/pointerTracker';
 
 export { GRAB_TOP } from './plannerLayout';
 import { GRAB_TOP } from './plannerLayout';
@@ -219,12 +220,11 @@ export const PlannerOverlay: React.FC<{
   useDndMonitor({
     onDragMove(event: DragMoveEvent) {
       const el = surface.current;
-      const start = event.activatorEvent as PointerEvent | TouchEvent | null;
-      const pt = start && ('touches' in start ? start.touches[0] ?? start.changedTouches[0] : start);
-      if (!el || !pt) return;
+      const now = pointerNow();
+      if (!el || !now) return;
+      void event;
       const rect = el.getBoundingClientRect();
-      const x = pt.clientX + event.delta.x;
-      const y = pt.clientY + event.delta.y;
+      const { x, y } = now;
       if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
         setHover(null);
         return;
