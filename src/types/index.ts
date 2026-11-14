@@ -40,6 +40,8 @@ export interface SettingsFieldSchema {
   step?: number;
   helperText?: string;
   placeholder?: string;
+  /** Only show this setting while another setting has this value. */
+  showWhen?: { key: string; value: string | number | boolean };
 }
 
 export type CharacterCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';

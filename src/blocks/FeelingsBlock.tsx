@@ -6,8 +6,8 @@
  * then draws why in the bubble. A grown-up reads the feeling words out loud.
  * Easier: 3 feelings. Stretch: 6.
  *
- * PLACEHOLDER ART: simple faces drawn by Claude. Swap in the Sunshine Brigade characters'
- * feeling poses when they are ready.
+ * Two face styles: round emoji faces (17 feelings) or children's faces (6 children,
+ * 9 feelings), one child for the whole row or a mix.
  */
 
 import React from 'react';
@@ -17,34 +17,53 @@ import { CharacterCorner } from '../components/CharacterCorner';
 import { Instruction } from '../components/Instruction';
 import { blockSpacing } from '../utils/spacing';
 
-export type Feeling = 'happy' | 'sad' | 'angry' | 'scared' | 'surprised' | 'calm';
+export type Feeling =
+  | 'happy' | 'sad' | 'angry' | 'scared' | 'surprised' | 'calm'
+  | 'bored' | 'confused' | 'excited' | 'grumpy' | 'loving' | 'proud'
+  | 'shy' | 'silly' | 'tired' | 'worried' | 'yucky';
 
-const SETS: Record<number, Feeling[]> = {
-  3: ['happy', 'sad', 'angry'],
-  4: ['happy', 'sad', 'angry', 'scared'],
-  6: ['happy', 'sad', 'angry', 'scared', 'surprised', 'calm'],
+/** Round emoji faces: all 17 feelings. Keys stay 3, 4, 6 so older worksheets keep their set. */
+const EMOJI_SETS: Record<string, Feeling[]> = {
+  '3': ['happy', 'sad', 'angry'],
+  '4': ['happy', 'sad', 'angry', 'scared'],
+  '6': ['happy', 'sad', 'angry', 'scared', 'surprised', 'calm'],
+  more: ['excited', 'worried', 'shy', 'tired', 'silly', 'yucky'],
+  more2: ['loving', 'proud', 'bored', 'confused', 'grumpy', 'happy'],
 };
 
-const LABELS: Record<Feeling, string> = {
-  happy: 'happy',
-  sad: 'sad',
-  angry: 'angry',
-  scared: 'scared',
-  surprised: 'surprised',
-  calm: 'calm',
+/** Children's faces come in 9 feelings (no sad, scared or surprised yet). */
+const KID_SETS: Record<string, Feeling[]> = {
+  '3': ['happy', 'angry', 'calm'],
+  '4': ['happy', 'angry', 'calm', 'excited'],
+  '6': ['happy', 'angry', 'calm', 'excited', 'proud', 'loving'],
+  more: ['bored', 'confused', 'grumpy', 'excited', 'calm', 'happy'],
 };
+
+export const CHILDREN = ['girl-puffs', 'boy-afro', 'girl-bob', 'boy-sidepart', 'girl-hijab', 'boy-curly'] as const;
+type Child = (typeof CHILDREN)[number];
+
+/** The art id for one face. A mix gives each face the next child along. */
+function faceId(feeling: Feeling, style: string, child: string, index: number): string {
+  if (style !== 'kids') return 'feeling-' + feeling;
+  const who: Child = (CHILDREN as readonly string[]).includes(child) ? (child as Child) : CHILDREN[index % CHILDREN.length];
+  return `kid-${who}-${feeling}`;
+}
 
 /** One feeling face, drawn in a 100 x 100 box. */
-export function Face({ feeling, cx, cy, size }: { feeling: Feeling; cx: number; cy: number; size: number }) {
-  // Krea feelings face (handArtShapes.ts)
-  return <HandArtBox id={'feeling-' + feeling} cx={cx} cy={cy} size={size} />;
+export function Face({ id, cx, cy, size }: { id: string; cx: number; cy: number; size: number }) {
+  // Krea feelings faces (feelingFaces.ts)
+  return <HandArtBox id={id} cx={cx} cy={cy} size={size} />;
 }
 
 export const FeelingsRenderer: React.FC<BlockRenderProps> = ({ instance, size, width, height }) => {
   const s = instance.settings;
-  const requested = [3, 4, 6].includes(Number(s.count)) ? Number(s.count) : 4;
-  const count = size === 'quarter' ? Math.min(requested, 4) : requested;
-  const feelings = SETS[count] || SETS[4];
+  const style = s.faces === 'kids' ? 'kids' : 'emoji';
+  const sets = style === 'kids' ? KID_SETS : EMOJI_SETS;
+  const key = style === 'kids' ? String(s.kidSet ?? '4') : String(s.count ?? '4');
+  const all = sets[key] || sets['4'];
+  // Quarter spaces show up to 4
+  const feelings = size === 'quarter' ? all.slice(0, 4) : all;
+  const count = feelings.length;
   const showDraw = s.showDraw !== false;
   const showWords = s.showWords !== false;
 
@@ -81,10 +100,10 @@ export const FeelingsRenderer: React.FC<BlockRenderProps> = ({ instance, size, w
         const cy = cellTop + (facesH / faceRows - labelH) / 2;
         return (
           <g key={feeling}>
-            <Face feeling={feeling} cx={cx} cy={cy} size={faceSize} />
+            <Face id={faceId(feeling, style, String(s.child ?? 'mix'), i)} cx={cx} cy={cy} size={faceSize} />
             {showWords && (
               <text x={cx} y={cy + faceSize / 2 + 15} textAnchor="middle" fill="#2D2200" fontSize="12" fontWeight="700" fontFamily="Nunito, sans-serif">
-                {LABELS[feeling]}
+                {feeling}
               </text>
             )}
           </g>
@@ -129,19 +148,59 @@ export const FeelingsBlockDefinition: BlockDefinition = {
   allowedSizes: ['full', 'half', 'quarter'],
   settingsSchema: [
     {
-      key: 'count',
-      label: 'Number of feelings',
+      key: 'faces',
+      label: 'Faces',
       type: 'select',
+      options: [
+        { label: 'Emoji faces', value: 'emoji' },
+        { label: "Children's faces", value: 'kids' },
+      ],
+    },
+    {
+      key: 'child',
+      label: 'Child',
+      type: 'select',
+      showWhen: { key: 'faces', value: 'kids' },
+      options: [
+        { label: 'A mix of children', value: 'mix' },
+        { label: 'Girl with puffs', value: 'girl-puffs' },
+        { label: 'Boy with an afro', value: 'boy-afro' },
+        { label: 'Girl with a bob', value: 'girl-bob' },
+        { label: 'Boy with a side parting', value: 'boy-sidepart' },
+        { label: 'Girl in a hijab', value: 'girl-hijab' },
+        { label: 'Boy with curls', value: 'boy-curly' },
+      ],
+    },
+    {
+      key: 'count',
+      label: 'Feelings',
+      type: 'select',
+      showWhen: { key: 'faces', value: 'emoji' },
       options: [
         { label: '3: happy, sad, angry (easier)', value: 3 },
         { label: '4: adds scared', value: 4 },
         { label: '6: adds surprised and calm (stretch)', value: 6 },
+        { label: '6 more: excited, worried, shy, tired, silly, yucky', value: 'more' },
+        { label: '6 more: loving, proud, bored, confused, grumpy, happy', value: 'more2' },
+      ],
+      helperText: 'Quarter spaces show up to 4.',
+    },
+    {
+      key: 'kidSet',
+      label: 'Feelings',
+      type: 'select',
+      showWhen: { key: 'faces', value: 'kids' },
+      options: [
+        { label: '3: happy, angry, calm (easier)', value: 3 },
+        { label: '4: adds excited', value: 4 },
+        { label: '6: adds proud and loving (stretch)', value: 6 },
+        { label: '6 more: bored, confused, grumpy, excited, calm, happy', value: 'more' },
       ],
       helperText: 'Quarter spaces show up to 4.',
     },
     { key: 'showWords', label: 'Show feeling words', type: 'boolean' },
     { key: 'showDraw', label: 'Add a bubble to draw why', type: 'boolean' },
   ],
-  defaultSettings: { count: 4, showWords: true, showDraw: true },
+  defaultSettings: { faces: 'emoji', child: 'mix', count: 4, kidSet: 4, showWords: true, showDraw: true },
   render: (props) => <FeelingsRenderer {...props} />,
 };

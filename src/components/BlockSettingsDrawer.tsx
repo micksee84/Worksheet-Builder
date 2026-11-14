@@ -141,6 +141,10 @@ export const BlockSettingsDrawer: React.FC<BlockSettingsDrawerProps> = ({
 
           {blockDef.settingsSchema.map((field) => {
             const val = currentSettings[field.key] ?? blockDef.defaultSettings[field.key];
+            if (field.showWhen) {
+              const other = currentSettings[field.showWhen.key] ?? blockDef.defaultSettings[field.showWhen.key];
+              if (String(other) !== String(field.showWhen.value)) return null;
+            }
 
             return (
               <div key={field.key} className="space-y-1.5">

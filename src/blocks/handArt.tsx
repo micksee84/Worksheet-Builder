@@ -7,7 +7,8 @@
  * Each drawing sits in a 100 x 100 box, centred on 50,50:
  *   count-*   KidShape at size 100, centre 50,50
  *   cue-*     the instruction cue's 100 x 100 box
- *   feeling-* Face at size 100, centre 50,50
+ *   feeling-* Face at size 100, centre 50,50 (feelingFaces.ts)
+ *   kid-*     a child's feelings face, same box (feelingFaces.ts)
  *   shape-*   shapePath at r 50, centre 50,50
  *   compare-block   one block, 0..100 square
  *   compare-crayon  a crayon of any length (HandCrayon stretches the plain middle)
@@ -17,7 +18,11 @@
 
 import React, { useId } from 'react';
 import { ArtPlaceholder, BoxPlaceholder } from './placeholder';
-import { HAND_LINE, HAND_SHAPES } from './handArtShapes';
+import { HAND_LINE, HAND_SHAPES as BUILDER_SHAPES } from './handArtShapes';
+import { FACE_SHAPES } from './feelingFaces';
+
+/** Builder art plus the feelings faces (feeling-* emoji, kid-<child>-<feeling> children). */
+const HAND_SHAPES = { ...BUILDER_SHAPES, ...FACE_SHAPES };
 
 const INK = '#2D2200';
 const PAPER = '#FFFFFF';
