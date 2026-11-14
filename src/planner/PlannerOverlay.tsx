@@ -25,14 +25,14 @@ const ItemHandle: React.FC<{
   box: Box;
   selected: boolean;
   onSelect: () => void;
-  /** The timeline's height for 15 minutes */
-  rowH: number;
+  /** A card's height for a length (the schedule's sizes) */
+  heightFor: (minutes: number) => number;
   /** Day cards run to the page edge, so their label sits inside the card */
   labelInside?: boolean;
   /** The longest this activity can be (day: until the day ends) */
   maxMinutes: number;
   onResize?: (minutes: number) => void;
-}> = ({ pageId, item, box, selected, onSelect, rowH, labelInside, maxMinutes, onResize }) => {
+}> = ({ pageId, item, box, selected, onSelect, heightFor, labelInside, maxMinutes, onResize }) => {
   const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
     id: `planner-item-${pageId}-${item.id}`,
     data: { type: 'planner-item', pageId, itemId: item.id, label: item.label, picture: item.picture },
@@ -44,7 +44,9 @@ const ItemHandle: React.FC<{
   const shown = draft ?? minutes;
   const live = draft !== null;
   // The card grows and shrinks with its length, 15 minutes at a time
-  const h = live ? Math.max(rowH - 2, (shown / STEP) * rowH - 2) : box.h;
+  const h = live ? heightFor(shown) : box.h;
+  // How far the handle moves for each 15 minutes
+  const perStep = Math.max(4, heightFor(STEP * 2) - heightFor(STEP));
   const label = item.start !== undefined ? `${timeLabel(item.start)}–${timeLabel(item.start + shown)} · ${lengthLabel(shown)}` : lengthLabel(shown);
   return (
     <div
@@ -101,7 +103,7 @@ const ItemHandle: React.FC<{
               const s = start.current;
               if (!s) return;
               const dy = (e.clientY - s.y) / s.scale;
-              const steps = Math.round(dy / rowH);
+              const steps = Math.round(dy / perStep);
               setDraft(Math.max(STEP, Math.min(maxMinutes, s.minutes + steps * STEP)));
             }}
             onPointerUp={(e) => {
@@ -187,7 +189,7 @@ export const PlannerOverlay: React.FC<{
     const moving = drag?.type === 'planner-item' ? planner.items.find((i) => i.id === drag.itemId) : undefined;
     const activity = drag?.activityId ? getActivity(drag.activityId) : undefined;
     const probe: PlannerItem = moving ?? { id: '__probe__', label: activity?.label ?? '', picture: activity?.picture ?? '', minutes: activity?.minutes ?? STEP };
-    const target = dropTarget(g, planner, hover.x, hover.y - GRAB_TOP, probe.minutes ?? STEP);
+    const target = dropTarget(g, planner, hover.x, hover.y - GRAB_TOP, probe.minutes ?? STEP, moving?.id);
     const after = plannerGeometry(pageSize, page.showDateName, placeItem(planner, probe, target));
     ghost = after.items.find((b) => b.id === probe.id) ?? null;
   }
@@ -213,7 +215,7 @@ export const PlannerOverlay: React.FC<{
             box={b}
             selected={selectedItemId === b.id}
             onSelect={() => onSelectItem(b.id)}
-            rowH={g.rowH ?? 1}
+            heightFor={g.heightFor ?? (() => b.h)}
             labelInside={planner.kind === 'day'}
             maxMinutes={Math.min(MAX_MINUTES, planner.endHour * 60 - (item.start ?? planner.startHour * 60))}
             onResize={

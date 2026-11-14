@@ -45,8 +45,27 @@ export const DAY_PARTS: { key: DayPart; label: string; icon: string; from: numbe
 ];
 /** Week plans saved with morning / afternoon / evening bands start their activities at these hours */
 const PART_START: Record<DayPart, number> = { morning: 9 * 60, afternoon: 13 * 60, evening: 18 * 60 };
-/** True for the views laid out on a timeline */
+/** True for the views laid out as a schedule (activities with times) */
 export const timed = (p: PlannerData) => p.kind === 'day' || p.kind === 'week';
+
+/**
+ * Keeps a schedule flowing: in time order, an activity that would start before the one
+ * above it has finished slides later to start when it ends. Free time between
+ * activities stays. Runs per day on the week.
+ */
+export function flow(p: PlannerData, items: PlannerItem[]): PlannerItem[] {
+  const ends: Record<string, number> = {};
+  const order = items.map((it, i) => ({ it, i })).sort((a, b) => (a.it.start ?? 0) - (b.it.start ?? 0) || a.i - b.i);
+  const moved = new Map<string, PlannerItem>();
+  for (const { it } of order) {
+    const day = p.kind === 'week' ? it.day ?? 'mon' : 'all';
+    const minutes = it.minutes ?? STEP;
+    const start = Math.min(Math.max(it.start ?? 0, ends[day] ?? 0), Math.max(p.startHour * 60, p.endHour * 60 - minutes));
+    ends[day] = start + minutes;
+    if (start !== it.start) moved.set(it.id, { ...it, start });
+  }
+  return moved.size ? items.map((it) => moved.get(it.id) ?? it) : items;
+}
 
 let counter = 0;
 export const newItemId = () => `pi_${Date.now().toString(36)}_${(counter++).toString(36)}`;
@@ -144,6 +163,7 @@ export function normalize(p: PlannerData): PlannerData {
       const { part: _part, ...rest } = it;
       return { ...rest, start, minutes, ...(p.kind === 'week' ? { day: day as DayKey } : {}) };
     });
+    items = flow(p, items);
   } else if (p.kind === 'first-then') {
     const hasFirst = items.some((i) => i.side === 'first');
     const hasThen = items.some((i) => i.side === 'then');
@@ -227,7 +247,12 @@ export function placeItem(p: PlannerData, item: PlannerItem, drop: PlannerDrop):
       const minutes = clampLength(item.minutes);
       const start = Math.max(p.startHour * 60, Math.min(drop.start, p.endHour * 60 - minutes));
       const { part: _part, ...rest } = item;
-      items.push({ ...rest, minutes, start, ...(drop.kind === 'week' ? { day: drop.day } : {}) });
+      const placed: PlannerItem = { ...rest, minutes, start, ...(drop.kind === 'week' ? { day: drop.day } : {}) };
+      // Goes in ahead of anything starting at the same time, which then slides later
+      const at = items.findIndex((i) => (drop.kind === 'day' || (i.day ?? 'mon') === drop.day) && (i.start ?? 0) >= start);
+      if (at === -1) items.push(placed);
+      else items.splice(at, 0, placed);
+      items = flow(p, items);
       break;
     }
     case 'checklist': {

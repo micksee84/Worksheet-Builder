@@ -13,7 +13,7 @@ import { PageSizeId, PlannerData, PlannerItem } from '../types';
 import { PlannerGraphic } from './plannerIcons';
 import { FRAME_STROKE } from '../utils/spacing';
 import { plannerGeometry, ItemBox, PlannerGeometry } from './plannerLayout';
-import { DAY_PARTS, hourLabel, lengthLabel, STEP, timeLabel } from './plannerModel';
+import { DAY_PARTS, hourLabel, lengthLabel, STEP, timeLabel, visibleItems } from './plannerModel';
 
 const INK = '#2D2200';
 const GUIDE = '#DDD9C4';
@@ -140,46 +140,34 @@ function StackCard({ it, b, p }: { it: PlannerItem; b: ItemBox; p: PlannerData }
   );
 }
 
+/** A start time for the rail: 7 am, 7:30, 12 pm */
+const railTime = (m: number) => (m % 60 === 0 ? hourLabel(m / 60) : timeLabel(m));
+
 /**
- * The timeline both the day and the week sit on: an hour label down the left every hour,
- * a solid guide line on the hour and a dashed one on the half hour across `spans`, and
- * a sunrise, sun or moon where morning, afternoon and evening begin.
+ * The day's rail: each activity's start time beside its card, and a sunrise, sun or moon
+ * beside the first activity of the morning, afternoon and evening.
  */
-function Timeline({ g, p, spans }: { g: PlannerGeometry; p: PlannerData; spans: { x: number; w: number }[] }) {
-  const rowH = g.rowH!;
-  const top = g.trackTop!;
-  const perHour = 60 / STEP;
-  const rows = (p.endHour - p.startHour) * perHour;
+function Rail({ g, p }: { g: PlannerGeometry; p: PlannerData }) {
   const col = g.timeCol!;
+  const list = visibleItems(p);
+  const boxes = new Map(g.items.map((b) => [b.id, b]));
+  const seen = new Set<string>();
   return (
     <g>
-      {Array.from({ length: rows + 1 }, (_, r) => {
-        const onHour = r % perHour === 0;
-        const onHalf = r % (perHour / 2) === 0;
-        if (!onHalf) return null;
-        const y = top + r * rowH;
-        const hour = p.startHour + r / perHour;
-        const part = onHour && r < rows ? DAY_PARTS.find((pt) => pt.from === hour || (r === 0 && pt.from <= hour && hour < (DAY_PARTS[DAY_PARTS.indexOf(pt) + 1]?.from ?? 24))) : undefined;
+      {list.map((it) => {
+        const b = boxes.get(it.id);
+        if (!b) return null;
+        const hour = (it.start ?? 0) / 60;
+        const part = [...DAY_PARTS].reverse().find((pt) => hour >= pt.from)!;
+        const first = !seen.has(part.key);
+        seen.add(part.key);
+        const size = Math.min(9.5, Math.max(6.5, b.h * 0.5));
         return (
-          <g key={r}>
-            {spans.map((sp, i) => (
-              <line
-                key={i}
-                x1={onHour && i === 0 ? sp.x - 6 : sp.x}
-                y1={y}
-                x2={sp.x + sp.w}
-                y2={y}
-                stroke={GUIDE}
-                strokeWidth={onHour ? 1.25 : 0.75}
-                strokeDasharray={onHour ? undefined : '3 4'}
-              />
-            ))}
-            {onHour && r < rows && (
-              <text x={col.x} y={y + 10} fill={INK} fontSize={9.5} fontWeight={800} fontFamily={FONT}>
-                {hourLabel(hour)}
-              </text>
-            )}
-            {part && rowH * perHour >= 22 && <PlannerGraphic picture={part.icon} cx={col.x + 8} cy={y + 10 + Math.min(11, rowH * perHour * 0.45)} size={Math.min(14, rowH * perHour * 0.5)} />}
+          <g key={it.id}>
+            <text x={col.x} y={b.y + size + 1} fill={INK} fontSize={size} fontWeight={800} fontFamily={FONT}>
+              {railTime(it.start ?? 0)}
+            </text>
+            {first && <PlannerGraphic picture={part.icon} cx={col.x + col.w - 7} cy={b.y + size * 0.6 + 1} size={12} />}
           </g>
         );
       })}
@@ -196,10 +184,9 @@ export const PlannerPageContent: React.FC<{ planner: PlannerData; pageSize: Page
   const byId = new Map(p.items.map((i) => [i.id, i]));
 
   if (p.kind === 'day') {
-    const trackX = g.area.x + g.timeCol!.w;
     return (
       <g className="planner-day">
-        <Timeline g={g} p={p} spans={[{ x: trackX + 6, w: g.area.x + g.area.w - trackX - 6 }]} />
+        <Rail g={g} p={p} />
         {g.items.map((b) => byId.get(b.id) && <RowCard key={b.id} it={byId.get(b.id)!} b={b} p={p} />)}
       </g>
     );
@@ -217,7 +204,6 @@ export const PlannerPageContent: React.FC<{ planner: PlannerData; pageSize: Page
             </text>
           </g>
         ))}
-        <Timeline g={g} p={p} spans={g.columns!.map((c) => ({ x: c.x + 2, w: c.w - 4 }))} />
         {g.items.map((b) => byId.get(b.id) && <StackCard key={b.id} it={byId.get(b.id)!} b={b} p={p} />)}
       </g>
     );

@@ -88,6 +88,7 @@ import {
   normalize,
   placeItem,
   samplePlanner,
+  flow,
   STEP,
   switchKind,
 } from './planner/plannerModel';
@@ -674,7 +675,7 @@ export default function App() {
     const item = moving ?? (drag.activityId ? itemFromActivity(drag.activityId) : undefined);
     if (!item) return;
     const g = plannerGeometry(ws.pageSize, page.showDateName, planner);
-    const target = dropTarget(g, planner, point.x, point.y - GRAB_TOP, item.minutes ?? STEP);
+    const target = dropTarget(g, planner, point.x, point.y - GRAB_TOP, item.minutes ?? STEP, moving?.id);
     updatePlanner(pageId, (p) => placeItem(p, item, target));
     if (!moving) trackEvent('planner_activity_added', { activity: drag.activityId, kind: planner.kind });
   };
@@ -1196,7 +1197,8 @@ export default function App() {
               }}
               onChangePlannerKind={handleChangePlannerKind}
               onResizePlannerItem={(pageId, itemId, minutes) =>
-                updatePlanner(pageId, (p) => ({ ...p, items: p.items.map((i) => (i.id === itemId ? { ...i, minutes } : i)) }))
+                // Longer: the activities after it slide later
+                updatePlanner(pageId, (p) => ({ ...p, items: flow(p, p.items.map((i) => (i.id === itemId ? { ...i, minutes } : i))) }))
               }
               onOpenPlannerSettings={() => {
                 setPlannerSel(null);
@@ -1216,7 +1218,11 @@ export default function App() {
                 item={plannerSel ? activePage.planner.items.find((i) => i.id === plannerSel.itemId) ?? null : null}
                 onUpdateItem={(patch) =>
                   plannerSel &&
-                  updatePlanner(plannerSel.pageId, (p) => ({ ...p, items: p.items.map((i) => (i.id === plannerSel.itemId ? { ...i, ...patch } : i)) }))
+                  updatePlanner(plannerSel.pageId, (p) => {
+                    const items = p.items.map((i) => (i.id === plannerSel.itemId ? { ...i, ...patch } : i));
+                    // A new time or length: the activities after it slide along
+                    return { ...p, items: 'start' in patch || 'minutes' in patch || 'day' in patch ? flow(p, items) : items };
+                  })
                 }
                 onMoveItem={handleMovePlannerItem}
                 onRemoveItem={() => plannerSel && removePlannerItem(plannerSel.pageId, plannerSel.itemId)}

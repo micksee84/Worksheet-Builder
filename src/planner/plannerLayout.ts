@@ -11,7 +11,7 @@
 import { DayKey, PageSizeId, PlannerData, PlannerItem } from '../types';
 import { pageDims } from '../config/appConfig';
 import { pageLayout } from '../utils/spacing';
-import { daysShown, PlannerDrop, STEP, visibleItems } from './plannerModel';
+import { daysShown, MAX_MINUTES, PlannerDrop, STEP, visibleItems } from './plannerModel';
 
 export interface Box { x: number; y: number; w: number; h: number }
 export interface ItemBox extends Box { id: string; day?: DayKey; lane?: number; lanes?: number }
@@ -19,10 +19,11 @@ export interface ItemBox extends Box { id: string; day?: DayKey; lane?: number; 
 export interface PlannerGeometry {
   /** The planner's whole area on the page */
   area: Box;
-  /** Day and week: the time column, and the height of one 15-minute step */
+  /** Day: the column of start times down the left */
   timeCol?: Box;
-  rowH?: number;
-  /** Day and week: where the timeline itself starts (below the week's day names) */
+  /** Day and week: a card's height for a length in minutes (your 15-minute and 3-hour sizes, scaled to fit) */
+  heightFor?: (minutes: number) => number;
+  /** Day and week: where the schedule starts (below the week's day names) */
   trackTop?: number;
   /** Week: one column per day, and the band their names sit in */
   columns?: (Box & { day: DayKey; label: string })[];
@@ -37,42 +38,46 @@ const TIME_COL = 46;
 const GAP = 6;
 
 /**
- * Boxes for activities on a timeline: each one as tall as its length, starting at its
- * time. Activities that overlap share the width side by side, in lanes.
+ * Card sizes for the day and week schedules, in page points: how tall 15 minutes and
+ * 3 hours are (lengths in between are in proportion). The week's columns are narrow,
+ * so its short cards are taller (room for the picture over the words).
  */
-function laneBoxes(items: PlannerItem[], startHour: number, top: number, rowH: number, x: number, w: number, gap: number): ItemBox[] {
-  const laneOf = new Map<string, number>();
-  const laneEnds: number[] = [];
-  const groups: string[][] = [];
-  let groupEnd = -1;
-  for (const it of items) {
-    const s = it.start ?? 0;
-    const e = s + (it.minutes ?? STEP);
-    if (s >= groupEnd) {
-      groups.push([]);
-      laneEnds.length = 0;
-    }
-    let lane = laneEnds.findIndex((end) => end <= s);
-    if (lane === -1) lane = laneEnds.length;
-    laneEnds[lane] = e;
-    laneOf.set(it.id, lane);
-    groups[groups.length - 1].push(it.id);
-    groupEnd = Math.max(groupEnd, e);
-  }
-  const lanesIn = new Map<string, number>();
-  for (const g of groups) {
-    const n = Math.max(...g.map((id) => laneOf.get(id)!)) + 1;
-    g.forEach((id) => lanesIn.set(id, n));
-  }
+export const CARD_SIZES = {
+  day: { min: 25, max: 125 },
+  week: { min: 35, max: 95 },
+} as const;
+/** Space between two activities that follow straight on, and for free time between them */
+const NEXT_GAP = 4;
+const FREE_GAP = 14;
+
+/** A stacked schedule: cards in time order, each as tall as its length allows */
+function stack(items: PlannerItem[], top: number, x: number, w: number, heightFor: (m: number) => number, k: number, day?: DayKey): ItemBox[] {
+  let y = top;
+  let end: number | null = null;
   return items.map((it) => {
-    const lanes = lanesIn.get(it.id) ?? 1;
-    const lane = laneOf.get(it.id) ?? 0;
-    const laneW = (w - gap * (lanes - 1)) / lanes;
-    const y = top + (((it.start ?? 0) - startHour * 60) / STEP) * rowH;
-    const h = ((it.minutes ?? STEP) / STEP) * rowH;
-    return { id: it.id, x: x + lane * (laneW + gap), y: y + 1, w: laneW, h: h - 2, lane, lanes };
+    if (end !== null) y += ((it.start ?? 0) > end ? FREE_GAP : NEXT_GAP) * k;
+    const h = heightFor(it.minutes ?? STEP);
+    const box = { id: it.id, day, x, y, w, h };
+    y += h;
+    end = (it.start ?? 0) + (it.minutes ?? STEP);
+    return box;
   });
 }
+
+/** How tall a stack is at full size */
+function stackHeight(items: PlannerItem[], size: { min: number; max: number }): number {
+  let total = 0;
+  let end: number | null = null;
+  for (const it of items) {
+    if (end !== null) total += (it.start ?? 0) > end ? FREE_GAP : NEXT_GAP;
+    total += sized(it.minutes ?? STEP, size);
+    end = (it.start ?? 0) + (it.minutes ?? STEP);
+  }
+  return total;
+}
+
+const sized = (m: number, size: { min: number; max: number }) =>
+  size.min + ((Math.max(STEP, Math.min(MAX_MINUTES, m)) - STEP) / (MAX_MINUTES - STEP)) * (size.max - size.min);
 
 export function plannerGeometry(pageSize: PageSizeId, showDateName: boolean, p: PlannerData): PlannerGeometry {
   const dims = pageDims(pageSize, { planner: p });
@@ -80,25 +85,28 @@ export function plannerGeometry(pageSize: PageSizeId, showDateName: boolean, p: 
   const area: Box = { x: layout.left, y: layout.contentTop, w: layout.right - layout.left, h: layout.contentBottom - layout.contentTop };
 
   if (p.kind === 'day' || p.kind === 'week') {
-    // One timeline for both: hours down the left, every 15 minutes the same height.
-    // The week puts the day names along the top and a column for each day.
-    const headerH = p.kind === 'week' ? 30 : 0;
-    const top = area.y + headerH;
-    const rows = Math.max(1, ((p.endHour - p.startHour) * 60) / STEP);
-    const rowH = (area.h - headerH) / rows;
-    const timeCol = { x: area.x, y: top, w: TIME_COL, h: area.h - headerH };
-    const trackX = area.x + TIME_COL + GAP;
-    const trackW = area.w - TIME_COL - GAP;
-    const boxFor = (list: PlannerItem[], x: number, w: number, day?: DayKey) =>
-      laneBoxes(list, p.startHour, top, rowH, x, w, p.kind === 'week' ? 3 : GAP).map((b) => ({ ...b, day }));
+    // A schedule: cards stacked in time order, sized by length. A full day that would run
+    // off the page shrinks everything by the same amount, so sizes stay comparable.
+    const size = CARD_SIZES[p.kind];
     if (p.kind === 'day') {
-      return { area, timeCol, rowH, trackTop: top, items: boxFor(visibleItems(p), trackX, trackW) };
+      const top = area.y;
+      const timeCol = { x: area.x, y: top, w: TIME_COL, h: area.h };
+      const list = visibleItems(p);
+      const k = Math.min(1, area.h / Math.max(1, stackHeight(list, size)));
+      const heightFor = (m: number) => sized(m, size) * k;
+      const x = area.x + TIME_COL + GAP;
+      return { area, timeCol, heightFor, trackTop: top, items: stack(list, top, x, area.w - TIME_COL - GAP, heightFor, k) };
     }
+    const headerH = 30;
+    const top = area.y + headerH + GAP;
     const days = daysShown(p);
-    const colW = (trackW - GAP * (days.length - 1)) / days.length;
-    const columns = days.map((d, i) => ({ x: trackX + i * (colW + GAP), y: area.y, w: colW, h: area.h, day: d.key, label: d.label }));
-    const items = columns.flatMap((c) => boxFor(visibleItems(p, c.day), c.x + 3, c.w - 6, c.day));
-    return { area, timeCol, rowH, trackTop: top, columns, headerH, items };
+    const colW = (area.w - GAP * (days.length - 1)) / days.length;
+    const columns = days.map((d, i) => ({ x: area.x + i * (colW + GAP), y: area.y, w: colW, h: area.h, day: d.key, label: d.label }));
+    const avail = area.h - headerH - GAP * 2;
+    const k = Math.min(1, ...columns.map((c) => avail / Math.max(1, stackHeight(visibleItems(p, c.day), size))));
+    const heightFor = (m: number) => sized(m, size) * k;
+    const items = columns.flatMap((c) => stack(visibleItems(p, c.day), top, c.x + 4, c.w - 8, heightFor, k, c.day));
+    return { area, heightFor, trackTop: top, columns, headerH, items };
   }
 
   if (p.kind === 'checklist') {
@@ -124,16 +132,32 @@ export function plannerGeometry(pageSize: PageSizeId, showDateName: boolean, p: 
 }
 
 /** What dropping at (x, y) in page points means. `grabOffsetY` keeps a moved card's top where it was grabbed. */
-export function dropTarget(g: PlannerGeometry, p: PlannerData, x: number, y: number, minutes = STEP): PlannerDrop {
+export function dropTarget(g: PlannerGeometry, p: PlannerData, x: number, y: number, minutes = STEP, movingId?: string): PlannerDrop {
   if (p.kind === 'day' || p.kind === 'week') {
-    // The pointer holds the top of the card; snap to the nearest 15 minutes
-    const rowH = g.rowH ?? 1;
-    const rows = Math.round((y - (g.trackTop ?? g.area.y)) / rowH);
-    const start = Math.max(p.startHour * 60, Math.min(p.startHour * 60 + rows * STEP, p.endHour * 60 - minutes));
-    if (p.kind === 'day') return { kind: 'day', start };
-    const cols = g.columns!;
-    const col = cols.reduce((best, c) => (Math.abs(c.x + c.w / 2 - x) < Math.abs(best.x + best.w / 2 - x) ? c : best), cols[0]);
-    return { kind: 'week', day: col.day, start };
+    // Between the cards: before the first card whose middle is below the pointer.
+    // It starts when the card above it ends (or just before the first one); anything
+    // it runs into slides later.
+    let day: DayKey | undefined;
+    if (p.kind === 'week') {
+      const cols = g.columns!;
+      day = cols.reduce((best, c) => (Math.abs(c.x + c.w / 2 - x) < Math.abs(best.x + best.w / 2 - x) ? c : best), cols[0]).day;
+    }
+    // The card being moved doesn't count: it's leaving its old spot
+    const list = visibleItems(p, day).filter((it) => it.id !== movingId);
+    const boxes = new Map(g.items.map((b) => [b.id, b]));
+    const next = list.findIndex((it) => {
+      const b = boxes.get(it.id);
+      return b && b.y + b.h / 2 > y;
+    });
+    const before = next === -1 ? list[list.length - 1] : list[next - 1];
+    const after = next === -1 ? undefined : list[next];
+    const start = before
+      ? (before.start ?? 0) + (before.minutes ?? STEP)
+      : after
+      ? Math.max(p.startHour * 60, (after.start ?? 0) - minutes)
+      : p.startHour * 60;
+    const clamped = Math.max(p.startHour * 60, Math.min(start, p.endHour * 60 - minutes));
+    return day ? { kind: 'week', day, start: clamped } : { kind: 'day', start: clamped };
   }
   if (p.kind === 'checklist') {
     const index = g.items.filter((b) => b.y + b.h / 2 < y).length;
