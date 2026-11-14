@@ -15,6 +15,9 @@ import { dropKind, isSlotBlockDrag, SlotBlockDrag } from '../utils/blockMoves';
 import { Page, PageSizeId, Slot, PageLayoutPreset, BlockInstance, PlannerKind } from '../types';
 import { PAGE_SPECS, pageDims } from '../config/appConfig';
 import { PlannerOverlay } from '../planner/PlannerOverlay';
+
+/** Ready-made titles for checklists: routines and packing lists */
+const CHECKLIST_TITLES = ['My morning', 'Pack for the beach', 'Sleepover bag', 'School trip', 'Snow day'];
 import { KIND_LABELS } from '../planner/plannerModel';
 import { LAYOUT_PRESETS, calculateSlotGeometries } from '../utils/layoutPresets';
 import { WorksheetPageSvg } from './WorksheetPageSvg';
@@ -678,7 +681,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
 
       {/* Page Title Quick Editor Banner */}
       <div className="bg-[#FAF8F0] px-6 py-2 border-b border-[#E2DEC9] flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2 flex-1 max-w-xl">
+        <div className="flex items-center gap-2 flex-1 max-w-4xl">
           <span className="text-[#6B5838] font-bold shrink-0">{activePage.planner ? 'Planner title:' : 'Worksheet Header Title:'}</span>
           <input
             type="text"
@@ -687,6 +690,23 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
             placeholder="e.g. Letter Practice or Sunshine Math"
             className="flex-1 px-2.5 py-1 text-xs font-bold text-[#2D2200] bg-white border border-[#E2DEC9] rounded-md focus:outline-none focus:ring-1 focus:ring-[#009BD9]"
           />
+          {/* Checklists: one tap to title a packing list */}
+          {activePage.planner?.kind === 'checklist' && (
+            <div className="hidden lg:flex items-center gap-1 shrink-0">
+              {CHECKLIST_TITLES.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => onChangePageTitle(activePage.id, t)}
+                  className={`px-2 py-0.5 rounded-full border text-[11px] font-bold ${
+                    activePage.title === t ? 'bg-[#2D2200] text-white border-[#2D2200]' : 'bg-white text-[#6B5838] border-[#E2DEC9] hover:border-[#2D2200]'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <span className="text-[11px] text-[#A39C8E] font-medium hidden md:inline">
           {spec.displayName}

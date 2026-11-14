@@ -151,7 +151,8 @@ export const PlannerLibrary: React.FC<{
             </span>
           </button>
 
-          {ACTIVITY_GROUPS.map((group) => {
+          {/* A checklist is often a packing list, so its things to pack come first */}
+          {(kind === 'checklist' ? [...ACTIVITY_GROUPS.filter((g) => g.id === 'pack'), ...ACTIVITY_GROUPS.filter((g) => g.id !== 'pack')] : ACTIVITY_GROUPS).map((group) => {
             const list = shown.filter((a) => a.group === group.id);
             if (!list.length) return null;
             return (
@@ -162,7 +163,7 @@ export const PlannerLibrary: React.FC<{
                 </div>
                 <div className={`space-y-2 ${slim ? 'lg:space-y-1.5' : ''}`}>
                   {list.map((a) => (
-                    <ActivityCard key={a.id} activity={a} onAdd={onAddActivity} slim={slim} showLength={kind === 'day'} />
+                    <ActivityCard key={a.id} activity={a} onAdd={onAddActivity} slim={slim} showLength={kind === 'day' && a.group !== 'pack'} />
                   ))}
                 </div>
               </div>

@@ -23,7 +23,7 @@ export const WEEK: { key: DayKey; label: string; short: string }[] = [
 export const KIND_LABELS: Record<PlannerKind, { label: string; title: string; blurb: string }> = {
   day: { label: 'Day', title: 'My day', blurb: 'A picture timeline of the day, from wake up to bedtime.' },
   week: { label: 'Week', title: 'My week', blurb: 'What happens each day of the week, in pictures.' },
-  checklist: { label: 'Checklist', title: 'My morning', blurb: 'Steps to tick off, like getting ready or tidying up.' },
+  checklist: { label: 'Checklist', title: 'My morning', blurb: 'Steps or things to tick off: getting ready, or packing for a trip.' },
   'first-then': { label: 'First–then', title: 'First, then', blurb: 'One thing to do first, then the reward. Big pictures.' },
 };
 

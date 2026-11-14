@@ -2,11 +2,11 @@
  * @license
  * Sunshine Brigade Worksheet Builder - Planner activities
  *
- * The routine activities in the planner library (Just My Planner's starter blocks),
+ * The routine activities and things to pack in the planner library (Just My Planner's starter blocks),
  * each shown with a Phosphor icon ("ph:<Name>", see plannerIcons.tsx).
  */
 
-export type ActivityGroup = 'morning' | 'learning' | 'meals' | 'play' | 'winddown';
+export type ActivityGroup = 'morning' | 'learning' | 'meals' | 'play' | 'winddown' | 'pack';
 
 export interface PlannerActivity {
   id: string;
@@ -23,6 +23,7 @@ export const ACTIVITY_GROUPS: { id: ActivityGroup; label: string }[] = [
   { id: 'meals', label: 'Meals and snacks' },
   { id: 'play', label: 'Play and outside' },
   { id: 'winddown', label: 'Wind down' },
+  { id: 'pack', label: 'Things to pack' },
 ];
 
 export const ACTIVITIES: PlannerActivity[] = [
@@ -66,6 +67,42 @@ export const ACTIVITIES: PlannerActivity[] = [
   { id: 'story', label: 'Story time', picture: 'ph:Book', group: 'winddown', minutes: 30 },
   { id: 'teeth-night', label: 'Brush teeth', picture: 'ph:Tooth', group: 'winddown', minutes: 30 },
   { id: 'bedtime', label: 'Bedtime', picture: 'ph:Bed', group: 'winddown', minutes: 30 },
+
+  // Things to pack: for packing lists the child ticks off with a grown-up
+  { id: 'clothes', label: 'Spare clothes', picture: 'ph:TShirt', group: 'pack', minutes: 30 },
+  { id: 'pack-pyjamas', label: 'Pyjamas', picture: 'ph:Hoodie', group: 'pack', minutes: 30 },
+  { id: 'jacket', label: 'Jacket', picture: 'ph:Hoodie', group: 'pack', minutes: 30 },
+  { id: 'pack-shoes', label: 'Shoes', picture: 'ph:Sneaker', group: 'pack', minutes: 30 },
+  { id: 'boots', label: 'Boots', picture: 'ph:Boot', group: 'pack', minutes: 30 },
+  { id: 'socks', label: 'Socks', picture: 'ph:Sock', group: 'pack', minutes: 30 },
+  { id: 'hat', label: 'Hat', picture: 'ph:BaseballCap', group: 'pack', minutes: 30 },
+  { id: 'sunglasses', label: 'Sunglasses', picture: 'ph:Sunglasses', group: 'pack', minutes: 30 },
+  { id: 'goggles', label: 'Swim goggles', picture: 'ph:Goggles', group: 'pack', minutes: 30 },
+  { id: 'towel', label: 'Towel', picture: 'ph:Towel', group: 'pack', minutes: 30 },
+  { id: 'umbrella', label: 'Umbrella', picture: 'ph:Umbrella', group: 'pack', minutes: 30 },
+  { id: 'water-bottle', label: 'Water bottle', picture: 'ph:Drop', group: 'pack', minutes: 30 },
+  { id: 'pack-snack', label: 'Snacks', picture: 'ph:OrangeSlice', group: 'pack', minutes: 30 },
+  { id: 'lunchbox', label: 'Lunch', picture: 'ph:BowlFood', group: 'pack', minutes: 30 },
+  { id: 'toothbrush', label: 'Toothbrush', picture: 'ph:Tooth', group: 'pack', minutes: 30 },
+  { id: 'soap', label: 'Soap', picture: 'ph:HandSoap', group: 'pack', minutes: 30 },
+  { id: 'pack-book', label: 'Book', picture: 'ph:Book', group: 'pack', minutes: 30 },
+  { id: 'toy', label: 'Favourite toy', picture: 'ph:Cube', group: 'pack', minutes: 30 },
+  { id: 'pillow', label: 'Pillow', picture: 'ph:Bed', group: 'pack', minutes: 30 },
+  { id: 'headphones', label: 'Headphones', picture: 'ph:Headphones', group: 'pack', minutes: 30 },
+  { id: 'tablet', label: 'Tablet', picture: 'ph:DeviceMobile', group: 'pack', minutes: 30 },
+  { id: 'charger', label: 'Charger', picture: 'ph:BatteryCharging', group: 'pack', minutes: 30 },
+  { id: 'camera', label: 'Camera', picture: 'ph:Camera', group: 'pack', minutes: 30 },
+  { id: 'flashlight', label: 'Flashlight', picture: 'ph:Flashlight', group: 'pack', minutes: 30 },
+  { id: 'first-aid', label: 'First aid kit', picture: 'ph:FirstAidKit', group: 'pack', minutes: 30 },
+  { id: 'medicine', label: 'Medicine', picture: 'ph:Pill', group: 'pack', minutes: 30 },
+  { id: 'diapers', label: 'Diapers', picture: 'ph:Baby', group: 'pack', minutes: 30 },
+  { id: 'tickets', label: 'Tickets', picture: 'ph:Ticket', group: 'pack', minutes: 30 },
+  { id: 'permission-slip', label: 'Permission slip', picture: 'ph:Envelope', group: 'pack', minutes: 30 },
+  { id: 'keys', label: 'Keys', picture: 'ph:Key', group: 'pack', minutes: 30 },
+  { id: 'wallet', label: 'Wallet', picture: 'ph:Wallet', group: 'pack', minutes: 30 },
+  { id: 'present', label: 'Present', picture: 'ph:Gift', group: 'pack', minutes: 30 },
+  { id: 'suitcase', label: 'Suitcase', picture: 'ph:Suitcase', group: 'pack', minutes: 30 },
+  { id: 'pack-backpack', label: 'Backpack', picture: 'ph:Backpack', group: 'pack', minutes: 30 },
 ];
 
 export const getActivity = (id: string) => ACTIVITIES.find((a) => a.id === id);
