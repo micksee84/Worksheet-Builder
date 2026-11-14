@@ -139,7 +139,7 @@ export const PlannerDrawer: React.FC<{
   const hours = Array.from({ length: 25 }, (_, h) => h);
   const times: number[] = [];
   for (let t = planner.startHour * 60; t < planner.endHour * 60; t += STEP) times.push(t);
-  // Every 15 minutes, up to 3 hours
+  // Every 15 minutes, up to 7 hours
   const lengths = Array.from({ length: MAX_MINUTES / STEP }, (_, i) => (i + 1) * STEP);
 
   return (

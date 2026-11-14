@@ -13,7 +13,7 @@ export interface PlannerActivity {
   label: string;
   picture: string;
   group: ActivityGroup;
-  /** Usual length in minutes (15-minute steps, up to 3 hours) */
+  /** Usual length in minutes (15-minute steps, up to 7 hours) */
   minutes: number;
 }
 

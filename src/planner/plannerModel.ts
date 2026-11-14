@@ -30,8 +30,8 @@ export const KIND_LABELS: Record<PlannerKind, { label: string; title: string; bl
 /** The planner's time unit: every start time and length moves in 15-minute steps */
 export const STEP = 15; // minutes
 /** The longest an activity can be, and the tallest its card gets */
-export const MAX_MINUTES = 180;
-/** Round a length to the time unit, between 15 minutes and 3 hours */
+export const MAX_MINUTES = 420; // 7 hours
+/** Round a length to the time unit, between 15 minutes and 7 hours */
 export const clampLength = (m: number | undefined) => Math.max(STEP, Math.min(MAX_MINUTES, Math.round((m ?? 30) / STEP) * STEP));
 
 /**
@@ -200,7 +200,7 @@ export const daysShown = (p: PlannerData) => (p.weekdaysOnly ? WEEK.slice(0, 5) 
 export function normalize(p: PlannerData): PlannerData {
   let items = p.items;
   if (p.kind === 'day' || p.kind === 'week') {
-    // Every activity gets a length in 15-minute steps (at most 3 hours) and a start time.
+    // Every activity gets a length in 15-minute steps (at most 7 hours) and a start time.
     // One without a time follows on from the one before it on the same day; a week
     // activity saved with a part of the day starts in that part.
     const next: Record<string, number> = {};

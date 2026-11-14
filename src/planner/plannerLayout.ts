@@ -58,7 +58,8 @@ const GAP = 6;
 
 /**
  * Card sizes for the day and week schedules, in page points: how tall 15 minutes and
- * 3 hours are (lengths in between are in proportion). The week's columns are narrow,
+ * 3 hours are (Mick's sample cards). Every length keeps that same scale, so longer
+ * activities (up to MAX_MINUTES, 7 hours) grow past the 3-hour card in proportion. The week's columns are narrow,
  * so its short cards are taller (room for the picture over the words).
  */
 export const CARD_SIZES = {
@@ -95,8 +96,10 @@ function stackHeight(items: PlannerItem[], size: { min: number; max: number }): 
   return total;
 }
 
+/** The length the "max" card size was set for */
+const REF_MINUTES = 180;
 const sized = (m: number, size: { min: number; max: number }) =>
-  size.min + ((Math.max(STEP, Math.min(MAX_MINUTES, m)) - STEP) / (MAX_MINUTES - STEP)) * (size.max - size.min);
+  size.min + ((Math.max(STEP, Math.min(MAX_MINUTES, m)) - STEP) / (REF_MINUTES - STEP)) * (size.max - size.min);
 
 export function plannerGeometry(pageSize: PageSizeId, showDateName: boolean, p: PlannerData): PlannerGeometry {
   const dims = pageDims(pageSize, { planner: p });
