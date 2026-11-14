@@ -254,7 +254,7 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
                     fontWeight="700"
                     fontFamily="Nunito, sans-serif"
                   >
-                    {slot.label} ({slot.size})
+                    {slot.label}
                   </text>
                   <text
                     x={geom.width / 2}
