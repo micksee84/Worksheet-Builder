@@ -545,7 +545,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
           <CardToolbar page={activePage} pages={pages} onUpdate={(patch) => onUpdateCards?.(activePage.id, patch)} onAddPages={() => onAddCardPages?.(activePage.id)} />
         ) : activePage.planner ? (
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#6B5838] hidden sm:inline">Planner:</span>
+            <span className="text-xs font-semibold text-[#6B5838] hidden sm:inline">Planner</span>
             <div role="group" aria-label="Planner view" className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9] gap-1">
               {(Object.keys(KIND_LABELS) as PlannerKind[]).map((kind) => (
                 <button
@@ -554,7 +554,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
                   onClick={() => onChangePlannerKind?.(activePage.id, kind)}
                   aria-pressed={activePage.planner!.kind === kind}
                   title={KIND_LABELS[kind].blurb}
-                  className={`px-2 py-1 text-[11px] font-bold rounded-md transition-all ${
+                  className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all ${
                     activePage.planner!.kind === kind ? 'bg-white text-[#2D2200] shadow-xs' : 'text-[#6B5838] hover:text-[#2D2200]'
                   }`}
                 >
@@ -566,7 +566,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
               type="button"
               data-opens-settings=""
               onClick={onOpenPlannerSettings}
-              className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold text-[#2D2200] bg-white border border-[#E2DEC9] rounded-lg hover:border-[#2D2200]"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-[#2D2200] bg-white border border-[#E2DEC9] rounded-lg hover:border-[#2D2200]"
               title="Hours, times, tick boxes and more"
             >
               <Settings2 className="w-3.5 h-3.5" />
@@ -577,8 +577,8 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
         <>
         {/* Center: Page Layout Grid Picker */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#6B5838] hidden sm:inline">
-            Slots:
+          <span className="text-xs font-semibold text-[#6B5838] hidden sm:inline">
+            Layout
           </span>
           <div className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9] gap-1">
             {LAYOUT_PRESETS.map((preset) => (
@@ -586,7 +586,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
                 key={preset.id}
                 type="button"
                 onClick={() => onChangePageLayout(activePage.id, preset.id)}
-                className={`px-2 py-1 text-[11px] font-bold rounded-md transition-all ${
+                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all ${
                   activePage.layout === preset.id
                     ? 'bg-white text-[#2D2200] shadow-xs'
                     : 'text-[#6B5838] hover:text-[#2D2200]'
@@ -609,32 +609,32 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
         </>
         )}
 
-        {/* Paper size: a setting of the page, so it sits with the slot layouts */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#6B5838] hidden xl:inline">Paper:</span>
-          <div role="group" aria-label="Paper size" className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9] gap-1">
-            {([
-              { id: 'letter', label: 'Letter', tip: 'Use US Letter paper (8.5 × 11 in)' },
-              { id: 'a4', label: 'A4', tip: 'Use A4 paper (210 × 297 mm)' },
-            ] as const).map(({ id, label, tip }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => onTogglePageSize(id)}
-                aria-pressed={pageSize === id}
-                title={tip}
-                className={`px-2 py-1 text-[11px] font-bold rounded-md transition-all ${
-                  pageSize === id ? 'bg-white text-[#2D2200] shadow-xs' : 'text-[#6B5838] hover:text-[#2D2200]'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Right: Zoom controls & Page Actions */}
         <div className="flex items-center gap-2">
+        {/* Paper size: the whole document's, so it sits with the view and zoom */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-[#6B5838] hidden xl:inline">Paper</span>
+            <div role="group" aria-label="Paper size" className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9] gap-1">
+              {([
+                { id: 'letter', label: 'Letter', tip: 'Use US Letter paper (8.5 × 11 in)' },
+                { id: 'a4', label: 'A4', tip: 'Use A4 paper (210 × 297 mm)' },
+              ] as const).map(({ id, label, tip }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => onTogglePageSize(id)}
+                  aria-pressed={pageSize === id}
+                  title={tip}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all ${
+                    pageSize === id ? 'bg-white text-[#2D2200] shadow-xs' : 'text-[#6B5838] hover:text-[#2D2200]'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <span className="hidden md:block w-px h-6 bg-[#E2DEC9] mx-1" aria-hidden="true" />
           {/* View toggle: one page at a time, or every page side by side */}
           <div
             role="group"
@@ -650,7 +650,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
                 type="button"
                 onClick={() => setViewMode(id)}
                 aria-pressed={viewMode === id}
-                className={`flex items-center gap-1.5 px-2 py-1 text-[11px] font-bold rounded-md transition-all ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-md transition-all ${
                   viewMode === id ? 'bg-white text-[#2D2200] shadow-xs' : 'text-[#6B5838] hover:text-[#2D2200]'
                 }`}
                 title={id === 'grid' ? 'See all pages side by side' : 'Edit one page at a time'}
@@ -669,10 +669,10 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
               title={isGrid ? 'Make the pages smaller' : 'Zoom out (Ctrl/Cmd + −)'}
               aria-label="Zoom out"
             >
-              <ZoomOut className="w-3.5 h-3.5" />
+              <ZoomOut className="w-4 h-4" />
             </button>
             <span
-              className="text-[11px] font-bold tabular-nums text-[#2D2200] w-10 text-center"
+              className="text-xs font-bold tabular-nums text-[#2D2200] w-11 text-center"
               title={isGrid ? 'Size of the page previews' : 'Current zoom'}
             >
               {Math.round(currentZoom * 100)}%
@@ -684,7 +684,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
               title={isGrid ? 'Make the pages bigger' : 'Zoom in, up to 200% (pinch, or Ctrl/Cmd + scroll). Scroll to move around.'}
               aria-label="Zoom in"
             >
-              <ZoomIn className="w-3.5 h-3.5" />
+              <ZoomIn className="w-4 h-4" />
             </button>
             <button
               onClick={resetZoom}
@@ -692,22 +692,22 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
               title={isGrid ? 'Reset the preview size' : 'Fit the whole page in the frame (Ctrl/Cmd + 0)'}
               aria-label={isGrid ? 'Reset preview size' : 'Fit page'}
             >
-              <Maximize2 className="w-3.5 h-3.5" />
+              <Maximize2 className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
 
       {/* Page Title Quick Editor Banner */}
-      <div className="bg-[#FAF8F0] px-6 py-2 border-b border-[#E2DEC9] flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2 flex-1 max-w-4xl">
-          <span className="text-[#6B5838] font-bold shrink-0">{activePage.planner ? 'Planner title:' : activePage.cards ? 'Cards title:' : 'Worksheet Header Title:'}</span>
+      <div className="bg-[#FAF8F0] px-6 py-2 border-b border-[#E2DEC9] flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-[#6B5838] font-semibold shrink-0">{activePage.planner ? 'Planner title' : activePage.cards ? 'Cards title' : 'Page title'}</span>
           <input
             type="text"
             value={activePage.title}
             onChange={(e) => onChangePageTitle(activePage.id, e.target.value)}
             placeholder="e.g. Letter Practice or Sunshine Math"
-            className="flex-1 px-2.5 py-1 text-xs font-bold text-[#2D2200] bg-white border border-[#E2DEC9] rounded-md focus:outline-none focus:ring-1 focus:ring-[#009BD9]"
+            className="w-56 sm:w-72 px-2.5 py-1.5 text-sm font-bold text-[#2D2200] bg-white border border-[#E2DEC9] rounded-md focus:outline-none focus:ring-1 focus:ring-[#009BD9]"
           />
           {/* Checklists: one tap to title a packing list */}
           {activePage.planner?.kind === 'checklist' && (
@@ -729,8 +729,8 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
         </div>
         {/* Name and date line: every worksheet page, or just the first */}
         {!activePage.planner && !activePage.cards && onChangeNameDate && (
-          <div className="flex items-center gap-1.5 shrink-0 ml-3">
-            <span className="text-[#6B5838] font-bold hidden lg:inline">Name and date:</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[#6B5838] font-semibold hidden lg:inline">Name and date</span>
             <div role="group" aria-label="Name and date line" className="flex items-center bg-white p-0.5 rounded-lg border border-[#E2DEC9] gap-0.5">
               {([
                 { id: 'all', label: 'Every page', tip: 'Name and date line on every worksheet page' },
@@ -742,7 +742,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
                   onClick={() => onChangeNameDate(id)}
                   aria-pressed={nameDate === id}
                   title={tip}
-                  className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
+                  className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all ${
                     nameDate === id ? 'bg-[#2D2200] text-white' : 'text-[#6B5838] hover:text-[#2D2200]'
                   }`}
                 >
@@ -752,9 +752,6 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
             </div>
           </div>
         )}
-        <span className="text-[11px] text-[#A39C8E] font-medium hidden md:inline ml-3">
-          {spec.displayName}
-        </span>
       </div>
 
       {/* To-scale canvas. A normal scroll area in both views. In single-page view the page sits centred

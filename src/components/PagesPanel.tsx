@@ -209,16 +209,16 @@ const PageItem: React.FC<{
         {isActive && (
           <div className="flex items-center justify-center gap-0.5" onClick={(e) => e.stopPropagation()}>
             <IconButton label="Move this page up" onClick={onMoveUp} disabled={index === 0}>
-              <ArrowUp className="w-3.5 h-3.5" />
+              <ArrowUp className="w-4 h-4" />
             </IconButton>
             <IconButton label="Move this page down" onClick={onMoveDown} disabled={index === total - 1}>
-              <ArrowDown className="w-3.5 h-3.5" />
+              <ArrowDown className="w-4 h-4" />
             </IconButton>
             <IconButton label="Duplicate this page" onClick={onDuplicate}>
-              <Copy className="w-3.5 h-3.5" />
+              <Copy className="w-4 h-4" />
             </IconButton>
             <IconButton label="Delete this page" onClick={onDelete} disabled={total <= 1} danger>
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-4 h-4" />
             </IconButton>
           </div>
         )}

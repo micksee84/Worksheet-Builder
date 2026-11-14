@@ -11,7 +11,7 @@ import { CardDeck, Page } from '../types';
 import { Plus } from '../components/icons';
 import { cardsPerPage, deckCards } from './cardModel';
 
-const seg = (on: boolean) => `px-2 py-1 text-[11px] font-bold rounded-md transition-all ${on ? 'bg-white text-[#2D2200] shadow-xs' : 'text-[#6B5838] hover:text-[#2D2200]'}`;
+const seg = (on: boolean) => `px-2.5 py-1 text-xs font-bold rounded-md transition-all ${on ? 'bg-white text-[#2D2200] shadow-xs' : 'text-[#6B5838] hover:text-[#2D2200]'}`;
 
 export const CardToolbar: React.FC<{ page: Page; pages: Page[]; onUpdate: (patch: Partial<CardDeck>) => void; onAddPages: () => void }> = ({ page, pages, onUpdate, onAddPages }) => {
   const d = page.cards!;
@@ -25,7 +25,7 @@ export const CardToolbar: React.FC<{ page: Page; pages: Page[]; onUpdate: (patch
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-1.5">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-[#6B5838] hidden sm:inline">Cards:</span>
+        <span className="text-xs font-semibold text-[#6B5838] hidden sm:inline">Card size</span>
         <div role="group" aria-label="Card size" className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9] gap-1">
           {([
             { n: 4, tip: 'Big cards: 4 a page' },
@@ -39,7 +39,7 @@ export const CardToolbar: React.FC<{ page: Page; pages: Page[]; onUpdate: (patch
         </div>
       </div>
       <div className="flex items-center gap-1.5">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-[#6B5838] hidden xl:inline">Print:</span>
+        <span className="text-xs font-semibold text-[#6B5838] hidden xl:inline">Print</span>
         <div role="group" aria-label="How the cards print" className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9] gap-1">
           <button type="button" title="Front and back side by side: cut out, fold down the middle" aria-pressed={d.print === 'fold'} onClick={() => onUpdate({ print: 'fold' })} className={seg(d.print === 'fold')}>
             Fold-over
@@ -49,7 +49,7 @@ export const CardToolbar: React.FC<{ page: Page; pages: Page[]; onUpdate: (patch
           </button>
         </div>
       </div>
-      <span className="text-[11px] font-bold text-[#6B5838] whitespace-nowrap hidden lg:inline">
+      <span className="text-xs font-semibold text-[#6B5838] whitespace-nowrap hidden lg:inline">
         {total ? `Cards ${first}–${last} of ${total}` : 'No cards picked'}
       </span>
       {missing > 0 && (
@@ -57,7 +57,7 @@ export const CardToolbar: React.FC<{ page: Page; pages: Page[]; onUpdate: (patch
           type="button"
           onClick={onAddPages}
           title="Add pages for the rest of the cards"
-          className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold text-white bg-[#009BD9] rounded-lg hover:bg-[#0087BD] whitespace-nowrap"
+          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-white bg-[#009BD9] rounded-lg hover:bg-[#0087BD] whitespace-nowrap"
         >
           <Plus className="w-3.5 h-3.5" /> {missing} more {missing === 1 ? 'page' : 'pages'} for the rest
         </button>
