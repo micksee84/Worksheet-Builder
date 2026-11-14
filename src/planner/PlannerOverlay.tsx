@@ -8,8 +8,8 @@
  * it will land: the time on a day, the spot in a week column or list, or the side.
  */
 
-import React, { useState } from 'react';
-import { useDndContext, useDraggable, useDroppable } from '@dnd-kit/core';
+import React, { useRef, useState } from 'react';
+import { DragMoveEvent, useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
 import { Page, PageSizeId, PlannerItem } from '../types';
 import { plannerGeometry, dropTarget, Box } from './plannerLayout';
 import { placeItem, STEP } from './plannerModel';
@@ -66,6 +66,29 @@ export const PlannerOverlay: React.FC<{
   const drag = active?.data.current as { type?: string; itemId?: string; activityId?: string; pageId?: string } | undefined;
   const draggingHere = drag?.type === 'planner-activity' || (drag?.type === 'planner-item' && drag.pageId === page.id);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
+  const surface = useRef<HTMLDivElement | null>(null);
+
+  // Follow the drag itself: the dragged card sits under the pointer, so this page never
+  // gets pointer events of its own while something is dragged.
+  useDndMonitor({
+    onDragMove(event: DragMoveEvent) {
+      const el = surface.current;
+      const start = event.activatorEvent as PointerEvent | TouchEvent | null;
+      const pt = start && ('touches' in start ? start.touches[0] ?? start.changedTouches[0] : start);
+      if (!el || !pt) return;
+      const rect = el.getBoundingClientRect();
+      const x = pt.clientX + event.delta.x;
+      const y = pt.clientY + event.delta.y;
+      if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+        setHover(null);
+        return;
+      }
+      const scale = rect.width / el.offsetWidth;
+      setHover({ x: (x - rect.left) / scale, y: (y - rect.top) / scale });
+    },
+    onDragEnd: () => setHover(null),
+    onDragCancel: () => setHover(null),
+  });
 
   // Where the dragged thing would land: lay the planner out as if it were dropped, and
   // outline that box.
@@ -81,16 +104,12 @@ export const PlannerOverlay: React.FC<{
 
   return (
     <div
-      ref={setNodeRef}
+      ref={(el) => {
+        setNodeRef(el);
+        surface.current = el;
+      }}
       className="absolute inset-0"
       onClick={onBackground}
-      onPointerMove={(e) => {
-        if (!draggingHere) return;
-        const rect = e.currentTarget.getBoundingClientRect();
-        const scale = rect.width / e.currentTarget.offsetWidth;
-        setHover({ x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale });
-      }}
-      onPointerLeave={() => setHover(null)}
     >
       {g.items.map((b) => {
         const item = planner.items.find((i) => i.id === b.id);
@@ -108,7 +127,7 @@ export const PlannerOverlay: React.FC<{
       })}
       {ghost && (
         <div
-          className="absolute rounded-lg border-2 border-dashed border-[#009BD9] bg-[#009BD9]/10 pointer-events-none"
+          className="absolute rounded-lg border-[3px] border-dashed border-[#009BD9] bg-[#009BD9]/15 pointer-events-none"
           style={{ left: ghost.x, top: ghost.y, width: ghost.w, height: ghost.h }}
         />
       )}
