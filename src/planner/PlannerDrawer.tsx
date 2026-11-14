@@ -9,7 +9,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Trash2, Settings, ArrowUp, ArrowDown, Search, RotateCcw } from '../components/icons';
+import { X, Trash2, Settings, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Search, RotateCcw } from '../components/icons';
 import { GroupTask, PlannerData, PlannerItem, PlannerKind } from '../types';
 import { GraphicThumb, ICON_NAMES, PLANNER_ICONS } from './plannerIcons';
 import { daysShown, GROUP_MAX, hourLabel, KIND_LABELS, lengthLabel, MAX_MINUTES, STEP, tasksOf, timeLabel } from './plannerModel';
@@ -176,11 +176,11 @@ export const PlannerDrawer: React.FC<{
                       onChange={(e) => onSetTasks?.(tasks.map((x) => (x.id === t.id ? { ...x, label: e.target.value } : x)))}
                       className={`${field} py-1.5`}
                     />
-                    <button type="button" title="Move earlier" disabled={i === 0} onClick={() => onSetTasks?.(swap(tasks, i, i - 1))} className="p-1.5 text-[#6B5838] hover:text-[#2D2200] disabled:opacity-30">
-                      <ArrowUp className="w-3.5 h-3.5" />
+                    <button type="button" title="Move left (earlier in the block)" disabled={i === 0} onClick={() => onSetTasks?.(swap(tasks, i, i - 1))} className="p-1.5 text-[#6B5838] hover:text-[#2D2200] disabled:opacity-30">
+                      <ArrowLeft className="w-3.5 h-3.5" />
                     </button>
-                    <button type="button" title="Move later" disabled={i === tasks.length - 1} onClick={() => onSetTasks?.(swap(tasks, i, i + 1))} className="p-1.5 text-[#6B5838] hover:text-[#2D2200] disabled:opacity-30">
-                      <ArrowDown className="w-3.5 h-3.5" />
+                    <button type="button" title="Move right (later in the block)" disabled={i === tasks.length - 1} onClick={() => onSetTasks?.(swap(tasks, i, i + 1))} className="p-1.5 text-[#6B5838] hover:text-[#2D2200] disabled:opacity-30">
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                     <button type="button" title="Remove from this block" onClick={() => onSetTasks?.(tasks.filter((x) => x.id !== t.id))} className="p-1.5 text-[#6B5838] hover:text-[#D94A38]">
                       <X className="w-3.5 h-3.5" />
@@ -188,7 +188,7 @@ export const PlannerDrawer: React.FC<{
                   </div>
                 ))}
                 <p className="text-[11px] text-[#6B5838]">
-                  {tasks.length < GROUP_MAX ? `Drag another task onto this card to add it (up to ${GROUP_MAX}). ` : ''}Drag a task out of the card to make it its own.
+                  {tasks.length < GROUP_MAX ? `Drag another task onto this card to add it (up to ${GROUP_MAX}). ` : ''}On the page, drag a task between the others to reorder, or out of the card to make it its own.
                 </p>
                 <button type="button" onClick={onSplit} className="w-full py-2 text-xs font-bold text-[#2D2200] bg-white border border-[#E2DEC9] rounded-lg hover:border-[#2D2200]">
                   Split into separate cards

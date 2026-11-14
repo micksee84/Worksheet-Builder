@@ -50,11 +50,22 @@ const TaskHandle: React.FC<{ pageId: string; itemId: string; taskId: string; lab
         e.stopPropagation();
         onSelect();
       }}
-      aria-label={`${label}: drag out of this block`}
-      title="Drag out to make it a card of its own"
+      aria-label={`${label}: drag to move it in this block, or out to make it its own card`}
+      title="Drag to change the order, or drag out to make it its own card"
       style={{ position: 'absolute', left: cell.x, top: cell.y, width: cell.w, height: cell.h }}
-      className={`rounded-md cursor-grab border border-dashed ${isDragging ? 'border-[#A39C8E] bg-white/70' : 'border-[#009BD9]/70 hover:bg-[#009BD9]/10'}`}
-    />
+      className={`group/task rounded-md cursor-grab active:cursor-grabbing border-2 border-dashed touch-none ${
+        isDragging ? 'border-[#A39C8E] bg-white/70' : 'border-[#009BD9]/60 hover:border-[#009BD9] hover:bg-[#009BD9]/10'
+      }`}
+    >
+      {/* A grip on each task says it can be picked up on its own */}
+      {!isDragging && (
+        <span className="absolute left-1/2 -translate-x-1/2 -top-[9px] flex gap-[2px] px-1.5 py-[3px] rounded-full bg-[#009BD9] shadow pointer-events-none opacity-80 group-hover/task:opacity-100">
+          {[0, 1, 2].map((d) => (
+            <span key={d} className="block w-[3px] h-[3px] rounded-full bg-white" />
+          ))}
+        </span>
+      )}
+    </div>
   );
 };
 
@@ -111,7 +122,13 @@ const ItemHandle: React.FC<{
           : 'hover:border-2 hover:border-[#009BD9]/60'
       }`}
     >
-      {/* A selected block: its tasks can be dragged out one at a time */}
+      {/* A selected block: say what its tasks can do */}
+      {selected && !isDragging && !live && cells && cells.length > 1 && (
+        <span className="absolute right-1 -top-[22px] whitespace-nowrap px-2 py-0.5 rounded-full bg-[#2D2200] text-white text-[10px] font-bold shadow pointer-events-none z-10">
+          Drag a task to reorder, or out to separate
+        </span>
+      )}
+      {/* A selected block: its tasks can be dragged on their own, to reorder or take out */}
       {selected && !isDragging && !live && cells && cells.length > 1 &&
         tasksOf(item).map((t, i) => (
           <TaskHandle
@@ -240,6 +257,9 @@ export const PlannerOverlay: React.FC<{
   // outline that box.
   let ghost: Box | null = null;
   let joining = false;
+  // Joining a block: the gap the task goes into, and whether it's the block it came from
+  let gap: Box | null = null;
+  let reorder = false;
   if (draggingHere && hover) {
     // A task pulled out of a block: lay out the planner without it first
     const pulled = drag?.type === 'planner-item' && drag.taskId && drag.itemId ? takeOut(planner, drag.itemId, drag.taskId) : null;
@@ -254,6 +274,16 @@ export const PlannerOverlay: React.FC<{
       // Joining a block: the whole card it joins lights up
       joining = true;
       ghost = baseG.items.find((b) => b.id === target.join) ?? null;
+      const into = base.items.find((i) => i.id === target.join);
+      if (ghost && into) {
+        const cells = blockCells(ghost, tasksOf(into).length, planner.showTimes);
+        const at = target.at ?? cells.length;
+        // A bar in the gap: before the first task, between two, or after the last
+        const x = at === 0 ? cells[0].x - 3 : at >= cells.length ? cells[cells.length - 1].x + cells[cells.length - 1].w + 1 : cells[at].x - 3;
+        gap = { x, y: ghost.y + 4, w: 4, h: ghost.h - 8 };
+      }
+      const from = drag?.itemId ? planner.items.find((i) => i.id === drag.itemId) : undefined;
+      reorder = !!pulled && !!from && tasksOf(from).some((t) => t.id === target.join);
     } else {
       const after = plannerGeometry(pageSize, page.showDateName, placeItem(base, probe, target));
       ghost = after.items.find((b) => b.id === probe.id) ?? null;
@@ -317,14 +347,21 @@ export const PlannerOverlay: React.FC<{
       )}
       {ghost && (
         <div
-          className={`absolute rounded-lg border-dashed border-[#009BD9] bg-[#009BD9]/15 pointer-events-none ${joining ? 'border-[4px]' : 'border-[3px]'}`}
+          className={`absolute rounded-lg border-dashed border-[#009BD9] pointer-events-none ${joining ? 'border-[2px] bg-[#009BD9]/5' : 'border-[3px] bg-[#009BD9]/15'}`}
           style={{ left: ghost.x, top: ghost.y, width: ghost.w, height: ghost.h }}
         >
           {joining && (
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 whitespace-nowrap px-2 py-0.5 rounded-full bg-[#009BD9] text-white text-[10px] font-extrabold shadow">
-              + Add to this block
+            <span className="absolute left-1/2 -translate-x-1/2 -top-3 whitespace-nowrap px-2 py-0.5 rounded-full bg-[#009BD9] text-white text-[10px] font-extrabold shadow">
+              {reorder ? 'Move here' : '+ Add here'}
             </span>
           )}
+        </div>
+      )}
+      {/* Joining a block: a bar marks the gap between the tasks it drops into */}
+      {gap && (
+        <div className="absolute rounded-full bg-[#009BD9] pointer-events-none shadow" style={{ left: gap.x, top: gap.y, width: gap.w, height: gap.h }}>
+          <span className="absolute -left-[3px] -top-[3px] w-[10px] h-[10px] rounded-full bg-[#009BD9] border-2 border-white" />
+          <span className="absolute -left-[3px] -bottom-[3px] w-[10px] h-[10px] rounded-full bg-[#009BD9] border-2 border-white" />
         </div>
       )}
     </div>

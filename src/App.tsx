@@ -91,6 +91,7 @@ import {
   flow,
   splitBlock,
   takeOut,
+  blockOf,
   STEP,
   switchKind,
 } from './planner/plannerModel';
@@ -688,7 +689,14 @@ export default function App() {
     if (!item) return;
     const g = plannerGeometry(ws.pageSize, page.showDateName, planner);
     const target = dropTarget(g, planner, point.x, point.y - GRAB_TOP, item.minutes ?? STEP, moving?.id);
-    updatePlanner(pageId, () => placeItem(planner, item, target));
+    const placed = placeItem(planner, item, target);
+    updatePlanner(pageId, () => placed);
+    // A task moved within or into a block: keep that block selected, so its tasks can
+    // keep being rearranged (the block's id follows whichever task leads it)
+    if (pulled && target.kind === 'day' && target.join) {
+      const block = blockOf(placed, item.id);
+      if (block) setPlannerSel({ pageId, itemId: block.id });
+    }
     if (!moving) trackEvent('planner_activity_added', { activity: drag.activityId, kind: planner.kind });
   };
 

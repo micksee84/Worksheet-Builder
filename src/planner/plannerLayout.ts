@@ -177,7 +177,13 @@ export function dropTarget(g: PlannerGeometry, p: PlannerData, x: number, y: num
         const py = y + GRAB_TOP;
         return py > b.y + edge && py < b.y + b.h - edge && canJoin(it, count);
       });
-      if (over) return { kind: 'day', start: over.start ?? 0, join: over.id };
+      if (over) {
+        // Which gap between the tasks: past the middle of a task means after it
+        const b = boxes.get(over.id)!;
+        const cells = blockCells(b, tasksOf(over).length, p.showTimes);
+        const at = cells.filter((c) => x > c.x + c.w / 2).length;
+        return { kind: 'day', start: over.start ?? 0, join: over.id, at };
+      }
     }
     const next = list.findIndex((it) => {
       const b = boxes.get(it.id);

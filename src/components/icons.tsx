@@ -17,6 +17,7 @@ import type { Icon as PhosphorIcon, IconProps } from '@phosphor-icons/react';
 import {
   ArrowCounterClockwiseIcon,
   ArrowDownIcon,
+  ArrowLeftIcon,
   ArrowRightIcon,
   ArrowUpIcon,
   ArrowUUpLeftIcon,
@@ -103,6 +104,7 @@ export const Menu = bold(ListIcon, 'Menu');
 export const ArrowUp = bold(ArrowUpIcon, 'ArrowUp');
 export const ArrowDown = bold(ArrowDownIcon, 'ArrowDown');
 export const ArrowRight = bold(ArrowRightIcon, 'ArrowRight');
+export const ArrowLeft = bold(ArrowLeftIcon, 'ArrowLeft');
 export const ChevronDown = bold(CaretDownIcon, 'ChevronDown');
 export const ChevronLeft = bold(CaretLeftIcon, 'ChevronLeft');
 export const ChevronRight = bold(CaretRightIcon, 'ChevronRight');

@@ -49,6 +49,15 @@ const PART_START: Record<DayPart, number> = { morning: 9 * 60, afternoon: 13 * 6
 export const GROUP_MAX = 4;
 /** Every task in a card: its own, then the others in its block */
 export const tasksOf = (it: PlannerItem): GroupTask[] => [{ id: it.id, label: it.label, picture: it.picture }, ...(it.also ?? [])];
+/** A block with its tasks in a new order: the first task leads (the card takes its id, words and picture) */
+export function withTasks(block: PlannerItem, tasks: GroupTask[]): PlannerItem {
+  const [lead, ...rest] = tasks;
+  const out: PlannerItem = { ...block, id: lead.id, label: lead.label, picture: lead.picture, also: rest };
+  if (!rest.length) delete out.also;
+  return out;
+}
+/** The block a task is in now (its id changes when a different task leads it) */
+export const blockOf = (p: PlannerData, taskId: string) => p.items.find((i) => tasksOf(i).some((t) => t.id === taskId));
 /** Room for `more` tasks in this card's block */
 export const canJoin = (it: PlannerItem, more = 1) => tasksOf(it).length + more <= GROUP_MAX;
 
@@ -279,7 +288,7 @@ export function addItem(p: PlannerData, item: PlannerItem, preferDay?: DayKey): 
 
 /** Where a drop lands, worked out by the layout (see plannerLayout.dropTarget) */
 export type PlannerDrop =
-  | { kind: 'day'; start: number; join?: string }
+  | { kind: 'day'; start: number; join?: string; at?: number }
   | { kind: 'week'; day: DayKey; start: number }
   | { kind: 'checklist'; index: number }
   | { kind: 'first-then'; side: 'first' | 'then' };
@@ -296,7 +305,11 @@ export function placeItem(p: PlannerData, item: PlannerItem, drop: PlannerDrop):
         const target = items.find((i) => i.id === drop.join);
         const moving = tasksOf(item);
         if (target && canJoin(target, moving.length)) {
-          items = items.map((i) => (i === target ? { ...i, also: [...(i.also ?? []), ...moving] } : i));
+          // Goes in at the gap it was dropped in (the end if no gap was given)
+          const tasks = tasksOf(target);
+          const at = Math.max(0, Math.min(drop.at ?? tasks.length, tasks.length));
+          const joined = withTasks(target, [...tasks.slice(0, at), ...moving, ...tasks.slice(at)]);
+          items = items.map((i) => (i === target ? joined : i));
           break;
         }
       }
