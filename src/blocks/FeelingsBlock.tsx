@@ -39,7 +39,7 @@ const KID_SETS: Record<string, Feeling[]> = {
   more: ['bored', 'confused', 'grumpy', 'excited', 'calm', 'happy'],
 };
 
-/** The six children: Penny, Caleb, Alice, Sam, Julia and Ralph (art ids describe the drawing). */
+/** The six children: Penny, Ralph, Alice, Sam, Julia and Caleb (art ids describe the drawing). */
 export const CHILDREN = ['girl-puffs', 'boy-afro', 'girl-bob', 'boy-sidepart', 'girl-hijab', 'boy-curly'] as const;
 type Child = (typeof CHILDREN)[number];
 
@@ -165,10 +165,10 @@ export const FeelingsBlockDefinition: BlockDefinition = {
       options: [
         { label: 'A mix of children', value: 'mix' },
         { label: 'Alice', value: 'girl-bob' },
-        { label: 'Caleb', value: 'boy-afro' },
+        { label: 'Caleb', value: 'boy-curly' },
         { label: 'Julia', value: 'girl-hijab' },
         { label: 'Penny', value: 'girl-puffs' },
-        { label: 'Ralph', value: 'boy-curly' },
+        { label: 'Ralph', value: 'boy-afro' },
         { label: 'Sam', value: 'boy-sidepart' },
       ],
     },
