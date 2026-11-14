@@ -141,6 +141,8 @@ function validatePlanner(raw: unknown): PlannerData | null {
     weekdaysOnly: raw.weekdaysOnly === true,
     showTicks: raw.showTicks === true,
     items,
+    // Planners saved before the start screen count as chosen
+    kindChosen: raw.kindChosen !== false,
   };
 }
 

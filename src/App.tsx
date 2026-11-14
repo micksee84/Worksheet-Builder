@@ -714,7 +714,7 @@ export default function App() {
   const handleChangePlannerKind = useCallback(
     (pageId: string, kind: PlannerKind) => {
       const page = worksheetRef.current.pages.find((p) => p.id === pageId);
-      if (!page?.planner || page.planner.kind === kind) return;
+      if (!page?.planner || (page.planner.kind === kind && page.planner.kindChosen !== false)) return;
       // A title still on the old view's default follows the switch ("My day" -> "My week")
       const oldDefault = KIND_LABELS[page.planner.kind].title;
       updateWorksheet((prev) => ({
@@ -765,7 +765,7 @@ export default function App() {
       const newPage: Page =
         choice === 'worksheet'
           ? { id: `page_${Date.now()}`, title: `Page ${n}`, layout: '2-half', showDateName: true, slots: createSlotsForPreset('2-half') }
-          : createPlannerPage(choice, n);
+          : createPlannerPage('day', n, false);
       updateWorksheet((prev) => ({ ...prev, pages: [...prev.pages, newPage] }));
       setActivePageIndex(worksheetRef.current.pages.length - 1);
       trackEvent('page_added', { pageCount: n, kind: choice });
@@ -775,7 +775,7 @@ export default function App() {
       await leaveCurrent(discard);
       const blank = createBlankWorksheet(worksheetRef.current.pageSize);
       if (choice !== 'worksheet') {
-        const page = createPlannerPage(choice, 1);
+        const page = createPlannerPage('day', 1, false);
         blank.pages = [page];
         blank.title = 'Untitled worksheet';
       }

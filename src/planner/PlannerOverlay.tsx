@@ -10,9 +10,10 @@
 
 import React, { useRef, useState } from 'react';
 import { DragMoveEvent, useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
-import { Page, PageSizeId, PlannerItem } from '../types';
+import { Page, PageSizeId, PlannerItem, PlannerKind } from '../types';
 import { plannerGeometry, dropTarget, Box } from './plannerLayout';
-import { placeItem, STEP } from './plannerModel';
+import { createPlannerPage, KIND_LABELS, placeItem, samplePlanner, STEP } from './plannerModel';
+import { Mini } from './WhatAreYouMaking';
 import { getActivity } from './activities';
 
 /** How far below the pointer a dragged card's top sits, in page points */
@@ -58,7 +59,9 @@ export const PlannerOverlay: React.FC<{
   selectedItemId: string | null;
   onSelectItem: (itemId: string) => void;
   onBackground: () => void;
-}> = ({ page, pageSize, selectedItemId, onSelectItem, onBackground }) => {
+  /** Picks the planner's type from the start screen */
+  onChooseKind?: (kind: PlannerKind) => void;
+}> = ({ page, pageSize, selectedItemId, onSelectItem, onBackground, onChooseKind }) => {
   const planner = page.planner!;
   const g = plannerGeometry(pageSize, page.showDateName, planner);
   const { setNodeRef } = useDroppable({ id: `planner-drop-${page.id}`, data: { type: 'planner-target', pageId: page.id } });
@@ -125,6 +128,30 @@ export const PlannerOverlay: React.FC<{
           />
         );
       })}
+      {/* Start screen: a new planner asks what kind it is, until one is picked or an
+          activity is added. The toolbar switcher changes it later. */}
+      {planner.kindChosen === false && planner.items.length === 0 && !draggingHere && onChooseKind && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/85" onClick={(e) => e.stopPropagation()}>
+          <div className="w-[80%] text-center">
+            <h3 className="text-2xl font-extrabold text-[#2D2200]">What kind of planner?</h3>
+            <p className="text-sm text-[#6B5838] mt-1 mb-5">Pick one to start. You can switch any time from the bar above.</p>
+            <div className="grid grid-cols-2 gap-4">
+              {(['day', 'week', 'checklist', 'first-then'] as PlannerKind[]).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => onChooseKind(k)}
+                  className="flex flex-col items-center gap-2 p-3 bg-white border-2 border-[#E2DEC9] rounded-xl hover:border-[#2D2200] hover:shadow-[3px_3px_0_#2D2200] focus:outline-none focus-visible:border-[#009BD9] transition-all"
+                >
+                  <Mini page={{ ...createPlannerPage(k, 0), id: `start_${k}`, planner: samplePlanner(k) }} pageSize={pageSize} size={120} />
+                  <span className="text-base font-extrabold text-[#2D2200]">{k === 'day' ? 'Daily routine' : k === 'week' ? 'Week plan' : k === 'checklist' ? 'Checklist' : 'First–then board'}</span>
+                  <span className="text-xs text-[#6B5838] leading-snug">{KIND_LABELS[k].blurb}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       {ghost && (
         <div
           className="absolute rounded-lg border-[3px] border-dashed border-[#009BD9] bg-[#009BD9]/15 pointer-events-none"

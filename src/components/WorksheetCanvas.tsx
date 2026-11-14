@@ -859,6 +859,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
               selectedItemId={selectedPlannerItemId}
               onSelectItem={(itemId) => onSelectPlannerItem?.(activePage.id, itemId)}
               onBackground={() => onPlannerBackground?.(activePage.id)}
+              onChooseKind={(kind) => onChangePlannerKind?.(activePage.id, kind)}
             />
           )}
 

@@ -86,8 +86,8 @@ export function samplePlanner(kind: PlannerKind): PlannerData {
   }
 }
 
-/** A new planner page of a kind */
-export function createPlannerPage(kind: PlannerKind, pageNumber: number): Page {
+/** A new planner page of a kind. `chosen: false` shows the start screen to pick the type. */
+export function createPlannerPage(kind: PlannerKind, pageNumber: number, chosen = true): Page {
   return {
     id: `page_${Date.now()}_${pageNumber}`,
     title: KIND_LABELS[kind].title,
@@ -95,7 +95,7 @@ export function createPlannerPage(kind: PlannerKind, pageNumber: number): Page {
     slots: [],
     showDateName: false,
     // Starts empty: the grown-up adds the activities
-    planner: { ...samplePlanner(kind), items: [] },
+    planner: { ...samplePlanner(kind), items: [], kindChosen: chosen },
   };
 }
 
@@ -135,7 +135,7 @@ export function normalize(p: PlannerData): PlannerData {
 
 /** Switch view: the same activities, laid out the new way */
 export function switchKind(p: PlannerData, kind: PlannerKind): PlannerData {
-  const next = normalize({ ...p, kind, showTicks: kind === 'checklist' ? true : p.showTicks });
+  const next = normalize({ ...p, kind, kindChosen: true, showTicks: kind === 'checklist' ? true : p.showTicks });
   return next;
 }
 

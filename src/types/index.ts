@@ -122,6 +122,8 @@ export interface PlannerData {
   weekdaysOnly: boolean;
   showTicks: boolean;
   items: PlannerItem[];
+  /** False on a new planner until the grown-up picks its type on the start screen */
+  kindChosen?: boolean;
 }
 
 export interface Worksheet {
