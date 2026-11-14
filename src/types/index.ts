@@ -148,6 +148,8 @@ export interface Worksheet {
   title: string;
   pageSize: PageSizeId;
   pages: Page[];
+  /** Name and date line on every worksheet page (default) or only the first one */
+  nameDate?: 'all' | 'first';
   createdAt: number;
   updatedAt: number;
 }

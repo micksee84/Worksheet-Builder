@@ -130,6 +130,24 @@ const followPointer: Modifier = ({ activatorEvent, draggingNodeRect, transform }
   };
 };
 
+/**
+ * The name and date line on worksheet pages: every page, or only the first worksheet page.
+ * Planner pages keep their own switch.
+ */
+function applyNameDate(ws: Worksheet): Worksheet {
+  const first = ws.nameDate === 'first';
+  const firstSheet = ws.pages.findIndex((p) => !p.planner);
+  let changed = false;
+  const pages = ws.pages.map((p, i) => {
+    if (p.planner) return p;
+    const want = !first || i === firstSheet;
+    if (p.showDateName === want) return p;
+    changed = true;
+    return { ...p, showDateName: want };
+  });
+  return changed ? { ...ws, pages } : ws;
+}
+
 export default function App() {
   const { user, signOut } = useAuth();
 
@@ -305,7 +323,7 @@ export default function App() {
   const updateWorksheet = useCallback(
     (updater: (prev: Worksheet) => Worksheet) => {
       const prev = worksheetRef.current;
-      const next = { ...updater(prev), updatedAt: Date.now() };
+      const next = applyNameDate({ ...updater(prev), updatedAt: Date.now() });
       setHistory((h) => [...h.slice(-19), prev]);
       setFuture([]);
       setWorksheetNow(next);
@@ -1192,6 +1210,8 @@ export default function App() {
               activePageIndex={activePageIndex}
               pageSize={worksheet.pageSize}
               onTogglePageSize={handleTogglePageSize}
+              nameDate={worksheet.nameDate ?? 'all'}
+              onChangeNameDate={(mode) => updateWorksheet((prev) => ({ ...prev, nameDate: mode }))}
               selectedSlot={
                 selectedSlot && selectedSlotRef
                   ? { pageId: selectedSlotRef.pageId, slot: selectedSlot }

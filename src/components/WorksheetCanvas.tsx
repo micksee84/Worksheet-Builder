@@ -49,6 +49,9 @@ interface WorksheetCanvasProps {
   onDeleteBlock: (pageId: string, slotId: string) => void;
   onOpenSettings: (pageId: string, slot: Slot) => void;
   onTogglePageSize: (size: PageSizeId) => void;
+  /** Name and date line on every worksheet page, or the first only */
+  nameDate?: 'all' | 'first';
+  onChangeNameDate?: (mode: 'all' | 'first') => void;
   /** Planner pages */
   selectedPlannerItemId?: string | null;
   onSelectPlannerItem?: (pageId: string, itemId: string) => void;
@@ -248,6 +251,8 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
   onDeleteBlock,
   onOpenSettings,
   onTogglePageSize,
+  nameDate = 'all',
+  onChangeNameDate,
   selectedPlannerItemId = null,
   onSelectPlannerItem,
   onPlannerBackground,
@@ -711,7 +716,32 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
             </div>
           )}
         </div>
-        <span className="text-[11px] text-[#A39C8E] font-medium hidden md:inline">
+        {/* Name and date line: every worksheet page, or just the first */}
+        {!activePage.planner && onChangeNameDate && (
+          <div className="flex items-center gap-1.5 shrink-0 ml-3">
+            <span className="text-[#6B5838] font-bold hidden lg:inline">Name and date:</span>
+            <div role="group" aria-label="Name and date line" className="flex items-center bg-white p-0.5 rounded-lg border border-[#E2DEC9] gap-0.5">
+              {([
+                { id: 'all', label: 'Every page', tip: 'Name and date line on every worksheet page' },
+                { id: 'first', label: 'First page', tip: 'Name and date line on the first page only' },
+              ] as const).map(({ id, label, tip }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => onChangeNameDate(id)}
+                  aria-pressed={nameDate === id}
+                  title={tip}
+                  className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
+                    nameDate === id ? 'bg-[#2D2200] text-white' : 'text-[#6B5838] hover:text-[#2D2200]'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <span className="text-[11px] text-[#A39C8E] font-medium hidden md:inline ml-3">
           {spec.displayName}
         </span>
       </div>
