@@ -12,9 +12,10 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDndContext, useDraggable, useDroppable } from '@dnd-kit/core';
 import { dropKind, isSlotBlockDrag, SlotBlockDrag } from '../utils/blockMoves';
-import { Page, PageSizeId, Slot, PageLayoutPreset, BlockInstance, PlannerKind, PlannerData } from '../types';
+import { Page, PageSizeId, Slot, PageLayoutPreset, BlockInstance, PlannerKind, PlannerData, CardDeck } from '../types';
 import { PAGE_SPECS, pageDims } from '../config/appConfig';
 import { PlannerOverlay } from '../planner/PlannerOverlay';
+import { CardToolbar } from '../cards/CardToolbar';
 
 /** Ready-made titles for checklists: routines and packing lists */
 const CHECKLIST_TITLES = ['My morning', 'Pack for the beach', 'Sleepover bag', 'School trip', 'Snow day'];
@@ -60,6 +61,9 @@ interface WorksheetCanvasProps {
   onResizePlannerItem?: (pageId: string, itemId: string, minutes: number) => void;
   onChangePlannerKind?: (pageId: string, kind: PlannerKind) => void;
   onOpenPlannerSettings?: () => void;
+  /** Flash card pages: change the deck (every page made from it), and add pages for the rest */
+  onUpdateCards?: (pageId: string, patch: Partial<CardDeck>) => void;
+  onAddCardPages?: (pageId: string) => void;
   /** Changes a planner page's planner (typing a checklist on the page) */
   onEditPlanner?: (pageId: string, fn: (p: PlannerData) => PlannerData) => void;
 }
@@ -262,6 +266,8 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
   onChangePlannerKind,
   onOpenPlannerSettings,
   onEditPlanner,
+  onUpdateCards,
+  onAddCardPages,
 }) => {
   const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
   const [gridZoom, setGridZoom] = useState<number>(DEFAULT_ZOOM.grid);
@@ -534,8 +540,10 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
           )}
         </div>
 
-        {/* Center: planner view picker (planner pages) or slot layouts (worksheet pages) */}
-        {activePage.planner ? (
+        {/* Center: flash card layout (card pages), planner view picker (planner pages) or slot layouts (worksheet pages) */}
+        {activePage.cards ? (
+          <CardToolbar page={activePage} pages={pages} onUpdate={(patch) => onUpdateCards?.(activePage.id, patch)} onAddPages={() => onAddCardPages?.(activePage.id)} />
+        ) : activePage.planner ? (
           <div className="flex items-center gap-1.5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#6B5838] hidden sm:inline">Planner:</span>
             <div role="group" aria-label="Planner view" className="flex items-center bg-[#FAF8F0] p-1 rounded-lg border border-[#E2DEC9] gap-1">
@@ -693,7 +701,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
       {/* Page Title Quick Editor Banner */}
       <div className="bg-[#FAF8F0] px-6 py-2 border-b border-[#E2DEC9] flex items-center justify-between text-xs">
         <div className="flex items-center gap-2 flex-1 max-w-4xl">
-          <span className="text-[#6B5838] font-bold shrink-0">{activePage.planner ? 'Planner title:' : 'Worksheet Header Title:'}</span>
+          <span className="text-[#6B5838] font-bold shrink-0">{activePage.planner ? 'Planner title:' : activePage.cards ? 'Cards title:' : 'Worksheet Header Title:'}</span>
           <input
             type="text"
             value={activePage.title}
@@ -720,7 +728,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
           )}
         </div>
         {/* Name and date line: every worksheet page, or just the first */}
-        {!activePage.planner && onChangeNameDate && (
+        {!activePage.planner && !activePage.cards && onChangeNameDate && (
           <div className="flex items-center gap-1.5 shrink-0 ml-3">
             <span className="text-[#6B5838] font-bold hidden lg:inline">Name and date:</span>
             <div role="group" aria-label="Name and date line" className="flex items-center bg-white p-0.5 rounded-lg border border-[#E2DEC9] gap-0.5">
@@ -820,7 +828,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
                           pageSize={pageSize}
                           isInteractive={true}
                         />
-                        {!page.planner && page.slots.map((slot) => {
+                        {!page.planner && !page.cards && page.slots.map((slot) => {
                           const geom = pageGeoms[slot.id];
                           if (!geom) return null;
                           return (
@@ -922,7 +930,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
           )}
 
           {/* Interactive Droppable Overlay Targets */}
-          <div className={`absolute inset-0 ${activePage.planner ? 'hidden' : 'pointer-events-auto'}`}>
+          <div className={`absolute inset-0 ${activePage.planner || activePage.cards ? 'hidden' : 'pointer-events-auto'}`}>
             {activePage.slots.map((slot) => {
               const geom = geometries[slot.id];
               if (!geom) return null;

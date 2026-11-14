@@ -49,6 +49,7 @@ import {
   PlusIcon,
   PrinterIcon,
   ShareNetworkIcon,
+  ShuffleIcon,
   SignOutIcon,
   SlidersHorizontalIcon,
   SmileyIcon,
@@ -77,6 +78,7 @@ export const Pencil = bold(PencilSimpleIcon, 'Pencil');
 export const Copy = bold(CopyIcon, 'Copy');
 export const Check = bold(CheckIcon, 'Check');
 export const Minus = bold(MinusIcon, 'Minus');
+export const Shuffle = bold(ShuffleIcon, 'Shuffle');
 export const MoreHorizontal = bold(DotsThreeIcon, 'MoreHorizontal');
 export const RotateCcw = bold(ArrowCounterClockwiseIcon, 'RotateCcw');
 export const Undo2 = bold(ArrowUUpLeftIcon, 'Undo2');

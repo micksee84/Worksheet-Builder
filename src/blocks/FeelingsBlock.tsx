@@ -43,8 +43,18 @@ const KID_SETS: Record<string, Feeling[]> = {
 export const CHILDREN = ['girl-puffs', 'boy-afro', 'girl-bob', 'boy-sidepart', 'girl-hijab', 'boy-curly'] as const;
 type Child = (typeof CHILDREN)[number];
 
+/** The children's names, as the settings show them */
+export const CHILD_NAMES: Record<Child, string> = {
+  'girl-bob': 'Alice',
+  'boy-curly': 'Caleb',
+  'girl-hijab': 'Julia',
+  'girl-puffs': 'Penny',
+  'boy-afro': 'Ralph',
+  'boy-sidepart': 'Sam',
+};
+
 /** The art id for one face. A mix gives each face the next child along. */
-function faceId(feeling: Feeling, style: string, child: string, index: number): string {
+export function faceId(feeling: Feeling, style: string, child: string, index: number): string {
   if (style !== 'kids') return 'feeling-' + feeling;
   const who: Child = (CHILDREN as readonly string[]).includes(child) ? (child as Child) : CHILDREN[index % CHILDREN.length];
   return `kid-${who}-${feeling}`;

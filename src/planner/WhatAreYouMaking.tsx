@@ -2,7 +2,7 @@
  * @license
  * Sunshine Brigade Worksheet Builder - "What are you making?"
  *
- * One simple start for everything the builder makes: a worksheet or a planner. Shown for
+ * One simple start for everything the builder makes: a worksheet, a planner or flash cards. Shown for
  * New (a fresh document) and Add page (another page in this one). A planner's type (day,
  * week, checklist, first-then) is picked on the planner page itself.
  */
@@ -14,12 +14,14 @@ import { pageDims } from '../config/appConfig';
 import { WorksheetPageSvg } from '../components/WorksheetPageSvg';
 import { createSlotsForPreset } from '../utils/layoutPresets';
 import { createPlannerPage, samplePlanner } from './plannerModel';
+import { createCardPage } from '../cards/cardModel';
 
-export type MakeChoice = 'worksheet' | 'planner';
+export type MakeChoice = 'worksheet' | 'planner' | 'cards';
 
 const CHOICES: { id: MakeChoice; title: string; blurb: string }[] = [
   { id: 'worksheet', title: 'Worksheet', blurb: 'Puzzles, tracing, counting and more, in activity blocks.' },
   { id: 'planner', title: 'Planner', blurb: 'A daily routine, week plan, checklist or first–then board, in pictures.' },
+  { id: 'cards', title: 'Flash cards', blurb: 'Letters, numbers, pictures, feelings and shapes, to cut out.' },
 ];
 
 export const Mini: React.FC<{ page: Page; pageSize: PageSizeId; size?: number }> = ({ page, pageSize, size = 132 }) => {
@@ -55,6 +57,7 @@ export const WhatAreYouMaking: React.FC<{
       worksheet,
       // An example day, so the card shows what a planner looks like
       planner: { ...createPlannerPage('day', 0), id: 'preview_planner', planner: samplePlanner('day') },
+      cards: { ...createCardPage(0), id: 'preview_cards' },
     } as Record<MakeChoice, Page>;
   }, []);
 
@@ -64,20 +67,20 @@ export const WhatAreYouMaking: React.FC<{
         role="dialog"
         aria-label={mode === 'new' ? 'What are you making?' : 'Add a page'}
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#FAF8F0] rounded-2xl border-2 border-[#2D2200] shadow-[6px_6px_0_#2D2200] w-full max-w-xl max-h-[90vh] overflow-y-auto"
+        className="bg-[#FAF8F0] rounded-2xl border-2 border-[#2D2200] shadow-[6px_6px_0_#2D2200] w-full max-w-3xl max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2DEC9] bg-white rounded-t-2xl">
           <div>
             <h2 className="text-xl font-extrabold text-[#2D2200]">{mode === 'new' ? 'What are you making today?' : 'What kind of page?'}</h2>
             <p className="text-xs text-[#6B5838]">
-              {mode === 'new' ? 'Pick one to start. You can add other kinds of pages to it later.' : 'Worksheets and planners can go in the same document.'}
+              {mode === 'new' ? 'Pick one to start. You can add other kinds of pages to it later.' : 'Worksheets, planners and flash cards can go in the same document.'}
             </p>
           </div>
           <button onClick={onClose} className="p-2 text-[#6B5838] hover:text-[#2D2200] hover:bg-[#F2F2E2] rounded-lg" title="Close">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-6 grid grid-cols-2 gap-4">
+        <div className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {CHOICES.map((c) => (
             <button
               key={c.id}

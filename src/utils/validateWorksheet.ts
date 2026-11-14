@@ -6,7 +6,7 @@
  * so a bad link or an old save can never leave the app stuck on a blank screen.
  */
 
-import type { PlannerData, PlannerItem } from '../types';
+import type { PlannerData, PlannerItem, CardDeck} from '../types';
 import { LEGACY_TO_ICON, PLANNER_ICONS } from '../planner/plannerIcons';
 import { GROUP_MAX, MAX_MINUTES, normalize, STEP } from '../planner/plannerModel';
 import { Worksheet, Page, Slot, PageLayoutPreset, BlockInstance } from '../types';
@@ -94,13 +94,15 @@ function validatePage(raw: unknown, index: number): Page | null {
   });
 
   const planner = validatePlanner(raw.planner);
+  const cards = planner ? null : validateCards(raw.cards);
   return {
     id: typeof raw.id === 'string' && raw.id ? raw.id : `page_${Date.now()}_${index}`,
     title: cleanString(raw.title, `Page ${index + 1}`),
     layout,
-    slots: planner ? [] : slots,
-    showDateName: raw.showDateName !== false,
+    slots: planner || cards ? [] : slots,
+    showDateName: cards ? false : raw.showDateName !== false,
     ...(planner ? { planner } : {}),
+    ...(cards ? { cards } : {}),
   };
 }
 
@@ -190,5 +192,31 @@ export function validateWorksheet(raw: unknown): Worksheet | null {
     pages,
     createdAt: Number.isFinite(raw.createdAt) ? raw.createdAt : now,
     updatedAt: Number.isFinite(raw.updatedAt) ? raw.updatedAt : now,
+  };
+}
+
+const CARD_SETS = new Set(['letters', 'numbers', 'pictures', 'feelings', 'shapes']);
+const pickOne = <T extends string>(v: unknown, allowed: readonly T[], fallback: T): T => (allowed.includes(v as T) ? (v as T) : fallback);
+
+/** A flash card page's deck: bad values fall back to the defaults */
+function validateCards(raw: unknown): CardDeck | null {
+  if (!isObject(raw) || !CARD_SETS.has(raw.set)) return null;
+  const perPage = ([4, 6, 9] as const).find((n) => n === raw.perPage) ?? 6;
+  return {
+    id: typeof raw.id === 'string' && raw.id ? raw.id.slice(0, 60) : `deck_${Date.now().toString(36)}`,
+    set: raw.set,
+    perPage,
+    print: pickOne(raw.print, ['fold', 'single'] as const, 'fold'),
+    from: num(raw.from, 0, 500, 0),
+    skip: Array.isArray(raw.skip) ? raw.skip.filter((x: unknown) => typeof x === 'string').slice(0, 300) : undefined,
+    shuffle: typeof raw.shuffle === 'number' && Number.isFinite(raw.shuffle) ? raw.shuffle : undefined,
+    words: raw.words !== false,
+    letterCase: pickOne(raw.letterCase, ['both', 'upper', 'lower'] as const, 'both'),
+    letterPictures: raw.letterPictures !== false,
+    range: pickOne(raw.range, ['1-10', '0-10', '1-20'] as const, '1-10'),
+    countWith: pickOne(raw.countWith, ['pictures', 'dots'] as const, 'pictures'),
+    theme: typeof raw.theme === 'string' ? raw.theme.slice(0, 30) : 'animals',
+    faces: pickOne(raw.faces, ['emoji', 'kids'] as const, 'emoji'),
+    child: typeof raw.child === 'string' ? raw.child.slice(0, 30) : 'mix',
   };
 }

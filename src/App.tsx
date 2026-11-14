@@ -32,8 +32,7 @@ import {
   PageSizeId,
   PlannerData,
   PlannerItem,
-  PlannerKind,
-} from './types';
+  PlannerKind, CardDeck } from './types';
 import { PAGE_SPECS, CharacterId } from './config/appConfig';
 import {
   getAllBlocks,
@@ -75,6 +74,8 @@ import { PrintContainer } from './components/PrintContainer';
 import { TooltipLayer } from './components/TooltipLayer';
 import { MyWorksheetsModal } from './components/MyWorksheetsModal';
 import { PlannerLibrary, PictureThumb } from './planner/PlannerLibrary';
+import { CardsPanel } from './cards/CardsPanel';
+import { cardsPerPage, createCardPage, deckCards, SET_INFO } from './cards/cardModel';
 import { PlannerDrawer } from './planner/PlannerDrawer';
 import { WhatAreYouMaking, MakeChoice } from './planner/WhatAreYouMaking';
 import { GRAB_TOP } from './planner/PlannerOverlay';
@@ -137,10 +138,10 @@ const followPointer: Modifier = ({ activatorEvent, draggingNodeRect, transform }
  */
 function applyNameDate(ws: Worksheet): Worksheet {
   const first = ws.nameDate === 'first';
-  const firstSheet = ws.pages.findIndex((p) => !p.planner);
+  const firstSheet = ws.pages.findIndex((p) => !p.planner && !p.cards);
   let changed = false;
   const pages = ws.pages.map((p, i) => {
-    if (p.planner) return p;
+    if (p.planner || p.cards) return p;
     const want = !first || i === firstSheet;
     if (p.showDateName === want) return p;
     changed = true;
@@ -696,6 +697,59 @@ export default function App() {
     [updateWorksheet]
   );
 
+  /** Flash cards: a change to a deck reaches every page made from it, and each page's
+   *  first card follows from its place in the deck */
+  const updateCards = useCallback(
+    (pageId: string, patch: Partial<CardDeck>) => {
+      updateWorksheet((prev) => {
+        const deckId = prev.pages.find((p) => p.id === pageId)?.cards?.id;
+        if (!deckId) return prev;
+        let k = 0;
+        return {
+          ...prev,
+          pages: prev.pages.map((pg) => {
+            if (pg.cards?.id !== deckId) return pg;
+            const old = pg.cards;
+            const next = { ...old, ...patch };
+            next.from = k++ * cardsPerPage(next);
+            const title = patch.set && pg.title === SET_INFO[old.set].title ? SET_INFO[patch.set].title : pg.title;
+            return { ...pg, title, cards: next };
+          }),
+        };
+      });
+    },
+    [updateWorksheet]
+  );
+
+  /** Flash cards: pages for the cards that don't fit yet, after the deck's last page */
+  const addCardPages = useCallback(
+    (pageId: string) => {
+      const prev = worksheetRef.current;
+      const deck = prev.pages.find((p) => p.id === pageId)?.cards;
+      if (!deck) return;
+      const mine = prev.pages.filter((p) => p.cards?.id === deck.id);
+      const per = cardsPerPage(deck);
+      const total = deckCards(deck).length;
+      const have = mine.length;
+      const need = Math.ceil(total / per) - have;
+      if (need <= 0) return;
+      const lastIndex = prev.pages.lastIndexOf(mine[mine.length - 1]);
+      const title = mine[0].title;
+      const added = Array.from({ length: need }, (_, i) => ({
+        ...createCardPage(prev.pages.length + i + 1, { ...deck, from: (have + i) * per }),
+        id: `page_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 6)}`,
+        title,
+      }));
+      updateWorksheet((w) => {
+        const pages = [...w.pages];
+        pages.splice(lastIndex + 1, 0, ...added);
+        return { ...w, pages };
+      });
+      trackEvent('page_added', { pageCount: prev.pages.length + need, kind: 'cards' });
+    },
+    [updateWorksheet]
+  );
+
   /** Where the pointer was let go, in page points on the open page */
   const pagePoint = (event: DragEndEvent): { x: number; y: number } | null => {
     // Where the pointer actually is (start + delta can be off by the drag's start distance)
@@ -819,6 +873,8 @@ export default function App() {
       const newPage: Page =
         choice === 'worksheet'
           ? { id: `page_${Date.now()}`, title: `Page ${n}`, layout: '2-half', showDateName: true, slots: createSlotsForPreset('2-half') }
+          : choice === 'cards'
+          ? createCardPage(n)
           : createPlannerPage('day', n, false);
       updateWorksheet((prev) => ({ ...prev, pages: [...prev.pages, newPage] }));
       setActivePageIndex(worksheetRef.current.pages.length - 1);
@@ -829,7 +885,7 @@ export default function App() {
       await leaveCurrent(discard);
       const blank = createBlankWorksheet(worksheetRef.current.pageSize);
       if (choice !== 'worksheet') {
-        const page = createPlannerPage('day', 1, false);
+        const page = choice === 'cards' ? createCardPage(1) : createPlannerPage('day', 1, false);
         blank.pages = [page];
         blank.title = 'Untitled worksheet';
       }
@@ -1189,7 +1245,14 @@ export default function App() {
           {/* Main App Workspace: Sidebar + Canvas */}
           <div className="flex-1 flex min-h-0 relative">
             {/* Left Block Library. Checklists have none: items are typed straight onto the page. */}
-            {isChecklist ? null : activePage.planner ? (
+            {activePage.cards ? (
+              <CardsPanel
+                deck={activePage.cards}
+                onUpdate={(patch) => updateCards(activePage.id, patch)}
+                isOpenOnMobile={isMobileSidebarOpen}
+                onCloseMobile={() => setIsMobileSidebarOpen(false)}
+              />
+            ) : isChecklist ? null : activePage.planner ? (
               <PlannerLibrary
                 kind={activePage.planner.kind}
                 onAddActivity={handleAddActivity}
@@ -1258,6 +1321,8 @@ export default function App() {
                 updatePlanner(pageId, (p) => ({ ...p, items: flow(p, p.items.map((i) => (i.id === itemId ? { ...i, minutes } : i))) }))
               }
               onEditPlanner={updatePlanner}
+              onUpdateCards={updateCards}
+              onAddCardPages={addCardPages}
               onOpenPlannerSettings={() => {
                 setPlannerSel(null);
                 setIsPlannerPanelOpen(true);

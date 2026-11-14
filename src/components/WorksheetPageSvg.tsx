@@ -9,6 +9,7 @@ import React from 'react';
 import { Page, PageSizeId, BlockInstance, Slot } from '../types';
 import { pageDims } from '../config/appConfig';
 import { PlannerPageContent } from '../planner/PlannerPageContent';
+import { CardPageContent } from '../cards/CardPageContent';
 import { calculateSlotGeometries, SlotGeometry } from '../utils/layoutPresets';
 import { getBlockById } from '../registry/blockRegistry';
 import {
@@ -145,9 +146,10 @@ export const WorksheetPageSvg: React.FC<WorksheetPageSvgProps> = ({
       {/* SLOTS & ACTIVITIES                                   */}
       {/* ==================================================== */}
       {page.planner && <PlannerPageContent planner={page.planner} pageSize={pageSize} showDateName={page.showDateName} />}
+      {page.cards && <CardPageContent page={page} pageSize={pageSize} />}
 
       <g className="worksheet-slots">
-        {!page.planner && page.slots.map((slot) => {
+        {!page.planner && !page.cards && page.slots.map((slot) => {
           const geom = geometries[slot.id];
           if (!geom) return null;
 

@@ -92,6 +92,8 @@ export interface Page {
   layout: PageLayoutPreset;
   slots: Slot[];
   showDateName: boolean;
+  /** A flash card page instead of activity slots */
+  cards?: CardDeck;
   /** A planner page (routine, week, checklist, first–then) instead of activity slots. */
   planner?: PlannerData;
 }
@@ -145,6 +147,36 @@ export interface PlannerData {
   items: PlannerItem[];
   /** False on a new planner until the grown-up picks its type on the start screen */
   kindChosen?: boolean;
+}
+
+/** Flash cards: which set, how they print, and which cards this page shows */
+export type CardSet = 'letters' | 'numbers' | 'pictures' | 'feelings' | 'shapes';
+export interface CardDeck {
+  /** Pages made from one deck share it: changing a setting changes them all */
+  id: string;
+  set: CardSet;
+  /** Cards on a page, one-sided (fold-over fits half as many, each with its back beside it) */
+  perPage: 4 | 6 | 9;
+  print: 'fold' | 'single';
+  /** The first card this page shows (0 on the first page of a deck) */
+  from: number;
+  /** Cards left out (unticked) */
+  skip?: string[];
+  /** Mixed order: the shuffle's seed (none = in order) */
+  shuffle?: number;
+  /** Show the words */
+  words?: boolean;
+  /** Letters */
+  letterCase?: 'both' | 'upper' | 'lower';
+  letterPictures?: boolean;
+  /** Numbers */
+  range?: '1-10' | '0-10' | '1-20';
+  countWith?: 'pictures' | 'dots';
+  /** Picture words: a theme, or "animals" */
+  theme?: string;
+  /** Feelings */
+  faces?: 'emoji' | 'kids';
+  child?: string;
 }
 
 export interface Worksheet {
