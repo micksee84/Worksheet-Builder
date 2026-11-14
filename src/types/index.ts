@@ -101,6 +101,13 @@ export type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 /** The week view's bands, down the side */
 export type DayPart = 'morning' | 'afternoon' | 'evening';
 
+/** Another task done in the same block of time as its card's own (daily routine) */
+export interface GroupTask {
+  id: string;
+  label: string;
+  picture: string;
+}
+
 export interface PlannerItem {
   id: string;
   label: string;
@@ -117,6 +124,8 @@ export interface PlannerItem {
   part?: DayPart;
   /** First–then: which side */
   side?: 'first' | 'then';
+  /** Daily routine: more tasks in this card's block, shown side by side (up to 3 more) */
+  also?: GroupTask[];
 }
 
 export interface PlannerData {

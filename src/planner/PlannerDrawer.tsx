@@ -10,9 +10,16 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Trash2, Settings, ArrowUp, ArrowDown, Search, RotateCcw } from '../components/icons';
-import { PlannerData, PlannerItem, PlannerKind } from '../types';
+import { GroupTask, PlannerData, PlannerItem, PlannerKind } from '../types';
 import { GraphicThumb, ICON_NAMES, PLANNER_ICONS } from './plannerIcons';
-import { daysShown, hourLabel, KIND_LABELS, lengthLabel, MAX_MINUTES, STEP, timeLabel } from './plannerModel';
+import { daysShown, GROUP_MAX, hourLabel, KIND_LABELS, lengthLabel, MAX_MINUTES, STEP, tasksOf, timeLabel } from './plannerModel';
+
+/** Two tasks trade places */
+const swap = (list: GroupTask[], a: number, b: number) => {
+  const next = [...list];
+  [next[a], next[b]] = [next[b], next[a]];
+  return next;
+};
 
 const field = 'w-full px-3.5 py-2.5 text-sm font-medium text-[#2D2200] bg-white border border-[#E2DEC9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#009BD9] transition-all';
 const Label: React.FC<{ children: React.ReactNode; hint?: string }> = ({ children, hint }) => (
@@ -76,6 +83,9 @@ export const PlannerDrawer: React.FC<{
   onUpdateItem: (patch: Partial<PlannerItem>) => void;
   onMoveItem: (dir: -1 | 1) => void;
   onRemoveItem: () => void;
+  /** Daily routine blocks: set the block's tasks (first one leads), or split it into cards */
+  onSetTasks?: (tasks: GroupTask[]) => void;
+  onSplit?: () => void;
   onUpdatePlanner: (patch: Partial<PlannerData>) => void;
   onChangeKind: (kind: PlannerKind) => void;
   onClearAll: () => void;
@@ -90,6 +100,8 @@ export const PlannerDrawer: React.FC<{
   onUpdateItem,
   onMoveItem,
   onRemoveItem,
+  onSetTasks,
+  onSplit,
   onUpdatePlanner,
   onChangeKind,
   onClearAll,
@@ -121,6 +133,9 @@ export const PlannerDrawer: React.FC<{
 
   if (!visible || !planner) return null;
   const kind = planner.kind;
+  // A daily routine card holding several tasks
+  const tasks = item ? tasksOf(item) : [];
+  const block = kind === 'day' && tasks.length > 1;
   const hours = Array.from({ length: 25 }, (_, h) => h);
   const times: number[] = [];
   for (let t = planner.startHour * 60; t < planner.endHour * 60; t += STEP) times.push(t);
@@ -139,7 +154,7 @@ export const PlannerDrawer: React.FC<{
           <span className="text-xs font-bold uppercase tracking-wider text-[#6B5F45]">
             Planner • {KIND_LABELS[kind].label}
           </span>
-          <h2 className="text-xl font-extrabold text-[#2D2200] truncate">{item ? item.label || 'Activity' : 'Planner settings'}</h2>
+          <h2 className="text-xl font-extrabold text-[#2D2200] truncate">{item ? (block ? tasks.map((t) => t.label).join(' + ') : item.label || 'Activity') : 'Planner settings'}</h2>
         </div>
         <button onClick={onClose} className="p-2 text-[#6B5838] hover:text-[#2D2200] hover:bg-[#F2F2E2] rounded-lg" title="Close">
           <X className="w-5 h-5" />
@@ -149,10 +164,43 @@ export const PlannerDrawer: React.FC<{
       <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
         {item ? (
           <>
-            <div className="space-y-1.5">
-              <Label>Words</Label>
-              <input value={item.label} maxLength={40} onChange={(e) => onUpdateItem({ label: e.target.value })} className={field} placeholder="e.g. Brush teeth" />
-            </div>
+            {block ? (
+              <div className="space-y-2">
+                <Label>Tasks in this block</Label>
+                {tasks.map((t, i) => (
+                  <div key={t.id} className="flex items-center gap-1.5">
+                    <GraphicThumb picture={t.picture} size={28} />
+                    <input
+                      value={t.label}
+                      maxLength={40}
+                      onChange={(e) => onSetTasks?.(tasks.map((x) => (x.id === t.id ? { ...x, label: e.target.value } : x)))}
+                      className={`${field} py-1.5`}
+                    />
+                    <button type="button" title="Move earlier" disabled={i === 0} onClick={() => onSetTasks?.(swap(tasks, i, i - 1))} className="p-1.5 text-[#6B5838] hover:text-[#2D2200] disabled:opacity-30">
+                      <ArrowUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button type="button" title="Move later" disabled={i === tasks.length - 1} onClick={() => onSetTasks?.(swap(tasks, i, i + 1))} className="p-1.5 text-[#6B5838] hover:text-[#2D2200] disabled:opacity-30">
+                      <ArrowDown className="w-3.5 h-3.5" />
+                    </button>
+                    <button type="button" title="Remove from this block" onClick={() => onSetTasks?.(tasks.filter((x) => x.id !== t.id))} className="p-1.5 text-[#6B5838] hover:text-[#D94A38]">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+                <p className="text-[11px] text-[#6B5838]">
+                  {tasks.length < GROUP_MAX ? `Drag another task onto this card to add it (up to ${GROUP_MAX}). ` : ''}Drag a task out of the card to make it its own.
+                </p>
+                <button type="button" onClick={onSplit} className="w-full py-2 text-xs font-bold text-[#2D2200] bg-white border border-[#E2DEC9] rounded-lg hover:border-[#2D2200]">
+                  Split into separate cards
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Words</Label>
+                <input value={item.label} maxLength={40} onChange={(e) => onUpdateItem({ label: e.target.value })} className={field} placeholder="e.g. Brush teeth" />
+                {kind === 'day' && <p className="text-[11px] text-[#6B5838]">Drag another task onto this card to do them together in one block.</p>}
+              </div>
+            )}
 
             {(kind === 'day' || kind === 'week') && (
               <div className="grid grid-cols-2 gap-3">
@@ -217,10 +265,12 @@ export const PlannerDrawer: React.FC<{
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <Label>Icon</Label>
-              <IconPicker value={item.picture} onChange={(picture) => onUpdateItem({ picture })} />
-            </div>
+            {!block && (
+              <div className="space-y-1.5">
+                <Label>Icon</Label>
+                <IconPicker value={item.picture} onChange={(picture) => onUpdateItem({ picture })} />
+              </div>
+            )}
           </>
         ) : (
           <>

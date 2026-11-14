@@ -8,7 +8,7 @@
 
 import type { PlannerData, PlannerItem } from '../types';
 import { LEGACY_TO_ICON, PLANNER_ICONS } from '../planner/plannerIcons';
-import { MAX_MINUTES, normalize, STEP } from '../planner/plannerModel';
+import { GROUP_MAX, MAX_MINUTES, normalize, STEP } from '../planner/plannerModel';
 import { Worksheet, Page, Slot, PageLayoutPreset, BlockInstance } from '../types';
 import { PAGE_SPECS, CHARACTERS } from '../config/appConfig';
 import { LAYOUT_PRESETS, createSlotsForPreset } from './layoutPresets';
@@ -135,6 +135,18 @@ function validatePlanner(raw: unknown): PlannerData | null {
       ...(DAY_KEYS.has(it.day) ? { day: it.day } : {}),
       ...(it.side === 'first' || it.side === 'then' ? { side: it.side } : {}),
       ...(it.part === 'morning' || it.part === 'afternoon' || it.part === 'evening' ? { part: it.part } : {}),
+      ...(Array.isArray(it.also) && it.also.length
+        ? {
+            also: it.also
+              .filter((t: unknown) => isObject(t) && typeof t.id === 'string')
+              .slice(0, GROUP_MAX - 1)
+              .map((t: Record<string, any>) => ({
+                id: t.id,
+                label: cleanString(t.label, 'Activity').slice(0, 40),
+                picture: typeof t.picture === 'string' && t.picture.startsWith('ph:') && PLANNER_ICONS[t.picture.slice(3)] ? t.picture : 'ph:Star',
+              })),
+          }
+        : {}),
     }));
   // normalize: lengths in 15-minute steps, and every day or week activity given a time
   return normalize({

@@ -89,6 +89,8 @@ import {
   placeItem,
   samplePlanner,
   flow,
+  splitBlock,
+  takeOut,
   STEP,
   switchKind,
 } from './planner/plannerModel';
@@ -570,14 +572,19 @@ export default function App() {
     // Planner activities: dropped on a planner page, they land where the pointer is
     // (a time, a day, a spot in the list, or a side). A placed one dragged off the page
     // is removed (Undo brings it back).
-    const pdata = active.data.current as { type?: string; activityId?: string; pageId?: string; itemId?: string } | undefined;
+    const pdata = active.data.current as { type?: string; activityId?: string; pageId?: string; itemId?: string; taskId?: string } | undefined;
     if (pdata?.type === 'planner-activity' || pdata?.type === 'planner-item') {
       const target = over?.data.current as { type?: string; pageId?: string } | undefined;
       if (target?.type === 'planner-target' && target.pageId) {
         const point = pagePoint(event);
         if (point) dropOnPlanner(target.pageId, point, pdata);
       } else if (pdata.type === 'planner-item' && !over && isOffPage(event) && pdata.pageId && pdata.itemId) {
-        removePlannerItem(pdata.pageId, pdata.itemId);
+        // A task pulled out of a block and let go off the page: just that task goes
+        if (pdata.taskId) {
+          const taskId = pdata.taskId;
+          const itemId = pdata.itemId;
+          updatePlanner(pdata.pageId, (p) => takeOut(p, itemId, taskId)?.planner ?? p);
+        } else removePlannerItem(pdata.pageId, pdata.itemId);
       }
       return;
     }
@@ -666,17 +673,19 @@ export default function App() {
     return { x: (pt.clientX + event.delta.x - rect.left) / scale, y: (pt.clientY + event.delta.y - rect.top) / scale };
   };
 
-  const dropOnPlanner = (pageId: string, point: { x: number; y: number }, drag: { type?: string; activityId?: string; itemId?: string }) => {
+  const dropOnPlanner = (pageId: string, point: { x: number; y: number }, drag: { type?: string; activityId?: string; itemId?: string; taskId?: string }) => {
     const ws = worksheetRef.current;
     const page = ws.pages.find((p) => p.id === pageId);
     if (!page?.planner) return;
-    const planner = page.planner;
-    const moving = drag.type === 'planner-item' ? planner.items.find((i) => i.id === drag.itemId) : undefined;
-    const item = moving ?? (drag.activityId ? itemFromActivity(drag.activityId) : undefined);
+    // A task pulled out of a block: place it as if the block never had it
+    const pulled = drag.type === 'planner-item' && drag.taskId && drag.itemId ? takeOut(page.planner, drag.itemId, drag.taskId) : null;
+    const planner = pulled?.planner ?? page.planner;
+    const moving = pulled ? undefined : drag.type === 'planner-item' ? planner.items.find((i) => i.id === drag.itemId) : undefined;
+    const item = pulled?.item ?? moving ?? (drag.activityId ? itemFromActivity(drag.activityId) : undefined);
     if (!item) return;
     const g = plannerGeometry(ws.pageSize, page.showDateName, planner);
     const target = dropTarget(g, planner, point.x, point.y - GRAB_TOP, item.minutes ?? STEP, moving?.id);
-    updatePlanner(pageId, (p) => placeItem(p, item, target));
+    updatePlanner(pageId, () => placeItem(planner, item, target));
     if (!moving) trackEvent('planner_activity_added', { activity: drag.activityId, kind: planner.kind });
   };
 
@@ -1224,6 +1233,24 @@ export default function App() {
                     return { ...p, items: 'start' in patch || 'minutes' in patch || 'day' in patch ? flow(p, items) : items };
                   })
                 }
+                onSetTasks={(tasks) => {
+                  if (!plannerSel) return;
+                  const { pageId, itemId } = plannerSel;
+                  if (!tasks.length) return removePlannerItem(pageId, itemId);
+                  // The first task leads the block: the card takes its id, words and icon
+                  updatePlanner(pageId, (p) => ({
+                    ...p,
+                    items: p.items.map((i) =>
+                      i.id === itemId ? { ...i, id: tasks[0].id, label: tasks[0].label, picture: tasks[0].picture, also: tasks.length > 1 ? tasks.slice(1) : undefined } : i
+                    ),
+                  }));
+                  setPlannerSel({ pageId, itemId: tasks[0].id });
+                }}
+                onSplit={() => {
+                  if (!plannerSel) return;
+                  const { pageId, itemId } = plannerSel;
+                  updatePlanner(pageId, (p) => splitBlock(p, itemId));
+                }}
                 onMoveItem={handleMovePlannerItem}
                 onRemoveItem={() => plannerSel && removePlannerItem(plannerSel.pageId, plannerSel.itemId)}
                 onUpdatePlanner={(patch) => updatePlanner(activePage.id, (p) => normalize({ ...p, ...patch }))}

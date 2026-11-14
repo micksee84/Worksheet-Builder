@@ -11,13 +11,51 @@
 import React, { useRef, useState } from 'react';
 import { DragMoveEvent, useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
 import { Page, PageSizeId, PlannerItem, PlannerKind } from '../types';
-import { plannerGeometry, dropTarget, Box } from './plannerLayout';
-import { createPlannerPage, KIND_LABELS, lengthLabel, MAX_MINUTES, placeItem, samplePlanner, STEP, timeLabel } from './plannerModel';
+import { blockCells, plannerGeometry, dropTarget, Box } from './plannerLayout';
+import { createPlannerPage, KIND_LABELS, lengthLabel, MAX_MINUTES, placeItem, samplePlanner, STEP, takeOut, tasksOf, timeLabel } from './plannerModel';
 import { Mini } from './WhatAreYouMaking';
 import { getActivity } from './activities';
 
-/** How far below the pointer a dragged card's top sits, in page points */
-export const GRAB_TOP = 8;
+export { GRAB_TOP } from './plannerLayout';
+import { GRAB_TOP } from './plannerLayout';
+
+/**
+ * One task inside a selected block: drag it out to make it a card of its own, or click
+ * it to change it. Its pointer press stops at the task, so the block itself stays put.
+ */
+const TaskHandle: React.FC<{ pageId: string; itemId: string; taskId: string; label: string; picture: string; cell: Box; onSelect: () => void }> = ({
+  pageId,
+  itemId,
+  taskId,
+  label,
+  picture,
+  cell,
+  onSelect,
+}) => {
+  const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
+    id: `planner-task-${pageId}-${itemId}-${taskId}`,
+    data: { type: 'planner-item', pageId, itemId, taskId, label, picture },
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      onPointerDown={(e) => {
+        listeners?.onPointerDown?.(e);
+        e.stopPropagation();
+      }}
+      onKeyDown={(e) => listeners?.onKeyDown?.(e)}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect();
+      }}
+      aria-label={`${label}: drag out of this block`}
+      title="Drag out to make it a card of its own"
+      style={{ position: 'absolute', left: cell.x, top: cell.y, width: cell.w, height: cell.h }}
+      className={`rounded-md cursor-grab border border-dashed ${isDragging ? 'border-[#A39C8E] bg-white/70' : 'border-[#009BD9]/70 hover:bg-[#009BD9]/10'}`}
+    />
+  );
+};
 
 const ItemHandle: React.FC<{
   pageId: string;
@@ -32,7 +70,9 @@ const ItemHandle: React.FC<{
   /** The longest this activity can be (day: until the day ends) */
   maxMinutes: number;
   onResize?: (minutes: number) => void;
-}> = ({ pageId, item, box, selected, onSelect, heightFor, labelInside, maxMinutes, onResize }) => {
+  /** Daily routine blocks: each task's place inside the card, relative to the page */
+  cells?: Box[];
+}> = ({ pageId, item, box, selected, onSelect, heightFor, labelInside, maxMinutes, onResize, cells }) => {
   const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
     id: `planner-item-${pageId}-${item.id}`,
     data: { type: 'planner-item', pageId, itemId: item.id, label: item.label, picture: item.picture },
@@ -70,6 +110,20 @@ const ItemHandle: React.FC<{
           : 'hover:border-2 hover:border-[#009BD9]/60'
       }`}
     >
+      {/* A selected block: its tasks can be dragged out one at a time */}
+      {selected && !isDragging && !live && cells && cells.length > 1 &&
+        tasksOf(item).map((t, i) => (
+          <TaskHandle
+            key={t.id}
+            pageId={pageId}
+            itemId={item.id}
+            taskId={t.id}
+            label={t.label}
+            picture={t.picture}
+            cell={{ x: cells[i].x - box.x, y: cells[i].y - box.y, w: cells[i].w, h: cells[i].h }}
+            onSelect={onSelect}
+          />
+        ))}
       {onResize && !isDragging && (
         <>
           {/* Bottom edge: drag to make the activity longer or shorter, in half hours */}
@@ -155,7 +209,7 @@ export const PlannerOverlay: React.FC<{
   const g = plannerGeometry(pageSize, page.showDateName, planner);
   const { setNodeRef } = useDroppable({ id: `planner-drop-${page.id}`, data: { type: 'planner-target', pageId: page.id } });
   const { active } = useDndContext();
-  const drag = active?.data.current as { type?: string; itemId?: string; activityId?: string; pageId?: string } | undefined;
+  const drag = active?.data.current as { type?: string; itemId?: string; taskId?: string; activityId?: string; pageId?: string; label?: string; picture?: string } | undefined;
   const draggingHere = drag?.type === 'planner-activity' || (drag?.type === 'planner-item' && drag.pageId === page.id);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const surface = useRef<HTMLDivElement | null>(null);
@@ -185,13 +239,25 @@ export const PlannerOverlay: React.FC<{
   // Where the dragged thing would land: lay the planner out as if it were dropped, and
   // outline that box.
   let ghost: Box | null = null;
+  let joining = false;
   if (draggingHere && hover) {
-    const moving = drag?.type === 'planner-item' ? planner.items.find((i) => i.id === drag.itemId) : undefined;
+    // A task pulled out of a block: lay out the planner without it first
+    const pulled = drag?.type === 'planner-item' && drag.taskId && drag.itemId ? takeOut(planner, drag.itemId, drag.taskId) : null;
+    const base = pulled?.planner ?? planner;
+    const baseG = pulled ? plannerGeometry(pageSize, page.showDateName, base) : g;
+    const moving = pulled ? undefined : drag?.type === 'planner-item' ? planner.items.find((i) => i.id === drag.itemId) : undefined;
     const activity = drag?.activityId ? getActivity(drag.activityId) : undefined;
-    const probe: PlannerItem = moving ?? { id: '__probe__', label: activity?.label ?? '', picture: activity?.picture ?? '', minutes: activity?.minutes ?? STEP };
-    const target = dropTarget(g, planner, hover.x, hover.y - GRAB_TOP, probe.minutes ?? STEP, moving?.id);
-    const after = plannerGeometry(pageSize, page.showDateName, placeItem(planner, probe, target));
-    ghost = after.items.find((b) => b.id === probe.id) ?? null;
+    const probe: PlannerItem =
+      pulled?.item ?? moving ?? { id: '__probe__', label: activity?.label ?? '', picture: activity?.picture ?? '', minutes: activity?.minutes ?? STEP };
+    const target = dropTarget(baseG, base, hover.x, hover.y - GRAB_TOP, probe.minutes ?? STEP, moving?.id);
+    if (target.kind === 'day' && target.join) {
+      // Joining a block: the whole card it joins lights up
+      joining = true;
+      ghost = baseG.items.find((b) => b.id === target.join) ?? null;
+    } else {
+      const after = plannerGeometry(pageSize, page.showDateName, placeItem(base, probe, target));
+      ghost = after.items.find((b) => b.id === probe.id) ?? null;
+    }
   }
 
   return (
@@ -221,6 +287,7 @@ export const PlannerOverlay: React.FC<{
             onResize={
               onResizeItem && (planner.kind === 'day' || planner.kind === 'week') ? (m) => onResizeItem(b.id, m) : undefined
             }
+            cells={planner.kind === 'day' && item.also?.length ? blockCells(b, tasksOf(item).length, planner.showTimes) : undefined}
           />
         );
       })}
@@ -250,9 +317,15 @@ export const PlannerOverlay: React.FC<{
       )}
       {ghost && (
         <div
-          className="absolute rounded-lg border-[3px] border-dashed border-[#009BD9] bg-[#009BD9]/15 pointer-events-none"
+          className={`absolute rounded-lg border-dashed border-[#009BD9] bg-[#009BD9]/15 pointer-events-none ${joining ? 'border-[4px]' : 'border-[3px]'}`}
           style={{ left: ghost.x, top: ghost.y, width: ghost.w, height: ghost.h }}
-        />
+        >
+          {joining && (
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 whitespace-nowrap px-2 py-0.5 rounded-full bg-[#009BD9] text-white text-[10px] font-extrabold shadow">
+              + Add to this block
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

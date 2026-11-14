@@ -12,8 +12,8 @@ import React from 'react';
 import { PageSizeId, PlannerData, PlannerItem } from '../types';
 import { PlannerGraphic } from './plannerIcons';
 import { FRAME_STROKE } from '../utils/spacing';
-import { plannerGeometry, ItemBox, PlannerGeometry } from './plannerLayout';
-import { DAY_PARTS, hourLabel, lengthLabel, STEP, timeLabel, visibleItems } from './plannerModel';
+import { blockCells, plannerGeometry, ItemBox, PlannerGeometry } from './plannerLayout';
+import { DAY_PARTS, hourLabel, lengthLabel, STEP, tasksOf, timeLabel, visibleItems } from './plannerModel';
 
 const INK = '#2D2200';
 const GUIDE = '#DDD9C4';
@@ -27,8 +27,59 @@ const Tick: React.FC<{ x: number; y: number; size: number }> = ({ x, y, size }) 
   <rect x={x} y={y} width={size} height={size} rx={size * 0.22} fill="#FFFFFF" stroke={INK} strokeWidth={1.5} />
 );
 
+/** A block of tasks done together: one card, the tasks side by side, one time */
+function BlockCard({ it, b, p }: { it: PlannerItem; b: ItemBox; p: PlannerData }) {
+  const tasks = tasksOf(it);
+  const cells = blockCells(b, tasks.length, p.showTimes);
+  const time = `${timeLabel(it.start ?? 0)}–${timeLabel((it.start ?? 0) + (it.minutes ?? STEP))}`;
+  return (
+    <g>
+      <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={Math.min(10, b.h / 3)} fill="#FFFFFF" stroke={INK} strokeWidth={1.5} />
+      {cells.map((c, i) => {
+        const t = tasks[i];
+        // Dividers between the tasks
+        const divider = i > 0 && <line x1={c.x - 2} y1={b.y + 4} x2={c.x - 2} y2={b.y + b.h - 4} stroke={GUIDE} strokeWidth={1.25} />;
+        const tick = p.showTicks ? Math.min(12, c.h * 0.4) : 0;
+        if (c.h >= 60) {
+          // Tall: picture over the words
+          const pic = Math.min(c.h - 24, c.w - 16, 64);
+          return (
+            <g key={t.id}>
+              {divider}
+              <PlannerGraphic picture={t.picture} cx={c.x + c.w / 2} cy={c.y + (c.h - 16) / 2} size={pic} />
+              <text x={c.x + c.w / 2} y={c.y + c.h - 5} textAnchor="middle" fill={INK} fontSize={fit(t.label, c.w - 6, 12, 6)} fontWeight={800} fontFamily={FONT}>
+                {t.label}
+              </text>
+              {tick > 0 && <Tick x={c.x + c.w - tick - 2} y={c.y + 2} size={tick} />}
+            </g>
+          );
+        }
+        const pic = Math.max(8, Math.min(c.h - 4, 30));
+        const textX = c.x + pic + 6;
+        const size = fit(t.label, c.x + c.w - textX - tick - 4, Math.min(13, c.h * 0.55), 5);
+        return (
+          <g key={t.id}>
+            {divider}
+            <PlannerGraphic picture={t.picture} cx={c.x + 2 + pic / 2} cy={c.y + c.h / 2} size={pic} />
+            <text x={textX} y={c.y + c.h / 2 + size * 0.36} fill={INK} fontSize={size} fontWeight={800} fontFamily={FONT}>
+              {t.label}
+            </text>
+            {tick > 0 && <Tick x={c.x + c.w - tick - 2} y={c.y + c.h / 2 - tick / 2} size={tick} />}
+          </g>
+        );
+      })}
+      {p.showTimes && (
+        <text x={b.x + b.w - 8} y={b.y + b.h / 2 + 3} textAnchor="end" fill={INK} fontSize={Math.min(9, b.h * 0.62)} fontWeight={700} fontFamily={FONT}>
+          {time}
+        </text>
+      )}
+    </g>
+  );
+}
+
 /** One activity card: picture on the left, words and time beside it */
 function RowCard({ it, b, p, big = false }: { it: PlannerItem; b: ItemBox; p: PlannerData; big?: boolean }) {
+  if (it.also?.length && p.kind === 'day') return <BlockCard it={it} b={b} p={p} />;
   const pad = Math.min(6, b.h * 0.12);
   const pic = Math.max(10, Math.min(b.h - pad * 2, big ? 72 : 56));
   const tickSize = p.showTicks ? Math.min(b.h - pad * 2, big ? 34 : 18) : 0;

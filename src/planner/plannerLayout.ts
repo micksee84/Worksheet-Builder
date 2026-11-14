@@ -11,10 +11,29 @@
 import { DayKey, PageSizeId, PlannerData, PlannerItem } from '../types';
 import { pageDims } from '../config/appConfig';
 import { pageLayout } from '../utils/spacing';
-import { daysShown, MAX_MINUTES, PlannerDrop, STEP, visibleItems } from './plannerModel';
+import { canJoin, daysShown, MAX_MINUTES, PlannerDrop, STEP, tasksOf, visibleItems } from './plannerModel';
 
 export interface Box { x: number; y: number; w: number; h: number }
 export interface ItemBox extends Box { id: string; day?: DayKey; lane?: number; lanes?: number }
+
+/** How far below the pointer a dragged card's top sits, in page points */
+export const GRAB_TOP = 8;
+
+/** Room at the right of a daily routine card for its time (7:00–7:15) */
+export const TIME_W = 62;
+
+/**
+ * A block's tasks side by side inside its card: one cell each, leaving room for the time
+ * at the right. Drawing and the on-screen handles both use these.
+ */
+export function blockCells(b: Box, n: number, showTimes: boolean): Box[] {
+  const pad = 4;
+  const left = b.x + pad;
+  const width = b.w - pad * 2 - (showTimes ? TIME_W : 0);
+  const gap = 4;
+  const w = (width - gap * (n - 1)) / n;
+  return Array.from({ length: n }, (_, i) => ({ x: left + i * (w + gap), y: b.y + 2, w, h: b.h - 4 }));
+}
 
 export interface PlannerGeometry {
   /** The planner's whole area on the page */
@@ -145,6 +164,21 @@ export function dropTarget(g: PlannerGeometry, p: PlannerData, x: number, y: num
     // The card being moved doesn't count: it's leaving its old spot
     const list = visibleItems(p, day).filter((it) => it.id !== movingId);
     const boxes = new Map(g.items.map((b) => [b.id, b]));
+    // Daily routine: over the middle of a card (not its top or bottom edge), it joins
+    // that card's block, if there's room for it
+    if (p.kind === 'day') {
+      const moving = movingId ? p.items.find((i) => i.id === movingId) : undefined;
+      const count = moving ? tasksOf(moving).length : 1;
+      const over = list.find((it) => {
+        const b = boxes.get(it.id);
+        if (!b) return false;
+        const edge = Math.min(8, b.h * 0.25);
+        // y is where the dragged card's top would go; the pointer is GRAB_TOP below it
+        const py = y + GRAB_TOP;
+        return py > b.y + edge && py < b.y + b.h - edge && canJoin(it, count);
+      });
+      if (over) return { kind: 'day', start: over.start ?? 0, join: over.id };
+    }
     const next = list.findIndex((it) => {
       const b = boxes.get(it.id);
       return b && b.y + b.h / 2 > y;

@@ -12,6 +12,13 @@ const week = samplePlanner('week');
 week.items.push({ id: 'x1', label: 'Brush teeth', picture: 'ph:Tooth', minutes: 15, day: 'tue', start: 8 * 60 });
 week.items.push({ id: 'x2', label: 'Snack', picture: 'ph:OrangeSlice', minutes: 15, day: 'thu', start: 10 * 60 + 30 });
 const day = samplePlanner('day');
+// A block of three quick tasks at 7:30, and one of two
+const dressed = day.items.find((i) => i.label === 'Get dressed')!;
+dressed.minutes = 15;
+dressed.also = [{ id: 't1', label: 'Brush teeth', picture: 'ph:Tooth' }, { id: 't2', label: 'Shoes on', picture: 'ph:Sneaker' }];
+day.items = day.items.filter((i) => i.label !== 'Brush teeth');
+const outside = day.items.find((i) => i.label === 'Outside play')!;
+outside.also = [{ id: 't3', label: 'Bike ride', picture: 'ph:Bicycle' }];
 for (const [name, p] of [['week', normalize(week)], ['day', normalize(day)]] as const) {
   const d = pageDims('letter', { planner: p } as any);
   const body = renderToStaticMarkup(<PlannerPageContent planner={p as any} pageSize="letter" showDateName={false} />);

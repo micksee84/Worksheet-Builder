@@ -7,7 +7,7 @@
  * reads the fields it needs and fills sensible defaults for the rest.
  */
 
-import { DayKey, Page, PlannerData, PlannerItem, PlannerKind, DayPart } from '../types';
+import { DayKey, Page, PlannerData, PlannerItem, PlannerKind, DayPart, GroupTask } from '../types';
 import { ACTIVITIES, getActivity } from './activities';
 
 export const WEEK: { key: DayKey; label: string; short: string }[] = [
@@ -45,6 +45,50 @@ export const DAY_PARTS: { key: DayPart; label: string; icon: string; from: numbe
 ];
 /** Week plans saved with morning / afternoon / evening bands start their activities at these hours */
 const PART_START: Record<DayPart, number> = { morning: 9 * 60, afternoon: 13 * 60, evening: 18 * 60 };
+/** The most tasks one block of time can hold, side by side (daily routine) */
+export const GROUP_MAX = 4;
+/** Every task in a card: its own, then the others in its block */
+export const tasksOf = (it: PlannerItem): GroupTask[] => [{ id: it.id, label: it.label, picture: it.picture }, ...(it.also ?? [])];
+/** Room for `more` tasks in this card's block */
+export const canJoin = (it: PlannerItem, more = 1) => tasksOf(it).length + more <= GROUP_MAX;
+
+/**
+ * Takes one task out of a block. Returns the planner without it and the task as a card
+ * of its own (same length as the block). Taking out the block's first task hands the
+ * block to the next one.
+ */
+export function takeOut(p: PlannerData, itemId: string, taskId: string): { planner: PlannerData; item: PlannerItem } | null {
+  const block = p.items.find((i) => i.id === itemId);
+  if (!block) return null;
+  const tasks = tasksOf(block);
+  const task = tasks.find((t) => t.id === taskId);
+  if (!task || tasks.length < 2) return null;
+  const rest = tasks.filter((t) => t.id !== taskId);
+  const kept: PlannerItem = { ...block, id: rest[0].id, label: rest[0].label, picture: rest[0].picture, also: rest.slice(1) };
+  if (!kept.also!.length) delete kept.also;
+  const item: PlannerItem = { id: task.id, label: task.label, picture: task.picture, minutes: block.minutes };
+  return { planner: { ...p, items: p.items.map((i) => (i.id === itemId ? kept : i)) }, item };
+}
+
+/** Every task in a block becomes its own card, one after another */
+export function splitBlock(p: PlannerData, itemId: string): PlannerData {
+  const block = p.items.find((i) => i.id === itemId);
+  if (!block?.also?.length) return p;
+  const minutes = block.minutes ?? STEP;
+  const cards: PlannerItem[] = tasksOf(block).map((t, i) => ({
+    ...(i === 0 ? block : {}),
+    id: t.id,
+    label: t.label,
+    picture: t.picture,
+    minutes,
+    start: (block.start ?? p.startHour * 60) + i * minutes,
+    also: undefined,
+  }));
+  const at = p.items.indexOf(block);
+  const items = [...p.items.slice(0, at), ...cards.map(({ also: _a, ...c }) => c), ...p.items.slice(at + 1)];
+  return { ...p, items: flow(p, items) };
+}
+
 /** True for the views laid out as a schedule (activities with times) */
 export const timed = (p: PlannerData) => p.kind === 'day' || p.kind === 'week';
 
@@ -181,7 +225,10 @@ export function normalize(p: PlannerData): PlannerData {
 
 /** Switch view: the same activities, laid out the new way */
 export function switchKind(p: PlannerData, kind: PlannerKind): PlannerData {
-  const next = normalize({ ...p, kind, kindChosen: true, showTicks: kind === 'checklist' ? true : p.showTicks });
+  // Blocks of tasks are a daily routine thing: other views get each task as its own card
+  let from = p;
+  if (kind !== 'day') for (const it of p.items) if (it.also?.length) from = splitBlock(from, it.id);
+  const next = normalize({ ...from, kind, kindChosen: true, showTicks: kind === 'checklist' ? true : p.showTicks });
   return next;
 }
 
@@ -232,7 +279,7 @@ export function addItem(p: PlannerData, item: PlannerItem, preferDay?: DayKey): 
 
 /** Where a drop lands, worked out by the layout (see plannerLayout.dropTarget) */
 export type PlannerDrop =
-  | { kind: 'day'; start: number }
+  | { kind: 'day'; start: number; join?: string }
   | { kind: 'week'; day: DayKey; start: number }
   | { kind: 'checklist'; index: number }
   | { kind: 'first-then'; side: 'first' | 'then' };
@@ -244,6 +291,15 @@ export function placeItem(p: PlannerData, item: PlannerItem, drop: PlannerDrop):
   switch (drop.kind) {
     case 'day':
     case 'week': {
+      // Daily routine: dropped on a card, it joins that card's block (and its time)
+      if (drop.kind === 'day' && drop.join) {
+        const target = items.find((i) => i.id === drop.join);
+        const moving = tasksOf(item);
+        if (target && canJoin(target, moving.length)) {
+          items = items.map((i) => (i === target ? { ...i, also: [...(i.also ?? []), ...moving] } : i));
+          break;
+        }
+      }
       const minutes = clampLength(item.minutes);
       const start = Math.max(p.startHour * 60, Math.min(drop.start, p.endHour * 60 - minutes));
       const { part: _part, ...rest } = item;
