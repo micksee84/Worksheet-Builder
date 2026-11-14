@@ -39,7 +39,7 @@ const Toggle: React.FC<{ checked: boolean; onChange: (v: boolean) => void; label
 );
 
 /** The icon picker: all planner icons, searchable by the words people use ("teeth", "tv") */
-const IconPicker: React.FC<{ value: string; onChange: (picture: string) => void }> = ({ value, onChange }) => {
+export const IconPicker: React.FC<{ value: string; onChange: (picture: string) => void }> = ({ value, onChange }) => {
   const [q, setQ] = useState('');
   const list = useMemo(() => {
     const term = q.trim().toLowerCase();

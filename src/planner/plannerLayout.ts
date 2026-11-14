@@ -54,6 +54,8 @@ export interface PlannerGeometry {
 }
 
 const TIME_COL = 46;
+/** A checklist heading row's height, as a share of an item row */
+const HEADING_ROW = 0.6;
 const GAP = 6;
 
 /**
@@ -132,10 +134,19 @@ export function plannerGeometry(pageSize: PageSizeId, showDateName: boolean, p: 
   }
 
   if (p.kind === 'checklist') {
+    // Items, then spare rows to write in (at least one, so there's always a row to click
+    // and type into). Section headings are shorter rows.
     const list = visibleItems(p);
-    const rows = Math.max(list.length, 6);
-    const rowH = Math.min(88, (area.h - GAP * (rows - 1)) / rows);
-    const rowBoxes = Array.from({ length: rows }, (_, i) => ({ x: area.x, y: area.y + i * (rowH + GAP), w: area.w, h: rowH }));
+    const rows = Math.max(list.length + 1, 6);
+    const weight = (i: number) => (list[i]?.heading ? HEADING_ROW : 1);
+    const units = Array.from({ length: rows }, (_, i) => weight(i)).reduce((a, b) => a + b, 0);
+    const rowH = Math.min(88, (area.h - GAP * (rows - 1)) / units);
+    let y = area.y;
+    const rowBoxes = Array.from({ length: rows }, (_, i) => {
+      const box = { x: area.x, y, w: area.w, h: rowH * weight(i) };
+      y += box.h + GAP;
+      return box;
+    });
     return { area, rowBoxes, items: list.map((it, i) => ({ id: it.id, ...rowBoxes[i] })) };
   }
 

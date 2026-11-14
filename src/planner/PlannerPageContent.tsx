@@ -80,6 +80,18 @@ function BlockCard({ it, b, p }: { it: PlannerItem; b: ItemBox; p: PlannerData }
 /** One activity card: picture on the left, words and time beside it */
 function RowCard({ it, b, p, big = false }: { it: PlannerItem; b: ItemBox; p: PlannerData; big?: boolean }) {
   if (it.also?.length && p.kind === 'day') return <BlockCard it={it} b={b} p={p} />;
+  if (it.heading) {
+    // A section heading: big words with a line under them, nothing to tick
+    const hs = fit(it.label, b.w - 8, Math.min(26, b.h * 0.62), 6);
+    return (
+      <g>
+        <text x={b.x + 4} y={b.y + b.h - 10} fill={INK} fontSize={hs} fontWeight={900} fontFamily={FONT}>
+          {it.label}
+        </text>
+        <line x1={b.x} x2={b.x + b.w} y1={b.y + b.h - 3} y2={b.y + b.h - 3} stroke={INK} strokeWidth={2} strokeLinecap="round" />
+      </g>
+    );
+  }
   const pad = Math.min(6, b.h * 0.12);
   const pic = Math.max(10, Math.min(b.h - pad * 2, big ? 72 : 56));
   const tickSize = p.showTicks ? Math.min(b.h - pad * 2, big ? 34 : 18) : 0;
@@ -88,14 +100,15 @@ function RowCard({ it, b, p, big = false }: { it: PlannerItem; b: ItemBox; p: Pl
   const showTime = p.showTimes && p.kind === 'day' && it.start !== undefined;
   const time = showTime ? `${timeLabel(it.start!)}–${timeLabel(it.start! + (it.minutes ?? STEP))}` : '';
   const twoLines = showTime && b.h >= 34;
-  const size = fit(it.label, textW, big ? 24 : Math.min(15, b.h * 0.62), 4);
+  const words = p.kind === 'checklist' && (it.count ?? 1) > 1 ? `${it.label} ×${it.count}` : it.label;
+  const size = fit(words, textW, big ? 24 : Math.min(15, b.h * 0.62), 4);
   const cy = b.y + b.h / 2;
   return (
     <g>
       <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={Math.min(10, b.h / 3)} fill="#FFFFFF" stroke={INK} strokeWidth={1.5} />
       <PlannerGraphic picture={it.picture} cx={b.x + pad + pic / 2} cy={cy} size={pic} />
       <text x={textX} y={twoLines ? cy - 2 : cy + size * 0.36} fill={INK} fontSize={size} fontWeight={800} fontFamily={FONT}>
-        {it.label}
+        {words}
       </text>
       {showTime && (
         <text

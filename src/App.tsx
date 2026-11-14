@@ -1254,6 +1254,7 @@ export default function App() {
                 // Longer: the activities after it slide later
                 updatePlanner(pageId, (p) => ({ ...p, items: flow(p, p.items.map((i) => (i.id === itemId ? { ...i, minutes } : i))) }))
               }
+              onEditPlanner={updatePlanner}
               onOpenPlannerSettings={() => {
                 setPlannerSel(null);
                 setIsPlannerPanelOpen(true);

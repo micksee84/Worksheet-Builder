@@ -184,3 +184,21 @@ export const GraphicThumb: React.FC<{ picture: string; size?: number }> = ({ pic
     {isIcon(picture) ? <PlannerIcon name={iconKey(picture)} cx={50} cy={50} size={size < 34 ? 92 : 80} /> : <Picture name={picture} cx={50} cy={50} size={100} />}
   </svg>
 );
+
+/**
+ * The icon that best fits what someone typed ("Pack socks" -> Sock), or null. Words count
+ * with or without a plural "s"; the last word that matches wins, since it's usually the thing.
+ */
+export function iconForWords(text: string): string | null {
+  const tokens = text.toLowerCase().match(/[a-z]+/g) ?? [];
+  const forms = (w: string) => [w, w.replace(/(es|s)$/, ''), w + 's'];
+  for (let i = tokens.length - 1; i >= 0; i--) {
+    const want = forms(tokens[i]);
+    const hit = ICON_NAMES.find((n) => {
+      const words = PLANNER_ICONS[n].words.split(' ').concat(n.toLowerCase());
+      return words.some((w) => want.includes(w) || forms(w).includes(tokens[i]));
+    });
+    if (hit && tokens[i].length > 2) return `ph:${hit}`;
+  }
+  return null;
+}

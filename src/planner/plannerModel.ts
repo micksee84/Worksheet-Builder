@@ -111,6 +111,7 @@ export function flow(p: PlannerData, items: PlannerItem[]): PlannerItem[] {
   const order = items.map((it, i) => ({ it, i })).sort((a, b) => (a.it.start ?? 0) - (b.it.start ?? 0) || a.i - b.i);
   const moved = new Map<string, PlannerItem>();
   for (const { it } of order) {
+    if (it.heading) continue;
     const day = p.kind === 'week' ? it.day ?? 'mon' : 'all';
     const minutes = it.minutes ?? STEP;
     const start = Math.min(Math.max(it.start ?? 0, ends[day] ?? 0), Math.max(p.startHour * 60, p.endHour * 60 - minutes));
@@ -205,6 +206,7 @@ export function normalize(p: PlannerData): PlannerData {
     // activity saved with a part of the day starts in that part.
     const next: Record<string, number> = {};
     items = items.map((it) => {
+      if (it.heading) return it; // checklist headings take no time
       const day = p.kind === 'week' ? it.day ?? 'mon' : 'all';
       const minutes = clampLength(it.minutes);
       const from = it.part ? Math.max(PART_START[it.part], next[day] ?? 0) : next[day] ?? p.startHour * 60;
@@ -221,7 +223,7 @@ export function normalize(p: PlannerData): PlannerData {
     const hasFirst = items.some((i) => i.side === 'first');
     const hasThen = items.some((i) => i.side === 'then');
     if (!hasFirst || !hasThen) {
-      const free = items.filter((i) => !i.side);
+      const free = items.filter((i) => !i.side && !i.heading);
       items = items.map((it) => {
         if (!hasFirst && it === free[0]) return { ...it, side: 'first' as const };
         if (!hasThen && it === free[hasFirst ? 0 : 1]) return { ...it, side: 'then' as const };
@@ -243,15 +245,17 @@ export function switchKind(p: PlannerData, kind: PlannerKind): PlannerData {
 
 /** Items a view actually draws, in drawing order */
 export function visibleItems(p: PlannerData, day?: DayKey): PlannerItem[] {
+  // Section headings are a checklist thing: other views keep them but don't draw them
+  const things = p.kind === 'checklist' ? p.items : p.items.filter((i) => !i.heading);
   switch (p.kind) {
     case 'day':
-      return [...p.items].sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
+      return [...things].sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
     case 'week':
-      return p.items.filter((i) => (i.day ?? 'mon') === day).sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
+      return things.filter((i) => (i.day ?? 'mon') === day).sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
     case 'checklist':
-      return p.items;
+      return things;
     case 'first-then':
-      return (['first', 'then'] as const).map((s) => p.items.find((i) => i.side === s)).filter(Boolean) as PlannerItem[];
+      return (['first', 'then'] as const).map((s) => things.find((i) => i.side === s)).filter(Boolean) as PlannerItem[];
   }
 }
 

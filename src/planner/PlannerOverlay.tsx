@@ -10,9 +10,10 @@
 
 import React, { useRef, useState } from 'react';
 import { DragMoveEvent, useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
-import { Page, PageSizeId, PlannerItem, PlannerKind } from '../types';
+import { Page, PageSizeId, PlannerData, PlannerItem, PlannerKind } from '../types';
 import { blockCells, plannerGeometry, dropTarget, Box } from './plannerLayout';
-import { createPlannerPage, KIND_LABELS, lengthLabel, MAX_MINUTES, placeItem, samplePlanner, STEP, takeOut, tasksOf, timeLabel } from './plannerModel';
+import { createPlannerPage, KIND_LABELS, lengthLabel, MAX_MINUTES, newItemId, placeItem, samplePlanner, STEP, takeOut, tasksOf, timeLabel } from './plannerModel';
+import { BLANK_PICTURE, ChecklistRowEditor, RowEditorActions } from './ChecklistRowEditor';
 import { Mini } from './WhatAreYouMaking';
 import { getActivity } from './activities';
 import { pointerNow } from '../utils/pointerTracker';
@@ -222,8 +223,46 @@ export const PlannerOverlay: React.FC<{
   onChooseKind?: (kind: PlannerKind) => void;
   /** Sets an activity's length (the drag handle on the card) */
   onResizeItem?: (itemId: string, minutes: number) => void;
-}> = ({ page, pageSize, selectedItemId, onSelectItem, onBackground, onChooseKind, onResizeItem }) => {
+  /** Changes the planner (checklists are typed straight onto the page) */
+  onEdit?: (fn: (p: PlannerData) => PlannerData) => void;
+}> = ({ page, pageSize, selectedItemId, onSelectItem, onBackground, onChooseKind, onResizeItem, onEdit }) => {
   const planner = page.planner!;
+  // Checklists: the row being typed into
+  const [editing, setEditing] = useState<string | null>(null);
+  const typing = planner.kind === 'checklist' && !!onEdit;
+  const editingItem = typing && editing ? planner.items.find((i) => i.id === editing) : undefined;
+  const editActions = (id: string): RowEditorActions => {
+    const ids = planner.items.map((i) => i.id);
+    const at = ids.indexOf(id);
+    const save = (patch: Partial<PlannerItem>) => {
+      if (Object.keys(patch).length) onEdit?.((p) => ({ ...p, items: p.items.map((i) => (i.id === id ? { ...i, ...patch } : i)) }));
+    };
+    return {
+      save,
+      saveAndNext: (patch) => {
+        const next: PlannerItem = { id: newItemId(), label: '', picture: BLANK_PICTURE, minutes: 30 };
+        onEdit?.((p) => {
+          const items = p.items.map((i) => (i.id === id ? { ...i, ...patch } : i));
+          const k = items.findIndex((i) => i.id === id);
+          items.splice(k + 1, 0, next);
+          return { ...p, items };
+        });
+        setEditing(next.id);
+      },
+      remove: () => onEdit?.((p) => ({ ...p, items: p.items.filter((i) => i.id !== id) })),
+      move: (dir, patch) => {
+        save(patch);
+        setEditing(ids[at + dir] ?? null);
+      },
+      close: () => setEditing((e) => (e === id ? null : e)),
+    };
+  };
+  /** Click a spare row: a new row at the end of the list, ready to type into */
+  const addRow = () => {
+    const item: PlannerItem = { id: newItemId(), label: '', picture: BLANK_PICTURE, minutes: 30 };
+    onEdit?.((p) => ({ ...p, items: [...p.items, item] }));
+    setEditing(item.id);
+  };
   const g = plannerGeometry(pageSize, page.showDateName, planner);
   const { setNodeRef } = useDroppable({ id: `planner-drop-${page.id}`, data: { type: 'planner-target', pageId: page.id } });
   const { active } = useDndContext();
@@ -303,6 +342,8 @@ export const PlannerOverlay: React.FC<{
       {g.items.map((b) => {
         const item = planner.items.find((i) => i.id === b.id);
         if (!item) return null;
+        if (editingItem?.id === item.id)
+          return <ChecklistRowEditor key={`edit-${b.id}`} item={item} box={b} areaBottom={g.area.y + g.area.h} actions={editActions(item.id)} />;
         return (
           <ItemHandle
             key={b.id}
@@ -310,7 +351,7 @@ export const PlannerOverlay: React.FC<{
             item={item}
             box={b}
             selected={selectedItemId === b.id}
-            onSelect={() => onSelectItem(b.id)}
+            onSelect={() => (typing ? setEditing(b.id) : onSelectItem(b.id))}
             heightFor={g.heightFor ?? (() => b.h)}
             labelInside={planner.kind === 'day'}
             maxMinutes={Math.min(MAX_MINUTES, planner.endHour * 60 - (item.start ?? planner.startHour * 60))}
@@ -321,6 +362,26 @@ export const PlannerOverlay: React.FC<{
           />
         );
       })}
+      {/* Checklists: the spare rows are where new items get typed */}
+      {typing &&
+        !draggingHere &&
+        g.rowBoxes!.slice(g.items.length).map((r, i) => (
+          <button
+            key={`spare-${i}`}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              addRow();
+            }}
+            style={{ position: 'absolute', left: r.x, top: r.y, width: r.w, height: r.h }}
+            className={`group/spare rounded-[10px] flex items-center pl-5 text-left font-extrabold text-[#009BD9] hover:bg-[#009BD9]/10 hover:outline hover:outline-2 hover:outline-[#009BD9] ${
+              i === 0 ? '' : 'opacity-0 hover:opacity-100'
+            }`}
+            aria-label="Add an item: click and type"
+          >
+            <span className="text-[15px] opacity-70 group-hover/spare:opacity-100">+ Click to add an item</span>
+          </button>
+        ))}
       {/* Start screen: a new planner asks what kind it is, until one is picked or an
           activity is added. The toolbar switcher changes it later. */}
       {planner.kindChosen === false && planner.items.length === 0 && !draggingHere && onChooseKind && (

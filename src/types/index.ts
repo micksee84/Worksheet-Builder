@@ -128,6 +128,10 @@ export interface PlannerItem {
   side?: 'first' | 'then';
   /** Daily routine: more tasks in this card's block, shown side by side (up to 3 more) */
   also?: GroupTask[];
+  /** Checklist: how many to pack ("Socks ×3") */
+  count?: number;
+  /** Checklist: a section heading row ("Clothes"), not a thing to tick. Other views leave it out. */
+  heading?: boolean;
 }
 
 export interface PlannerData {

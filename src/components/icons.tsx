@@ -33,6 +33,7 @@ import {
   CloudIcon,
   CloudSlashIcon,
   CopyIcon,
+  DotsThreeIcon,
   DownloadSimpleIcon,
   FilePlusIcon,
   FileTextIcon,
@@ -43,6 +44,7 @@ import {
   MagnifyingGlassIcon,
   MagnifyingGlassMinusIcon,
   MagnifyingGlassPlusIcon,
+  MinusIcon,
   PencilSimpleIcon,
   PlusIcon,
   PrinterIcon,
@@ -74,6 +76,8 @@ export const Trash2 = bold(TrashIcon, 'Trash2');
 export const Pencil = bold(PencilSimpleIcon, 'Pencil');
 export const Copy = bold(CopyIcon, 'Copy');
 export const Check = bold(CheckIcon, 'Check');
+export const Minus = bold(MinusIcon, 'Minus');
+export const MoreHorizontal = bold(DotsThreeIcon, 'MoreHorizontal');
 export const RotateCcw = bold(ArrowCounterClockwiseIcon, 'RotateCcw');
 export const Undo2 = bold(ArrowUUpLeftIcon, 'Undo2');
 export const Redo2 = bold(ArrowUUpRightIcon, 'Redo2');

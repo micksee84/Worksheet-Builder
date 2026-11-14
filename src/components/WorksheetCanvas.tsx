@@ -12,7 +12,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDndContext, useDraggable, useDroppable } from '@dnd-kit/core';
 import { dropKind, isSlotBlockDrag, SlotBlockDrag } from '../utils/blockMoves';
-import { Page, PageSizeId, Slot, PageLayoutPreset, BlockInstance, PlannerKind } from '../types';
+import { Page, PageSizeId, Slot, PageLayoutPreset, BlockInstance, PlannerKind, PlannerData } from '../types';
 import { PAGE_SPECS, pageDims } from '../config/appConfig';
 import { PlannerOverlay } from '../planner/PlannerOverlay';
 
@@ -60,6 +60,8 @@ interface WorksheetCanvasProps {
   onResizePlannerItem?: (pageId: string, itemId: string, minutes: number) => void;
   onChangePlannerKind?: (pageId: string, kind: PlannerKind) => void;
   onOpenPlannerSettings?: () => void;
+  /** Changes a planner page's planner (typing a checklist on the page) */
+  onEditPlanner?: (pageId: string, fn: (p: PlannerData) => PlannerData) => void;
 }
 
 const DEFAULT_ZOOM = { single: 0.85, grid: 0.32 } as const;
@@ -259,6 +261,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
   onResizePlannerItem,
   onChangePlannerKind,
   onOpenPlannerSettings,
+  onEditPlanner,
 }) => {
   const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
   const [gridZoom, setGridZoom] = useState<number>(DEFAULT_ZOOM.grid);
@@ -914,6 +917,7 @@ export const WorksheetCanvas: React.FC<WorksheetCanvasProps> = ({
               onBackground={() => onPlannerBackground?.(activePage.id)}
               onChooseKind={(kind) => onChangePlannerKind?.(activePage.id, kind)}
               onResizeItem={(itemId, minutes) => onResizePlannerItem?.(activePage.id, itemId, minutes)}
+              onEdit={onEditPlanner ? (fn) => onEditPlanner(activePage.id, fn) : undefined}
             />
           )}
 
