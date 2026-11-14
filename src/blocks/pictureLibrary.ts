@@ -29,6 +29,8 @@ export const THEMES: { value: PictureTheme; label: string }[] = [
   { value: 'clothes', label: 'Clothes' },
   { value: 'toys', label: 'Toys, music and play' },
   { value: 'go', label: 'Things that go' },
+  { value: 'winter', label: 'Winter' },
+  { value: 'christmas', label: 'Christmas' },
 ];
 
 /** The shared "Pictures" setting: a theme, or everything mixed */

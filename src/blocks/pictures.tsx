@@ -250,6 +250,43 @@ export const PICTURES: Record<string, { label: string; sound: string }> = {
   yarn: { label: 'yarn', sound: 'y' },
   'yo-yo': { label: 'yo yo', sound: 'y' },
   zebra: { label: 'zebra', sound: 'z' },
+  // Winter and Christmas (Krea Batch 08)
+  angel: { label: 'angel', sound: '' }, // blend, digraph or vowel that isn't short: left out of Beginning sounds
+  'arctic-fox': { label: 'arctic fox', sound: '' }, // blend, digraph or vowel that isn't short: left out of Beginning sounds
+  candle: { label: 'candle', sound: 'c' },
+  'candy-cane': { label: 'candy cane', sound: 'c' },
+  cardinal: { label: 'cardinal', sound: 'c' },
+  'christmas-tree': { label: 'Christmas tree', sound: '' }, // blend, digraph or vowel that isn't short: left out of Beginning sounds
+  earmuffs: { label: 'earmuffs', sound: '' }, // blend, digraph or vowel that isn't short: left out of Beginning sounds
+  elf: { label: 'elf', sound: 'e' },
+  fireplace: { label: 'fireplace', sound: 'f' },
+  'gingerbread-house': { label: 'gingerbread house', sound: 'j' },
+  'gingerbread-man': { label: 'gingerbread man', sound: 'j' },
+  hockey: { label: 'hockey stick', sound: 'h' },
+  holly: { label: 'holly', sound: 'h' },
+  'hot-cocoa': { label: 'hot cocoa', sound: 'h' },
+  'ice-skates': { label: 'ice skates', sound: '' }, // blend, digraph or vowel that isn't short: left out of Beginning sounds
+  icicles: { label: 'icicles', sound: '' }, // blend, digraph or vowel that isn't short: left out of Beginning sounds
+  lights: { label: 'lights', sound: 'l' },
+  moose: { label: 'moose', sound: 'm' },
+  nutcracker: { label: 'nutcracker', sound: 'n' },
+  ornament: { label: 'ornament', sound: '' }, // blend, digraph or vowel that isn't short: left out of Beginning sounds
+  'pine-tree': { label: 'pine tree', sound: 'p' },
+  pinecone: { label: 'pinecone', sound: 'p' },
+  poinsettia: { label: 'poinsettia', sound: 'p' },
+  reindeer: { label: 'reindeer', sound: 'r' },
+  santa: { label: 'Santa', sound: 's' },
+  'santa-hat': { label: 'Santa hat', sound: 's' },
+  skis: { label: 'skis', sound: '' }, // blend, digraph or vowel that isn't short: left out of Beginning sounds
+  sleigh: { label: 'sleigh', sound: '' }, // blend, digraph or vowel that isn't short: left out of Beginning sounds
+  'snow-globe': { label: 'snow globe', sound: '' }, // blend, digraph or vowel that isn't short: left out of Beginning sounds
+  'snow-shovel': { label: 'snow shovel', sound: '' }, // blend, digraph or vowel that isn't short: left out of Beginning sounds
+  snowballs: { label: 'snowballs', sound: '' }, // blend, digraph or vowel that isn't short: left out of Beginning sounds
+  snowboard: { label: 'snowboard', sound: '' }, // blend, digraph or vowel that isn't short: left out of Beginning sounds
+  stocking: { label: 'stocking', sound: '' }, // blend, digraph or vowel that isn't short: left out of Beginning sounds
+  toque: { label: 'toque', sound: 't' },
+  walrus: { label: 'walrus', sound: 'w' },
+  wreath: { label: 'wreath', sound: 'r' },
   icecream: { label: 'ice cream', sound: '' }, // older name for ice-cream, kept so saved worksheets still open
 };
 
